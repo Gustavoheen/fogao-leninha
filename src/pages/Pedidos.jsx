@@ -29,7 +29,7 @@ let _uid = 0
 function uid() { return ++_uid }
 
 export default function Pedidos() {
-  const { clientes, pedidos, cardapio, adicionarPedido, atualizarStatusPedido, quitarPedido, removerPedido } = useApp()
+  const { clientes, pedidos, cardapio, cardapioHoje, adicionarPedido, atualizarStatusPedido, quitarPedido, removerPedido } = useApp()
   const [mostrarForm, setMostrarForm] = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [form, setForm] = useState(FORM_VAZIO)
@@ -54,18 +54,18 @@ export default function Pedidos() {
   }
 
   // Cardápio separado por tipo
-  const marmitex = cardapio.filter(i => i.disponivel && i.categoria === 'Marmitex')
+  const opcoesAlmoco = (cardapioHoje?.opcoes || []).filter(o => o.disponivel && o.precoG)
   const combos = cardapio.filter(i => i.disponivel && i.categoria === 'Combo')
   const refrigerantes = cardapio.filter(i => i.disponivel && i.categoria === 'Refrigerante')
 
-  // Adicionar marmitex ao pedido
-  function adicionarMarmitex(item, tamanho) {
-    const preco = tamanho === 'P' ? Number(item.precoP || item.preco) : Number(item.preco)
+  // Adicionar marmitex ao pedido (via cardapioHoje)
+  function adicionarMarmitex(opcao, proteina, tamanho) {
+    const preco = tamanho === 'P' ? Number(opcao.precoP || opcao.precoG) : Number(opcao.precoG)
     setForm(prev => ({
       ...prev,
       itensMarmitex: [...prev.itensMarmitex, {
-        uid: uid(), cardapioId: item.id, nome: item.nome,
-        tamanho, preco, adicionais: '', remover: '', qtd: 1,
+        uid: uid(), opcaoId: opcao.id, nome: opcao.nome,
+        proteina, tamanho, preco, adicionais: '', remover: '', qtd: 1,
       }]
     }))
   }
@@ -240,41 +240,38 @@ export default function Pedidos() {
             </div>
           </div>
 
-          {/* Marmitex */}
+          {/* Marmitex — opções do cardápio do dia */}
           <div className="bg-orange-50 rounded-xl p-4 mb-4">
             <p className="text-xs font-bold text-orange-800 uppercase tracking-wider mb-3 flex items-center gap-1">
               <UtensilsCrossed size={13} /> Marmitex
             </p>
-            {marmitex.length === 0 ? (
-              <p className="text-xs text-gray-400">Nenhum prato no cardápio hoje. Cadastre em Cardápio do Dia.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                {marmitex.map(item => (
-                  <div key={item.id} className="bg-white border border-orange-100 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-gray-800 mb-2">{item.nome}</p>
-                    <div className="flex gap-2">
-                      {item.precoP && (
-                        <button onClick={() => adicionarMarmitex(item, 'P')}
-                          className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold py-1.5 rounded-lg transition-colors">
-                          P — R$ {Number(item.precoP).toFixed(2).replace('.', ',')}
-                        </button>
-                      )}
-                      <button onClick={() => adicionarMarmitex(item, 'G')}
-                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-1.5 rounded-lg transition-colors">
-                        G — R$ {Number(item.preco).toFixed(2).replace('.', ',')}
-                      </button>
-                    </div>
-                  </div>
+
+            {/* Acompanhamentos do dia */}
+            {cardapioHoje?.acompanhamentos?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                <span className="text-xs text-gray-500 mr-1">Acomp.:</span>
+                {cardapioHoje.acompanhamentos.map(a => (
+                  <span key={a} className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{a}</span>
                 ))}
               </div>
             )}
 
+            {opcoesAlmoco.length === 0 ? (
+              <p className="text-xs text-gray-400">Nenhuma opção de almoço configurada. Acesse Cardápio do Dia.</p>
+            ) : (
+              <SeletorMarmitex
+                opcoesAlmoco={opcoesAlmoco}
+                onAdicionar={adicionarMarmitex}
+              />
+            )}
+
             {/* Itens de marmitex adicionados */}
             {form.itensMarmitex.map(item => (
-              <div key={item.uid} className="bg-white border border-amber-200 rounded-lg p-3 mb-2">
+              <div key={item.uid} className="bg-white border border-amber-200 rounded-lg p-3 mb-2 mt-2">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-gray-800">
                     {item.nome} <span className="text-amber-700 font-bold">({item.tamanho})</span>
+                    {item.proteina && <span className="text-gray-500 font-normal"> · {item.proteina}</span>}
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-green-700">R$ {(item.preco * item.qtd).toFixed(2).replace('.', ',')}</span>
@@ -439,6 +436,82 @@ export default function Pedidos() {
           {pedidosFiltrados.map(pedido => (
             <PedidoCard key={pedido.id} pedido={pedido} onStatus={atualizarStatusPedido} onQuitar={quitarPedido} onRemover={removerPedido} />
           ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Seletor de Marmitex em 3 passos: Cardápio → Proteína → Tamanho ──────────
+function SeletorMarmitex({ opcoesAlmoco, onAdicionar }) {
+  const [opcaoSel, setOpcaoSel] = useState(null)   // opcao do cardápio
+  const [proteinaSel, setProteinaSel] = useState('') // proteína escolhida
+
+  const COR = ['bg-orange-500', 'bg-amber-600']
+
+  function confirmar(tamanho) {
+    if (!opcaoSel) return
+    onAdicionar(opcaoSel, proteinaSel, tamanho)
+    setOpcaoSel(null)
+    setProteinaSel('')
+  }
+
+  return (
+    <div>
+      {/* Passo 1 – escolher cardápio */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        {opcoesAlmoco.map((opcao, idx) => (
+          <button
+            key={opcao.id}
+            onClick={() => { setOpcaoSel(opcao); setProteinaSel('') }}
+            className={`rounded-xl p-3 text-left border-2 transition-all ${opcaoSel?.id === opcao.id ? 'border-amber-600 bg-white shadow-md' : 'border-transparent bg-white hover:border-amber-300'}`}
+          >
+            <p className={`text-xs font-bold px-2 py-0.5 rounded-full text-white inline-block mb-1 ${COR[idx] || 'bg-gray-500'}`}>{opcao.nome}</p>
+            <div className="space-y-0.5">
+              {opcao.proteinas.filter(p => p.trim()).map((p, i) => (
+                <p key={i} className="text-xs text-gray-600">· {p}</p>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-2">
+              {opcao.precoP && <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-bold">P R$ {Number(opcao.precoP).toFixed(2).replace('.', ',')}</span>}
+              <span className="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-bold">G R$ {Number(opcao.precoG).toFixed(2).replace('.', ',')}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Passo 2 – escolher proteína (se houver) */}
+      {opcaoSel && opcaoSel.proteinas.filter(p => p.trim()).length > 0 && (
+        <div className="bg-white border border-amber-200 rounded-xl p-3 mb-2">
+          <p className="text-xs font-semibold text-gray-600 mb-2">Proteína — {opcaoSel.nome}</p>
+          <div className="flex gap-2 flex-wrap">
+            {opcaoSel.proteinas.filter(p => p.trim()).map((p, i) => (
+              <button key={i} onClick={() => setProteinaSel(p)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${proteinaSel === p ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-400'}`}>
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Passo 3 – escolher tamanho e confirmar */}
+      {opcaoSel && (
+        <div className="flex gap-2">
+          {opcaoSel.precoP && (
+            <button onClick={() => confirmar('P')}
+              className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-2 rounded-lg text-sm transition-colors">
+              + Marmitex P — R$ {Number(opcaoSel.precoP).toFixed(2).replace('.', ',')}
+            </button>
+          )}
+          <button onClick={() => confirmar('G')}
+            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-sm transition-colors">
+            + Marmitex G — R$ {Number(opcaoSel.precoG).toFixed(2).replace('.', ',')}
+          </button>
+          <button onClick={() => { setOpcaoSel(null); setProteinaSel('') }}
+            className="p-2 text-gray-400 hover:text-gray-600">
+            <X size={16} />
+          </button>
         </div>
       )}
     </div>

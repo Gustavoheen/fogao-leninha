@@ -5,7 +5,16 @@ const AppContext = createContext()
 const STORAGE_KEYS = {
   clientes: 'fogao_clientes',
   pedidos: 'fogao_pedidos',
-  cardapio: 'fogao_cardapio',
+  cardapio: 'fogao_cardapio',       // refrigerantes e combos
+  cardapioHoje: 'fogao_cardapio_hoje', // estrutura do almoço do dia
+}
+
+const CARDAPIO_HOJE_PADRAO = {
+  acompanhamentos: [],
+  opcoes: [
+    { id: 1, nome: 'Cardápio 1', proteinas: ['', '', ''], precoP: '', precoG: '', disponivel: true },
+    { id: 2, nome: 'Cardápio 2', proteinas: ['', '', ''], precoP: '', precoG: '', disponivel: true },
+  ],
 }
 
 function load(key, fallback) {
@@ -25,20 +34,18 @@ export function AppProvider({ children }) {
   const [clientes, setClientes] = useState(() => load(STORAGE_KEYS.clientes, []))
   const [pedidos, setPedidos] = useState(() => load(STORAGE_KEYS.pedidos, []))
   const [cardapio, setCardapio] = useState(() => load(STORAGE_KEYS.cardapio, []))
+  const [cardapioHoje, setCardapioHoje] = useState(() => load(STORAGE_KEYS.cardapioHoje, CARDAPIO_HOJE_PADRAO))
 
   useEffect(() => save(STORAGE_KEYS.clientes, clientes), [clientes])
   useEffect(() => save(STORAGE_KEYS.pedidos, pedidos), [pedidos])
   useEffect(() => save(STORAGE_KEYS.cardapio, cardapio), [cardapio])
+  useEffect(() => save(STORAGE_KEYS.cardapioHoje, cardapioHoje), [cardapioHoje])
 
-  // Clientes
+  // ── Clientes ──────────────────────────────────────────────
   function adicionarCliente(dados) {
     const novo = {
-      id: Date.now(),
-      nome: '',
-      telefone: '',
-      endereco: '',
-      observacoes: '',
-      tipo: 'normal', // 'normal' | 'mensalista'
+      id: Date.now(), nome: '', telefone: '', endereco: '',
+      observacoes: '', tipo: 'normal',
       ...dados,
       criadoEm: new Date().toISOString(),
     }
@@ -54,33 +61,22 @@ export function AppProvider({ children }) {
     setClientes(prev => prev.filter(c => c.id !== id))
   }
 
-  // Auto-registra cliente ao fazer pedido se não existir
   function autoRegistrarCliente(nome, endereco, telefone = '') {
     if (!nome.trim()) return null
-    const jaExiste = clientes.find(
-      c => c.nome.toLowerCase().trim() === nome.toLowerCase().trim()
-    )
+    const jaExiste = clientes.find(c => c.nome.toLowerCase().trim() === nome.toLowerCase().trim())
     if (jaExiste) {
-      if (endereco && !jaExiste.endereco) {
-        editarCliente(jaExiste.id, { endereco })
-      }
+      if (endereco && !jaExiste.endereco) editarCliente(jaExiste.id, { endereco })
       return jaExiste
     }
     return adicionarCliente({ nome: nome.trim(), endereco, telefone })
   }
 
-  // Pedidos
+  // ── Pedidos ───────────────────────────────────────────────
   function adicionarPedido(dados) {
-    const cliente = autoRegistrarCliente(
-      dados.clienteNome,
-      dados.clienteEndereco,
-      dados.clienteTelefone
-    )
-    // Se mensalista, pagamento começa como pendente
+    const cliente = autoRegistrarCliente(dados.clienteNome, dados.clienteEndereco, dados.clienteTelefone)
     const statusInicial = dados.pagamento === 'Pendente' ? 'pendente' : 'aberto'
     const novo = {
-      id: Date.now(),
-      ...dados,
+      id: Date.now(), ...dados,
       clienteId: cliente?.id || null,
       status: statusInicial,
       criadoEm: new Date().toISOString(),
@@ -103,14 +99,29 @@ export function AppProvider({ children }) {
     setPedidos(prev => prev.filter(p => p.id !== id))
   }
 
-  // Cardápio
+  // ── Cardápio Hoje (almoço estruturado) ───────────────────
+  function salvarAcompanhamentos(lista) {
+    setCardapioHoje(prev => ({ ...prev, acompanhamentos: lista }))
+  }
+
+  function salvarOpcaoAlmoco(id, dados) {
+    setCardapioHoje(prev => ({
+      ...prev,
+      opcoes: prev.opcoes.map(o => o.id === id ? { ...o, ...dados } : o),
+    }))
+  }
+
+  function toggleOpcaoAlmoco(id) {
+    setCardapioHoje(prev => ({
+      ...prev,
+      opcoes: prev.opcoes.map(o => o.id === id ? { ...o, disponivel: !o.disponivel } : o),
+    }))
+  }
+
+  // ── Cardápio geral (refrigerantes / combos) ───────────────
   function adicionarItemCardapio(dados) {
     const novo = { id: Date.now(), ...dados, disponivel: true }
     setCardapio(prev => [novo, ...prev])
-  }
-
-  function editarItemCardapio(id, dados) {
-    setCardapio(prev => prev.map(i => i.id === id ? { ...i, ...dados } : i))
   }
 
   function toggleDisponibilidade(id) {
@@ -121,7 +132,7 @@ export function AppProvider({ children }) {
     setCardapio(prev => prev.filter(i => i.id !== id))
   }
 
-  // Calcula débito pendente de um cliente
+  // ── Financeiro ────────────────────────────────────────────
   function debitoPendente(clienteId) {
     return pedidos
       .filter(p => p.clienteId === clienteId && (p.pagamento === 'Pendente' || p.status === 'pendente') && p.status !== 'cancelado')
@@ -132,7 +143,8 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente,
       pedidos, adicionarPedido, atualizarStatusPedido, quitarPedido, removerPedido,
-      cardapio, adicionarItemCardapio, editarItemCardapio, toggleDisponibilidade, removerItemCardapio,
+      cardapio, adicionarItemCardapio, toggleDisponibilidade, removerItemCardapio,
+      cardapioHoje, salvarAcompanhamentos, salvarOpcaoAlmoco, toggleOpcaoAlmoco,
     }}>
       {children}
     </AppContext.Provider>
