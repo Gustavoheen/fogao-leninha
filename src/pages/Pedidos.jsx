@@ -3,25 +3,36 @@ import { useApp } from '../context/AppContext'
 import { ClipboardList, Plus, X, Check, ChevronDown, User, MapPin, UtensilsCrossed, GlassWater, Package, Clock, Bike, Printer } from 'lucide-react'
 import { formatarEndereco, ENDERECO_VAZIO } from '../utils/endereco'
 
-function imprimirComanda(pedido) {
+function imprimirComanda(pedido, autoImprimir, onImpresso) {
   const hora = new Date(pedido.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const data = new Date(pedido.criadoEm).toLocaleDateString('pt-BR')
   const num = String(pedido.id).slice(-4)
   const endereco = formatarEndereco(pedido)
 
+  let itemIdx = 0
   const linhasItens = (pedido.itens || [])
     .filter(i => i.tipo !== 'refrigerante' && i.tipo !== 'embalagem')
     .map(item => {
-      let html = `<div class="item">
-        <div class="item-titulo">${item.qtd}x ${item.nome}${item.tamanho ? ` (${item.tamanho})` : ''}${item.proteina ? ` — ${item.proteina}` : ''}</div>`
-      if (item.retirados && item.retirados.length > 0)
-        html += `<div class="retirar">SEM: ${item.retirados.join(', ')}</div>`
-      if (item.extras)
-        html += `<div class="adicionar">+ ${item.extras}</div>`
-      if (item.adicionais)
-        html += `<div class="adicionar">+ ${item.adicionais}</div>`
-      if (item.remover)
-        html += `<div class="retirar">- ${item.remover}</div>`
+      itemIdx++
+      const todosAcomp = item.acompanhamentos || []
+      const retirados = item.retirados || []
+
+      let acompHtml = ''
+      if (todosAcomp.length > 0) {
+        acompHtml = todosAcomp.map(a => {
+          const sem = retirados.includes(a)
+          return sem
+            ? `<div class="acomp sem">✗ SEM ${a.toUpperCase()}</div>`
+            : `<div class="acomp ok">· ${a}</div>`
+        }).join('')
+      }
+
+      let html = `<div class="item ${itemIdx > 1 ? 'item-sep' : ''}">
+        <div class="item-titulo">${itemIdx}. ${item.nome} (${item.tamanho || 'Combo'})${item.proteina ? ` — ${item.proteina}` : ''}</div>
+        ${acompHtml}`
+      if (item.extras) html += `<div class="adicionar">+ ${item.extras}</div>`
+      if (item.adicionais) html += `<div class="adicionar">+ ${item.adicionais}</div>`
+      if (item.remover) html += `<div class="acomp sem">✗ SEM ${item.remover}</div>`
       html += `</div>`
       return html
     }).join('')
@@ -32,7 +43,7 @@ function imprimirComanda(pedido) {
     : ''
 
   const emb = (pedido.itens || []).find(i => i.tipo === 'embalagem')
-  const linhaEmbalagem = emb ? `<div class="item"><div class="item-titulo">${emb.qtd}x Embalagem adicional</div></div>` : ''
+  const linhaEmbalagem = emb ? `<div class="item"><div class="acomp ok">· ${emb.qtd}x Embalagem adicional</div></div>` : ''
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -41,22 +52,25 @@ function imprimirComanda(pedido) {
 <title>Comanda #${num}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: 'Courier New', monospace; font-size: 13px; color: #000; width: 280px; padding: 8px; }
-  .restaurante { text-align:center; font-size:15px; font-weight:bold; margin-bottom:2px; }
-  .subtitulo { text-align:center; font-size:11px; margin-bottom:6px; }
+  body { font-family: 'Courier New', monospace; font-size: 13px; color: #000; width: 300px; padding: 10px; }
+  .restaurante { text-align:center; font-size:16px; font-weight:bold; margin-bottom:2px; }
+  .subtitulo { text-align:center; font-size:11px; margin-bottom:6px; letter-spacing:2px; }
   .linha { border-top:1px dashed #000; margin:6px 0; }
-  .num { text-align:center; font-size:22px; font-weight:bold; margin:4px 0; }
-  .info { display:flex; justify-content:space-between; font-size:12px; margin:2px 0; }
-  .cliente { font-size:14px; font-weight:bold; margin:4px 0 2px; }
-  .endereco { font-size:11px; color:#333; margin-bottom:4px; }
-  .horario { font-size:12px; font-weight:bold; margin:2px 0; }
-  .secao { font-size:11px; font-weight:bold; text-transform:uppercase; letter-spacing:1px; margin-top:8px; margin-bottom:3px; border-bottom:1px solid #000; }
-  .item { margin:4px 0 6px; }
-  .item-titulo { font-size:14px; font-weight:bold; }
-  .retirar { font-size:12px; padding-left:10px; font-weight:bold; }
-  .adicionar { font-size:12px; padding-left:10px; }
-  .obs { font-size:12px; font-style:italic; margin-top:6px; border-left:2px solid #000; padding-left:6px; }
-  .total { text-align:right; font-size:16px; font-weight:bold; margin-top:8px; }
+  .num { text-align:center; font-size:28px; font-weight:bold; margin:4px 0; letter-spacing:2px; }
+  .info { display:flex; justify-content:space-between; font-size:11px; margin:2px 0; }
+  .cliente { font-size:15px; font-weight:bold; margin:4px 0 2px; }
+  .endereco { font-size:11px; color:#333; margin-bottom:3px; }
+  .horario { font-size:13px; font-weight:bold; margin:2px 0; }
+  .secao { font-size:11px; font-weight:bold; text-transform:uppercase; letter-spacing:1px; margin-top:8px; margin-bottom:4px; border-bottom:1px solid #000; padding-bottom:2px; }
+  .item { margin:4px 0 8px; }
+  .item-sep { border-top:1px dotted #999; padding-top:6px; }
+  .item-titulo { font-size:15px; font-weight:bold; margin-bottom:3px; }
+  .acomp { font-size:12px; padding-left:8px; line-height:1.6; }
+  .acomp.ok { color:#000; }
+  .acomp.sem { font-weight:bold; color:#000; }
+  .adicionar { font-size:12px; padding-left:8px; }
+  .obs { font-size:12px; font-style:italic; margin-top:6px; border-left:3px solid #000; padding-left:6px; }
+  .total { text-align:right; font-size:17px; font-weight:bold; margin-top:8px; }
   @media print { body { width:auto; } }
 </style>
 </head>
@@ -69,22 +83,25 @@ function imprimirComanda(pedido) {
   <div class="linha"></div>
   <div class="cliente">${pedido.clienteNome}</div>
   ${endereco ? `<div class="endereco">${endereco}</div>` : ''}
-  ${pedido.horarioEntrega ? `<div class="horario">Entrega: ${pedido.horarioEntrega}</div>` : ''}
+  ${pedido.horarioEntrega ? `<div class="horario">⏰ Entrega: ${pedido.horarioEntrega}</div>` : ''}
   <div class="linha"></div>
-  ${linhasItens ? `<div class="secao">PEDIDO</div>${linhasItens}` : ''}
+  ${linhasItens ? `<div class="secao">PEDIDO (${itemIdx} marmitex)</div>${linhasItens}` : ''}
   ${linhasBebidas}
   ${linhaEmbalagem}
-  ${pedido.observacoes ? `<div class="obs">Obs: ${pedido.observacoes}</div>` : ''}
+  ${pedido.observacoes ? `<div class="obs">OBS: ${pedido.observacoes}</div>` : ''}
   <div class="linha"></div>
-  <div class="total">R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}</div>
+  <div class="total">TOTAL: R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}</div>
 </body>
 </html>`
 
-  const w = window.open('', '_blank', 'width=340,height=600')
+  const w = window.open('', '_blank', 'width=360,height=700')
   w.document.write(html)
   w.document.close()
   w.focus()
-  setTimeout(() => { w.print(); w.close() }, 300)
+  if (onImpresso) onImpresso()
+  if (autoImprimir) {
+    setTimeout(() => { w.print() }, 400)
+  }
 }
 
 export const STATUS_LABELS = {
@@ -130,12 +147,13 @@ export default function Pedidos() {
   const {
     clientes, pedidos, cardapio, cardapioHoje,
     adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido,
-    atribuirMotoboy, quitarPedido, removerPedido, motoboys,
+    atribuirMotoboy, quitarPedido, removerPedido, motoboys, marcarComandaImpressa,
   } = useApp()
   const [mostrarForm, setMostrarForm] = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [form, setForm] = useState(FORM_VAZIO)
   const [sugestoes, setSugestoes] = useState([])
+  const [autoImprimir, setAutoImprimir] = useState(true)
 
   function onNomeChange(valor) {
     setForm(prev => ({ ...prev, clienteNome: valor }))
@@ -165,16 +183,15 @@ export default function Pedidos() {
   const combos = cardapio.filter(i => i.disponivel && i.categoria === 'Combo')
   const refrigerantes = cardapio.filter(i => i.disponivel && i.categoria === 'Refrigerante')
 
-  function adicionarMarmitex(opcao, proteina, tamanho, retirados, extras) {
+  function adicionarMarmitex(opcao, proteina, tamanho, retirados, extras, qtd = 1) {
     const preco = tamanho === 'P' ? precoP : precoG
-    setForm(prev => ({
-      ...prev,
-      itensMarmitex: [...prev.itensMarmitex, {
-        uid: uid(), opcaoId: opcao.id, nome: opcao.nome,
-        proteina, tamanho, preco, adicionais: extras || '', remover: '', qtd: 1,
-        retirados: retirados || [], extras: extras || '',
-      }]
+    const novas = Array.from({ length: qtd }, () => ({
+      uid: uid(), opcaoId: opcao.id, nome: opcao.nome,
+      proteina, tamanho, preco, adicionais: extras || '', remover: '', qtd: 1,
+      retirados: retirados || [], extras: extras || '',
+      acompanhamentos: opcao.acompanhamentos || [],
     }))
+    setForm(prev => ({ ...prev, itensMarmitex: [...prev.itensMarmitex, ...novas] }))
   }
 
   function adicionarRefrigerante(item) {
@@ -282,12 +299,26 @@ export default function Pedidos() {
           <h1 className="text-2xl font-bold text-amber-900">Pedidos</h1>
           <p className="text-sm text-gray-500">{emAberto} em aberto</p>
         </div>
-        <button
-          onClick={() => setMostrarForm(true)}
-          className="flex items-center gap-2 bg-amber-700 hover:bg-amber-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          <Plus size={16} /> Novo Pedido
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setAutoImprimir(v => !v)}
+            title={autoImprimir ? 'Impressão automática ativada' : 'Impressão manual'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-colors ${
+              autoImprimir
+                ? 'bg-green-50 border-green-400 text-green-700'
+                : 'bg-gray-50 border-gray-300 text-gray-500'
+            }`}
+          >
+            <Printer size={13} />
+            {autoImprimir ? 'Impressão automática' : 'Impressão manual'}
+          </button>
+          <button
+            onClick={() => setMostrarForm(true)}
+            className="flex items-center gap-2 bg-amber-700 hover:bg-amber-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Plus size={16} /> Novo Pedido
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -620,6 +651,8 @@ export default function Pedidos() {
               onQuitar={quitarPedido}
               onRemover={removerPedido}
               motoboys={motoboys}
+              autoImprimir={autoImprimir}
+              onImpresso={() => marcarComandaImpressa(pedido.id)}
             />
           ))}
         </div>
@@ -632,17 +665,19 @@ export default function Pedidos() {
 function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicionar }) {
   const [opcaoSel, setOpcaoSel] = useState(null)
   const [carneSel, setCarneSel] = useState('')
-  const [acompSel, setAcompSel] = useState([]) // items selected (all start selected)
+  const [acompSel, setAcompSel] = useState([])
   const [extras, setExtras] = useState('')
+  const [qtd, setQtd] = useState(1)
+  const [feedback, setFeedback] = useState('')
 
   const COR_BADGE = ['bg-orange-500', 'bg-amber-600']
 
   function selecionarOpcao(opcao) {
     setOpcaoSel(opcao)
     setCarneSel('')
-    // All acompanhamentos start as selected
     setAcompSel(opcao.acompanhamentos || [])
     setExtras('')
+    setQtd(1)
   }
 
   function toggleAcomp(item) {
@@ -655,11 +690,15 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
     if (!opcaoSel) return
     const todosAcomp = opcaoSel.acompanhamentos || []
     const retirados = todosAcomp.filter(a => !acompSel.includes(a))
-    onAdicionar(opcaoSel, carneSel, tamanho, retirados, extras)
+    onAdicionar(opcaoSel, carneSel, tamanho, retirados, extras, qtd)
+    const msg = `✓ ${qtd}x ${opcaoSel.nome} (${tamanho}) adicionada${qtd > 1 ? 's' : ''}!`
+    setFeedback(msg)
+    setTimeout(() => setFeedback(''), 2000)
     setOpcaoSel(null)
     setCarneSel('')
     setAcompSel([])
     setExtras('')
+    setQtd(1)
   }
 
   const temCarnes = carnesGlobais.length > 0
@@ -667,6 +706,11 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
 
   return (
     <div>
+      {feedback && (
+        <div className="mb-2 px-3 py-2 bg-green-100 text-green-800 text-sm font-semibold rounded-lg">
+          {feedback}
+        </div>
+      )}
       {/* Passo 1 – escolher opção */}
       <div className="grid grid-cols-2 gap-2 mb-2">
         {opcoesAlmoco.map((opcao, idx) => (
@@ -740,29 +784,41 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
         </div>
       )}
 
-      {/* Passo 4 – tamanho */}
+      {/* Passo 4 – quantidade + tamanho */}
       {opcaoSel && (
-        <div className="flex gap-2">
-          {precoP > 0 && (
-            <button onClick={() => prontoParaTamanho && confirmar('P')} disabled={!prontoParaTamanho}
-              className={`flex-1 font-bold py-2.5 rounded-lg text-sm transition-colors ${prontoParaTamanho ? 'bg-amber-100 hover:bg-amber-200 text-amber-800' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
-              + Marmitex P — R$ {precoP.toFixed(2).replace('.', ',')}
+        <div className="space-y-2">
+          {/* Contador de quantidade */}
+          <div className="flex items-center gap-2 bg-white border border-amber-100 rounded-xl px-3 py-2">
+            <span className="text-xs font-semibold text-gray-600 mr-auto">Quantidade:</span>
+            <button onClick={() => setQtd(q => Math.max(1, q - 1))}
+              className="w-7 h-7 bg-gray-100 border rounded font-bold text-gray-600 hover:bg-gray-200">-</button>
+            <span className="text-base font-bold text-gray-800 w-6 text-center">{qtd}</span>
+            <button onClick={() => setQtd(q => q + 1)}
+              className="w-7 h-7 bg-gray-100 border rounded font-bold text-gray-600 hover:bg-gray-200">+</button>
+            <span className="text-xs text-gray-400 ml-1">{qtd > 1 ? `(${qtd} itens iguais)` : ''}</span>
+          </div>
+          <div className="flex gap-2">
+            {precoP > 0 && (
+              <button onClick={() => prontoParaTamanho && confirmar('P')} disabled={!prontoParaTamanho}
+                className={`flex-1 font-bold py-2.5 rounded-lg text-sm transition-colors ${prontoParaTamanho ? 'bg-amber-100 hover:bg-amber-200 text-amber-800' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+                + {qtd > 1 ? `${qtd}x ` : ''}Marmitex P — R$ {(precoP * qtd).toFixed(2).replace('.', ',')}
+              </button>
+            )}
+            <button onClick={() => prontoParaTamanho && confirmar('G')} disabled={!prontoParaTamanho}
+              className={`flex-1 font-bold py-2.5 rounded-lg text-sm transition-colors ${prontoParaTamanho ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+              + {qtd > 1 ? `${qtd}x ` : ''}Marmitex G — R$ {(precoG * qtd).toFixed(2).replace('.', ',')}
             </button>
-          )}
-          <button onClick={() => prontoParaTamanho && confirmar('G')} disabled={!prontoParaTamanho}
-            className={`flex-1 font-bold py-2.5 rounded-lg text-sm transition-colors ${prontoParaTamanho ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
-            + Marmitex G — R$ {precoG.toFixed(2).replace('.', ',')}
-          </button>
-          <button onClick={() => { setOpcaoSel(null); setCarneSel('') }} className="p-2 text-gray-400 hover:text-gray-600">
-            <X size={16} />
-          </button>
+            <button onClick={() => { setOpcaoSel(null); setCarneSel(''); setQtd(1) }} className="p-2 text-gray-400 hover:text-gray-600">
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, onQuitar, onRemover, motoboys }) {
+function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, onQuitar, onRemover, motoboys, autoImprimir, onImpresso }) {
   const [aberto, setAberto] = useState(false)
   const [mostrarEntrega, setMostrarEntrega] = useState(false)
   const [motoboyInput, setMotoboyInput] = useState('')
@@ -797,6 +853,10 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
                 <Clock size={10} /> {pedido.horarioEntrega}
               </span>
             )}
+            {pedido.comandaImpressaEm
+              ? <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><Printer size={9} /> Impressa</span>
+              : <span className="text-xs bg-orange-50 text-orange-500 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><Printer size={9} /> Não impressa</span>
+            }
           </div>
           {endFormatado && (
             <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
@@ -861,9 +921,9 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
 
           {/* Ações */}
           <div className="flex gap-2 flex-wrap mt-3">
-            <button onClick={() => imprimirComanda(pedido)}
+            <button onClick={() => imprimirComanda(pedido, autoImprimir, onImpresso)}
               className="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors flex items-center gap-1">
-              <Printer size={12} /> Imprimir Comanda
+              <Printer size={12} /> {pedido.comandaImpressaEm ? 'Reimprimir' : 'Imprimir Comanda'}
             </button>
             {pedido.status !== 'entregue' && (
               <>

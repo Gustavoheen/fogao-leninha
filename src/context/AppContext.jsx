@@ -137,6 +137,10 @@ export function AppProvider({ children }) {
     setPedidos(prev => prev.filter(p => p.id !== id))
   }
 
+  function marcarComandaImpressa(id) {
+    setPedidos(prev => prev.map(p => p.id === id ? { ...p, comandaImpressaEm: new Date().toISOString() } : p))
+  }
+
   // ── Cardápio Hoje ─────────────────────────────────────────
   function salvarCarnes(carnes) {
     setCardapioHoje(prev => ({ ...prev, carnes }))
@@ -317,7 +321,7 @@ export function AppProvider({ children }) {
       // Clientes
       clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente,
       // Pedidos
-      pedidos, adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atribuirMotoboy, quitarPedido, removerPedido,
+      pedidos, adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atribuirMotoboy, quitarPedido, removerPedido, marcarComandaImpressa,
       // Cardápio
       cardapio, adicionarItemCardapio, toggleDisponibilidade, removerItemCardapio,
       cardapioHoje, salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco,
