@@ -1,11 +1,15 @@
 import { NavLink } from 'react-router-dom'
-import { Users, ClipboardList, BookOpen, CreditCard, Flame } from 'lucide-react'
+import { Users, ClipboardList, BookOpen, TrendingUp, Package, Truck, UserCheck, BarChart3, Flame } from 'lucide-react'
 
 const navItems = [
-  { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/pedidos', label: 'Pedidos', icon: ClipboardList },
-  { to: '/cardapio', label: 'Cardápio do Dia', icon: BookOpen },
-  { to: '/pagamentos', label: 'Dashboard', icon: CreditCard },
+  { to: '/clientes', label: 'Clientes', icon: Users },
+  { to: '/cardapio', label: 'Cardápio', icon: BookOpen },
+  { to: '/financeiro', label: 'Financeiro', icon: TrendingUp },
+  { to: '/estoque', label: 'Estoque', icon: Package },
+  { to: '/fornecedores', label: 'Fornecedores', icon: Truck },
+  { to: '/funcionarios', label: 'Funcionários', icon: UserCheck },
+  { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
 ]
 
 export default function Layout({ children }) {
@@ -20,7 +24,7 @@ export default function Layout({ children }) {
           </div>
           <span className="text-amber-300 text-xs">da Leninha</span>
         </div>
-        <nav className="flex-1 p-3 flex flex-col gap-1">
+        <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -39,7 +43,7 @@ export default function Layout({ children }) {
           ))}
         </nav>
         <div className="p-4 text-xs text-amber-500 text-center border-t border-amber-700">
-          v1.0 — Sistema PDV
+          v2.0 — Sistema PDV
         </div>
       </aside>
 

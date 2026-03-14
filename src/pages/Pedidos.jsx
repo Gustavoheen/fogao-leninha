@@ -1,15 +1,11 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { ClipboardList, Plus, X, Check, ChevronDown, User, MapPin, UtensilsCrossed, GlassWater, Package } from 'lucide-react'
+import { ClipboardList, Plus, X, Check, ChevronDown, User, MapPin, UtensilsCrossed, GlassWater, Package, Clock, Bike } from 'lucide-react'
 import { formatarEndereco, ENDERECO_VAZIO } from '../utils/endereco'
 
 export const STATUS_LABELS = {
   aberto: { label: 'Aberto', color: 'bg-blue-100 text-blue-700' },
-  preparando: { label: 'Preparando', color: 'bg-yellow-100 text-yellow-700' },
-  pronto: { label: 'Pronto', color: 'bg-green-100 text-green-700' },
   entregue: { label: 'Entregue', color: 'bg-gray-100 text-gray-600' },
-  pendente: { label: 'Pend. Pagto', color: 'bg-orange-100 text-orange-700' },
-  cancelado: { label: 'Cancelado', color: 'bg-red-100 text-red-600' },
 }
 
 const FORMAS_PAGAMENTO_OPCOES = [
@@ -20,6 +16,12 @@ const FORMAS_PAGAMENTO_OPCOES = [
   { value: 'Mensalista',        label: 'Mensalista',        cor: 'bg-orange-100 text-orange-800' },
   { value: 'Pendente',          label: 'Pendente',          cor: 'bg-red-100 text-red-700' },
 ]
+
+const PAGAMENTO_STATUS = {
+  pago: { label: 'Pago', color: 'bg-green-100 text-green-700', icon: '✓' },
+  pendente: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-700', icon: '⏳' },
+  mensalista: { label: 'Mensalista', color: 'bg-orange-100 text-orange-700', icon: '📋' },
+}
 
 const FORM_VAZIO = {
   clienteNome: '',
@@ -33,20 +35,24 @@ const FORM_VAZIO = {
   itensCombo: [],
   pagamento: 'Dinheiro',
   observacoes: '',
+  horarioEntrega: '',
+  embalagensAdicionais: 0,
 }
 
-// Gera UID único por item no pedido (mesmo prato pode entrar 2x com tamanhos diferentes)
 let _uid = 0
 function uid() { return ++_uid }
 
 export default function Pedidos() {
-  const { clientes, pedidos, cardapio, cardapioHoje, adicionarPedido, atualizarStatusPedido, quitarPedido, removerPedido } = useApp()
+  const {
+    clientes, pedidos, cardapio, cardapioHoje,
+    adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido,
+    atribuirMotoboy, quitarPedido, removerPedido, motoboys,
+  } = useApp()
   const [mostrarForm, setMostrarForm] = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [form, setForm] = useState(FORM_VAZIO)
   const [sugestoes, setSugestoes] = useState([])
 
-  // Autocomplete de clientes
   function onNomeChange(valor) {
     setForm(prev => ({ ...prev, clienteNome: valor }))
     if (valor.length < 2) { setSugestoes([]); return }
@@ -63,13 +69,11 @@ export default function Pedidos() {
       clienteBairro: c.bairro || prev.clienteBairro,
       clienteNumero: c.numero || prev.clienteNumero,
       clienteReferencia: c.referencia || prev.clienteReferencia,
-      // Se for mensalista, pré-seleciona forma de pagamento
       pagamento: c.tipo === 'mensalista' ? 'Mensalista' : prev.pagamento,
     }))
     setSugestoes([])
   }
 
-  // Cardápio do dia
   const opcoesAlmoco = (cardapioHoje?.opcoes || []).filter(o => o.disponivel)
   const carnesGlobais = (cardapioHoje?.carnes || []).filter(c => c.trim())
   const precoP = Number(cardapioHoje?.precoP || 0)
@@ -77,14 +81,14 @@ export default function Pedidos() {
   const combos = cardapio.filter(i => i.disponivel && i.categoria === 'Combo')
   const refrigerantes = cardapio.filter(i => i.disponivel && i.categoria === 'Refrigerante')
 
-  // Adicionar marmitex ao pedido (via cardapioHoje)
-  function adicionarMarmitex(opcao, proteina, tamanho) {
+  function adicionarMarmitex(opcao, proteina, tamanho, retirados, extras) {
     const preco = tamanho === 'P' ? precoP : precoG
     setForm(prev => ({
       ...prev,
       itensMarmitex: [...prev.itensMarmitex, {
         uid: uid(), opcaoId: opcao.id, nome: opcao.nome,
-        proteina, tamanho, preco, adicionais: '', remover: '', qtd: 1,
+        proteina, tamanho, preco, adicionais: extras || '', remover: '', qtd: 1,
+        retirados: retirados || [], extras: extras || '',
       }]
     }))
   }
@@ -109,45 +113,46 @@ export default function Pedidos() {
     }))
   }
 
-  function atualizarItemMarmitex(uid, campo, valor) {
+  function atualizarItemMarmitex(itemUid, campo, valor) {
     setForm(prev => ({
       ...prev,
-      itensMarmitex: prev.itensMarmitex.map(i => i.uid === uid ? { ...i, [campo]: valor } : i)
+      itensMarmitex: prev.itensMarmitex.map(i => i.uid === itemUid ? { ...i, [campo]: valor } : i)
     }))
   }
 
-  function atualizarItemCombo(uid, campo, valor) {
+  function atualizarItemCombo(itemUid, campo, valor) {
     setForm(prev => ({
       ...prev,
-      itensCombo: prev.itensCombo.map(i => i.uid === uid ? { ...i, [campo]: valor } : i)
+      itensCombo: prev.itensCombo.map(i => i.uid === itemUid ? { ...i, [campo]: valor } : i)
     }))
   }
 
-  function alterarQtdRefrigerante(uid, delta) {
+  function alterarQtdRefrigerante(itemUid, delta) {
     setForm(prev => ({
       ...prev,
       itensRefrigerante: prev.itensRefrigerante
-        .map(i => i.uid === uid ? { ...i, qtd: i.qtd + delta } : i)
+        .map(i => i.uid === itemUid ? { ...i, qtd: i.qtd + delta } : i)
         .filter(i => i.qtd > 0)
     }))
   }
 
-  function removerMarmitex(uid) {
-    setForm(prev => ({ ...prev, itensMarmitex: prev.itensMarmitex.filter(i => i.uid !== uid) }))
+  function removerMarmitex(itemUid) {
+    setForm(prev => ({ ...prev, itensMarmitex: prev.itensMarmitex.filter(i => i.uid !== itemUid) }))
   }
-  function removerRefrigerante(uid) {
-    setForm(prev => ({ ...prev, itensRefrigerante: prev.itensRefrigerante.filter(i => i.uid !== uid) }))
+  function removerRefrigerante(itemUid) {
+    setForm(prev => ({ ...prev, itensRefrigerante: prev.itensRefrigerante.filter(i => i.uid !== itemUid) }))
   }
-  function removerCombo(uid) {
-    setForm(prev => ({ ...prev, itensCombo: prev.itensCombo.filter(i => i.uid !== uid) }))
+  function removerCombo(itemUid) {
+    setForm(prev => ({ ...prev, itensCombo: prev.itensCombo.filter(i => i.uid !== itemUid) }))
   }
 
   const totalMarmitex = form.itensMarmitex.reduce((acc, i) => acc + i.preco * i.qtd, 0)
   const totalRefrigerante = form.itensRefrigerante.reduce((acc, i) => acc + i.preco * i.qtd, 0)
   const totalCombo = form.itensCombo.reduce((acc, i) => acc + i.preco * i.qtd, 0)
-  const total = totalMarmitex + totalRefrigerante + totalCombo
+  const totalEmbalagens = (form.embalagensAdicionais || 0) * 1
+  const total = totalMarmitex + totalRefrigerante + totalCombo + totalEmbalagens
 
-  const temItens = form.itensMarmitex.length > 0 || form.itensRefrigerante.length > 0 || form.itensCombo.length > 0
+  const temItens = form.itensMarmitex.length > 0 || form.itensRefrigerante.length > 0 || form.itensCombo.length > 0 || form.embalagensAdicionais > 0
 
   function salvar() {
     if (!temItens) return
@@ -156,6 +161,12 @@ export default function Pedidos() {
       ...form.itensCombo.map(i => ({ ...i, tipo: 'combo' })),
       ...form.itensRefrigerante.map(i => ({ ...i, tipo: 'refrigerante' })),
     ]
+    if (form.embalagensAdicionais > 0) {
+      todosItens.push({
+        uid: uid(), tipo: 'embalagem', nome: 'Embalagem adicional',
+        qtd: form.embalagensAdicionais, preco: 1,
+      })
+    }
     adicionarPedido({
       clienteNome: form.clienteNome || 'Cliente não identificado',
       clienteTelefone: form.clienteTelefone,
@@ -166,6 +177,8 @@ export default function Pedidos() {
       itens: todosItens,
       pagamento: form.pagamento,
       observacoes: form.observacoes,
+      horarioEntrega: form.horarioEntrega,
+      embalagensAdicionais: form.embalagensAdicionais,
       total,
     })
     setForm(FORM_VAZIO)
@@ -176,14 +189,14 @@ export default function Pedidos() {
     ? pedidos
     : pedidos.filter(p => p.status === filtroStatus)
 
-  const emAberto = pedidos.filter(p => !['entregue', 'cancelado'].includes(p.status)).length
+  const emAberto = pedidos.filter(p => p.status === 'aberto').length
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-amber-900">Pedidos</h1>
-          <p className="text-sm text-gray-500">{emAberto} em aberto hoje</p>
+          <p className="text-sm text-gray-500">{emAberto} em aberto</p>
         </div>
         <button
           onClick={() => setMostrarForm(true)}
@@ -251,7 +264,6 @@ export default function Pedidos() {
                   placeholder="(32) 99999-9999"
                 />
               </div>
-              {/* Endereço — 4 campos */}
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-500 mb-2 flex items-center gap-1">
                   <MapPin size={11} /> Endereço de Entrega
@@ -290,24 +302,14 @@ export default function Pedidos() {
             </div>
           </div>
 
-          {/* Marmitex — opções do cardápio do dia */}
+          {/* Marmitex */}
           <div className="bg-orange-50 rounded-xl p-4 mb-4">
             <p className="text-xs font-bold text-orange-800 uppercase tracking-wider mb-3 flex items-center gap-1">
               <UtensilsCrossed size={13} /> Marmitex
             </p>
 
-            {/* Acompanhamentos do dia */}
-            {cardapioHoje?.acompanhamentos?.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
-                <span className="text-xs text-gray-500 mr-1">Acomp.:</span>
-                {cardapioHoje.acompanhamentos.map(a => (
-                  <span key={a} className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{a}</span>
-                ))}
-              </div>
-            )}
-
             {opcoesAlmoco.length === 0 || !precoG ? (
-              <p className="text-xs text-gray-400">Configure as opções e preços em Cardápio do Dia.</p>
+              <p className="text-xs text-gray-400">Configure as opções e preços em Cardápio.</p>
             ) : (
               <SeletorMarmitex
                 opcoesAlmoco={opcoesAlmoco}
@@ -318,7 +320,6 @@ export default function Pedidos() {
               />
             )}
 
-            {/* Itens de marmitex adicionados */}
             {form.itensMarmitex.map(item => (
               <div key={item.uid} className="bg-white border border-amber-200 rounded-lg p-3 mb-2 mt-2">
                 <div className="flex items-center justify-between mb-2">
@@ -331,21 +332,18 @@ export default function Pedidos() {
                     <button onClick={() => removerMarmitex(item.uid)} className="text-red-400 hover:text-red-600"><X size={14} /></button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Adicionar</label>
-                    <input type="text" value={item.adicionais}
-                      onChange={e => atualizarItemMarmitex(item.uid, 'adicionais', e.target.value)}
-                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400"
-                      placeholder="Ex: bacon, queijo..." />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Retirar</label>
-                    <input type="text" value={item.remover}
-                      onChange={e => atualizarItemMarmitex(item.uid, 'remover', e.target.value)}
-                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400"
-                      placeholder="Ex: cebola, pimenta..." />
-                  </div>
+                {item.retirados && item.retirados.length > 0 && (
+                  <p className="text-xs text-red-500 mb-1">Sem: {item.retirados.join(', ')}</p>
+                )}
+                {item.extras && (
+                  <p className="text-xs text-green-600 mb-1">+ {item.extras}</p>
+                )}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Observação</label>
+                  <input type="text" value={item.adicionais}
+                    onChange={e => atualizarItemMarmitex(item.uid, 'adicionais', e.target.value)}
+                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400"
+                    placeholder="Observação adicional..." />
                 </div>
               </div>
             ))}
@@ -403,7 +401,7 @@ export default function Pedidos() {
               <GlassWater size={13} /> Refrigerantes
             </p>
             {refrigerantes.length === 0 ? (
-              <p className="text-xs text-gray-400">Nenhum refrigerante cadastrado. Adicione em Cardápio do Dia.</p>
+              <p className="text-xs text-gray-400">Nenhum refrigerante cadastrado.</p>
             ) : (
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {refrigerantes.map(item => (
@@ -434,7 +432,27 @@ export default function Pedidos() {
             )}
           </div>
 
-          {/* Pagamento e total */}
+          {/* Embalagens Adicionais */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-4">
+            <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-1">
+              <Package size={13} /> Embalagens Adicionais (R$ 1,00 cada)
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setForm(prev => ({ ...prev, embalagensAdicionais: Math.max(0, (prev.embalagensAdicionais || 0) - 1) }))}
+                className="w-8 h-8 bg-white border border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+              >-</button>
+              <span className="text-lg font-bold text-gray-800 w-8 text-center">{form.embalagensAdicionais}</span>
+              <button
+                onClick={() => setForm(prev => ({ ...prev, embalagensAdicionais: (prev.embalagensAdicionais || 0) + 1 }))}
+                className="w-8 h-8 bg-white border border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+              >+</button>
+              {form.embalagensAdicionais > 0 && (
+                <span className="text-sm font-bold text-green-700">R$ {(form.embalagensAdicionais * 1).toFixed(2).replace('.', ',')}</span>
+              )}
+            </div>
+          </div>
+
           {/* Pagamento */}
           <div className="mb-4">
             <label className="block text-xs font-medium text-gray-600 mb-2">Forma de Pagamento</label>
@@ -451,8 +469,18 @@ export default function Pedidos() {
               ))}
             </div>
             {(form.pagamento === 'Pendente' || form.pagamento === 'Mensalista') && (
-              <p className="text-xs text-orange-600 mt-2">⚠ Pedido ficará em aberto até o pagamento ser confirmado</p>
+              <p className="text-xs text-orange-600 mt-2">Pagamento registrado como pendente</p>
             )}
+          </div>
+
+          {/* Horário de Entrega */}
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+              <Clock size={12} /> Horário de Entrega (opcional)
+            </label>
+            <input type="time" value={form.horarioEntrega}
+              onChange={e => setForm(prev => ({ ...prev, horarioEntrega: e.target.value }))}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
 
           <div className="mb-4">
@@ -469,6 +497,7 @@ export default function Pedidos() {
               {totalMarmitex > 0 && <div className="flex justify-between text-sm text-gray-600 mb-1"><span>Marmitex</span><span>R$ {totalMarmitex.toFixed(2).replace('.', ',')}</span></div>}
               {totalCombo > 0 && <div className="flex justify-between text-sm text-gray-600 mb-1"><span>Combos</span><span>R$ {totalCombo.toFixed(2).replace('.', ',')}</span></div>}
               {totalRefrigerante > 0 && <div className="flex justify-between text-sm text-gray-600 mb-1"><span>Refrigerantes</span><span>R$ {totalRefrigerante.toFixed(2).replace('.', ',')}</span></div>}
+              {totalEmbalagens > 0 && <div className="flex justify-between text-sm text-gray-600 mb-1"><span>Embalagens</span><span>R$ {totalEmbalagens.toFixed(2).replace('.', ',')}</span></div>}
               <div className="flex justify-between font-bold text-green-800 text-base border-t border-green-200 mt-2 pt-2">
                 <span>Total</span>
                 <span>R$ {total.toFixed(2).replace('.', ',')}</span>
@@ -498,7 +527,16 @@ export default function Pedidos() {
       ) : (
         <div className="grid gap-3">
           {pedidosFiltrados.map(pedido => (
-            <PedidoCard key={pedido.id} pedido={pedido} onStatus={atualizarStatusPedido} onQuitar={quitarPedido} onRemover={removerPedido} />
+            <PedidoCard
+              key={pedido.id}
+              pedido={pedido}
+              onStatus={atualizarStatusPedido}
+              onPagamentoStatus={atualizarPagamentoPedido}
+              onAtribuirMotoboy={atribuirMotoboy}
+              onQuitar={quitarPedido}
+              onRemover={removerPedido}
+              motoboys={motoboys}
+            />
           ))}
         </div>
       )}
@@ -507,19 +545,37 @@ export default function Pedidos() {
 }
 
 // ── Seletor de Marmitex ──────────────────────────────────────────────────────
-// Fluxo A (tem carnes globais): Opção → Carne → Tamanho
-// Fluxo B (sem carnes / prato completo): Opção → Tamanho direto
 function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicionar }) {
   const [opcaoSel, setOpcaoSel] = useState(null)
   const [carneSel, setCarneSel] = useState('')
+  const [acompSel, setAcompSel] = useState([]) // items selected (all start selected)
+  const [extras, setExtras] = useState('')
 
   const COR_BADGE = ['bg-orange-500', 'bg-amber-600']
 
+  function selecionarOpcao(opcao) {
+    setOpcaoSel(opcao)
+    setCarneSel('')
+    // All acompanhamentos start as selected
+    setAcompSel(opcao.acompanhamentos || [])
+    setExtras('')
+  }
+
+  function toggleAcomp(item) {
+    setAcompSel(prev =>
+      prev.includes(item) ? prev.filter(a => a !== item) : [...prev, item]
+    )
+  }
+
   function confirmar(tamanho) {
     if (!opcaoSel) return
-    onAdicionar(opcaoSel, carneSel, tamanho)
+    const todosAcomp = opcaoSel.acompanhamentos || []
+    const retirados = todosAcomp.filter(a => !acompSel.includes(a))
+    onAdicionar(opcaoSel, carneSel, tamanho, retirados, extras)
     setOpcaoSel(null)
     setCarneSel('')
+    setAcompSel([])
+    setExtras('')
   }
 
   const temCarnes = carnesGlobais.length > 0
@@ -531,7 +587,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
       <div className="grid grid-cols-2 gap-2 mb-2">
         {opcoesAlmoco.map((opcao, idx) => (
           <button key={opcao.id}
-            onClick={() => { setOpcaoSel(opcao); setCarneSel('') }}
+            onClick={() => selecionarOpcao(opcao)}
             className={`rounded-xl p-3 text-left border-2 transition-all ${opcaoSel?.id === opcao.id ? 'border-amber-600 bg-white shadow-md' : 'border-transparent bg-white hover:border-amber-300'}`}
           >
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full text-white inline-block mb-1.5 ${COR_BADGE[idx] || 'bg-gray-500'}`}>
@@ -553,11 +609,38 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
         ))}
       </div>
 
-      {/* Passo 2 – escolher carne (só se houver carnes globais) */}
+      {/* Passo 2 – acompanhamentos toggleáveis */}
+      {opcaoSel && (opcaoSel.acompanhamentos || []).length > 0 && (
+        <div className="bg-white border border-orange-100 rounded-xl p-3 mb-2">
+          <p className="text-xs font-semibold text-gray-600 mb-2">Acompanhamentos (clique para retirar)</p>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {(opcaoSel.acompanhamentos || []).map((a, i) => {
+              const selecionado = acompSel.includes(a)
+              return (
+                <button key={i} onClick={() => toggleAcomp(a)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                    selecionado
+                      ? 'bg-green-100 text-green-800 border-green-300'
+                      : 'bg-gray-100 text-gray-400 border-gray-200 line-through'
+                  }`}>
+                  {a}
+                </button>
+              )
+            })}
+          </div>
+          <div>
+            <input type="text" value={extras} onChange={e => setExtras(e.target.value)}
+              className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400"
+              placeholder="Adicionar extra (ex: batata frita extra)" />
+          </div>
+        </div>
+      )}
+
+      {/* Passo 3 – escolher carne */}
       {opcaoSel && temCarnes && (
         <div className="bg-white border border-red-100 rounded-xl p-3 mb-2">
           <p className="text-xs font-semibold text-gray-600 mb-2">
-            🥩 Escolha a carne <span className="text-red-400">*</span>
+            Escolha a carne <span className="text-red-400">*</span>
           </p>
           <div className="flex gap-2 flex-wrap">
             {carnesGlobais.map((c, i) => (
@@ -573,7 +656,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
         </div>
       )}
 
-      {/* Passo 3 – tamanho */}
+      {/* Passo 4 – tamanho */}
       {opcaoSel && (
         <div className="flex gap-2">
           {precoP > 0 && (
@@ -595,18 +678,27 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
   )
 }
 
-function PedidoCard({ pedido, onStatus, onQuitar, onRemover }) {
+function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, onQuitar, onRemover, motoboys }) {
   const [aberto, setAberto] = useState(false)
-  const [formaPagtoQuitar, setFormaPagtoQuitar] = useState('Dinheiro')
+  const [mostrarEntrega, setMostrarEntrega] = useState(false)
+  const [motoboyInput, setMotoboyInput] = useState('')
+
   const statusInfo = STATUS_LABELS[pedido.status] || STATUS_LABELS.aberto
   const hora = new Date(pedido.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  const isPendente = ['Pendente', 'Mensalista'].includes(pedido.pagamento) || pedido.status === 'pendente'
   const endFormatado = formatarEndereco(pedido)
-
+  const pagStatus = PAGAMENTO_STATUS[pedido.statusPagamento] || PAGAMENTO_STATUS.pago
   const BADGE_PAGTO = FORMAS_PAGAMENTO_OPCOES.find(f => f.value === pedido.pagamento)
 
+  function confirmarEntrega() {
+    if (motoboyInput.trim()) {
+      onAtribuirMotoboy(pedido.id, motoboyInput.trim())
+    }
+    onStatus(pedido.id, 'entregue')
+    setMostrarEntrega(false)
+  }
+
   return (
-    <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${isPendente ? 'border-orange-200' : 'border-gray-100'}`}>
+    <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${pedido.statusPagamento === 'pendente' || pedido.statusPagamento === 'mensalista' ? 'border-orange-200' : 'border-gray-100'}`}>
       <div className="flex items-center justify-between p-4">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -616,13 +708,25 @@ function PedidoCard({ pedido, onStatus, onQuitar, onRemover }) {
                 {BADGE_PAGTO.label}
               </span>
             )}
+            {pedido.horarioEntrega && (
+              <span className="text-xs text-gray-500 flex items-center gap-0.5">
+                <Clock size={10} /> {pedido.horarioEntrega}
+              </span>
+            )}
           </div>
           {endFormatado && (
             <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
               <MapPin size={10} />{endFormatado}
             </p>
           )}
-          <p className="text-xs text-gray-400 mt-0.5">{hora}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-gray-400">{hora}</p>
+            {pedido.motoboy && (
+              <span className="text-xs text-indigo-600 flex items-center gap-0.5">
+                <Bike size={10} /> {pedido.motoboy}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <span className="font-bold text-green-700 text-sm">R$ {Number(pedido.total).toFixed(2).replace('.', ',')}</span>
@@ -635,6 +739,22 @@ function PedidoCard({ pedido, onStatus, onQuitar, onRemover }) {
 
       {aberto && (
         <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+          {/* Status de pagamento */}
+          <div className="flex gap-1.5 mb-3">
+            {Object.entries(PAGAMENTO_STATUS).map(([key, info]) => (
+              <button key={key}
+                onClick={() => onPagamentoStatus(pedido.id, key)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border-2 transition-all ${
+                  pedido.statusPagamento === key
+                    ? `${info.color} border-current`
+                    : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300'
+                }`}>
+                {info.icon} {info.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Itens */}
           {pedido.itens?.map((item, idx) => (
             <div key={idx} className="flex justify-between text-sm py-0.5">
               <div>
@@ -643,6 +763,10 @@ function PedidoCard({ pedido, onStatus, onQuitar, onRemover }) {
                   {item.tamanho && <span className="font-bold text-amber-700"> ({item.tamanho})</span>}
                   {item.subtipo && <span className="text-blue-600"> [{item.subtipo}]</span>}
                 </span>
+                {item.retirados && item.retirados.length > 0 && (
+                  <p className="text-xs text-red-500 ml-3">Sem: {item.retirados.join(', ')}</p>
+                )}
+                {item.extras && <p className="text-xs text-green-600 ml-3">+ {item.extras}</p>}
                 {item.adicionais && <p className="text-xs text-green-600 ml-3">+ {item.adicionais}</p>}
                 {item.remover && <p className="text-xs text-red-500 ml-3">- {item.remover}</p>}
               </div>
@@ -651,32 +775,45 @@ function PedidoCard({ pedido, onStatus, onQuitar, onRemover }) {
           ))}
           {pedido.observacoes && <p className="text-xs text-amber-600 mt-2">Obs: {pedido.observacoes}</p>}
 
-          {/* Quitar pagamento pendente */}
-          {isPendente && (
-            <div className="mt-3 p-3 bg-orange-50 rounded-lg">
-              <p className="text-xs font-semibold text-orange-700 mb-2">Quitar pagamento</p>
-              <div className="flex gap-2">
-                <select value={formaPagtoQuitar} onChange={e => setFormaPagtoQuitar(e.target.value)}
-                  className="flex-1 border border-orange-200 rounded px-2 py-1.5 text-xs focus:outline-none">
-                  {['Dinheiro', 'PIX', 'Cartão de Débito', 'Cartão de Crédito'].map(f => <option key={f}>{f}</option>)}
-                </select>
-                <button onClick={() => onQuitar(pedido.id, formaPagtoQuitar)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors">
-                  Quitar R$ {Number(pedido.total).toFixed(2).replace('.', ',')}
-                </button>
-              </div>
-            </div>
-          )}
-
+          {/* Ações */}
           <div className="flex gap-2 flex-wrap mt-3">
-            {Object.entries(STATUS_LABELS).map(([key, { label, color }]) => (
-              pedido.status !== key && key !== 'pendente' && (
-                <button key={key} onClick={() => onStatus(pedido.id, key)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${color} opacity-80 hover:opacity-100 transition-opacity`}>
-                  → {label}
-                </button>
-              )
-            ))}
+            {pedido.status !== 'entregue' && (
+              <>
+                {!mostrarEntrega ? (
+                  <button onClick={() => setMostrarEntrega(true)}
+                    className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+                    Marcar como Entregue
+                  </button>
+                ) : (
+                  <div className="w-full mt-1 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                      <Bike size={12} /> Atribuir Motoboy
+                    </p>
+                    <div className="flex gap-2">
+                      {motoboys && motoboys.length > 0 ? (
+                        <select value={motoboyInput} onChange={e => setMotoboyInput(e.target.value)}
+                          className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none">
+                          <option value="">Selecionar motoboy...</option>
+                          {motoboys.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      ) : (
+                        <input type="text" value={motoboyInput} onChange={e => setMotoboyInput(e.target.value)}
+                          className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none"
+                          placeholder="Nome do motoboy (opcional)" />
+                      )}
+                      <button onClick={confirmarEntrega}
+                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1">
+                        <Check size={12} /> Confirmar Entrega
+                      </button>
+                      <button onClick={() => setMostrarEntrega(false)}
+                        className="text-gray-400 hover:text-gray-600 px-2">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             <button onClick={() => onRemover(pedido.id)}
               className="px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-red-500 hover:bg-red-100 transition-colors ml-auto">
               Excluir
