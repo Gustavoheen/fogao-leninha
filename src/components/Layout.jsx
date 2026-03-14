@@ -5,7 +5,7 @@ const navItems = [
   { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/pedidos', label: 'Pedidos', icon: ClipboardList },
   { to: '/cardapio', label: 'Cardápio do Dia', icon: BookOpen },
-  { to: '/pagamentos', label: 'Pagamentos', icon: CreditCard },
+  { to: '/pagamentos', label: 'Dashboard', icon: CreditCard },
 ]
 
 export default function Layout({ children }) {
