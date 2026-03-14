@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { TrendingUp, Plus, X, Check, ChevronDown } from 'lucide-react'
+import { TrendingUp, Plus, X, Check, Pencil } from 'lucide-react'
 
 const CATEGORIAS_DESPESA = ['Compras/Ingredientes', 'Combustível', 'Embalagens', 'Manutenção', 'Salários', 'Outros']
 
 const CATEGORIA_COR = {
-  'Compras/Ingredientes': 'bg-green-100 text-green-800',
-  'Combustível': 'bg-blue-100 text-blue-800',
-  'Embalagens': 'bg-purple-100 text-purple-800',
-  'Manutenção': 'bg-orange-100 text-orange-800',
-  'Salários': 'bg-indigo-100 text-indigo-800',
-  'Outros': 'bg-gray-100 text-gray-700',
+  'Compras/Ingredientes': { bg: '#16A34A', color: '#fff' },
+  'Combustível': { bg: '#2563EB', color: '#fff' },
+  'Embalagens': { bg: '#7C3AED', color: '#fff' },
+  'Manutenção': { bg: '#EA580C', color: '#fff' },
+  'Salários': { bg: '#4338CA', color: '#fff' },
+  'Outros': { bg: '#6B7280', color: '#fff' },
 }
 
 const FORM_VAZIO = {
@@ -19,6 +19,19 @@ const FORM_VAZIO = {
   valor: '',
   data: new Date().toISOString().split('T')[0],
   pago: true,
+}
+
+const INPUT_BASE = {
+  background: '#fff',
+  border: '1.5px solid #CFC4BB',
+  borderRadius: 8,
+  padding: '8px 12px',
+  fontSize: 13,
+  width: '100%',
+  outline: 'none',
+  fontFamily: 'Inter, sans-serif',
+  color: '#1A0E08',
+  boxSizing: 'border-box',
 }
 
 export default function Financeiro() {
@@ -66,7 +79,6 @@ export default function Financeiro() {
     .filter(d => filtroPago === 'todos' || (filtroPago === 'pago' ? d.pago : !d.pago))
     .sort((a, b) => b.data.localeCompare(a.data))
 
-  // Fluxo do dia
   const hoje = new Date().toISOString().split('T')[0]
   const pedidosHoje = pedidos.filter(p => p.criadoEm?.startsWith(hoje) && p.status !== 'cancelado')
   const receitasHoje = pedidosHoje
@@ -78,27 +90,43 @@ export default function Financeiro() {
   const liquidoHoje = receitasHoje - despesasHoje
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
         <div>
-          <h1 className="text-2xl font-bold text-amber-900">Financeiro</h1>
-          <p className="text-sm text-gray-500">Controle de despesas e fluxo de caixa</p>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
+            Financeiro
+          </h1>
+          <p style={{ fontSize: 13, color: '#9D8878', margin: '2px 0 0' }}>
+            Controle de despesas e fluxo de caixa
+          </p>
         </div>
         {aba === 'despesas' && (
           <button
             onClick={() => { setMostrarForm(true); setEditandoId(null); setForm(FORM_VAZIO) }}
-            className="flex items-center gap-2 bg-amber-700 hover:bg-amber-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Plus size={16} /> Nova Despesa
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              background: '#C8221A', color: '#fff',
+              boxShadow: '0 2px 10px rgba(200,34,26,0.35)',
+              borderRadius: 8, border: 'none',
+              padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}>
+            <Plus size={15} /> Nova Despesa
           </button>
         )}
       </div>
 
       {/* Abas */}
-      <div className="flex gap-2 mb-6">
+      <div style={{ display: 'flex', gap: 8, marginBottom: 22 }}>
         {[['despesas', 'Despesas'], ['fluxo', 'Fluxo do Dia']].map(([key, label]) => (
           <button key={key} onClick={() => setAba(key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${aba === key ? 'bg-amber-700 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-amber-400'}`}>
+            style={{
+              padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', transition: 'all 0.15s',
+              background: aba === key ? '#C8221A' : '#fff',
+              color: aba === key ? '#fff' : '#6B5A4E',
+              border: aba === key ? 'none' : '1.5px solid #E6DDD5',
+            }}>
             {label}
           </button>
         ))}
@@ -108,91 +136,137 @@ export default function Financeiro() {
       {aba === 'despesas' && (
         <div>
           {mostrarForm && (
-            <div className="bg-white border border-amber-200 rounded-xl p-5 mb-5 shadow-sm">
-              <h2 className="font-semibold text-amber-900 mb-4">{editandoId ? 'Editar Despesa' : 'Nova Despesa'}</h2>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Categoria</label>
-                  <select value={form.categoria} onChange={e => setForm(prev => ({ ...prev, categoria: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
-                    {CATEGORIAS_DESPESA.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Data</label>
-                  <input type="date" value={form.data}
-                    onChange={e => setForm(prev => ({ ...prev, data: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label>
-                  <input type="text" value={form.descricao}
-                    onChange={e => setForm(prev => ({ ...prev, descricao: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    placeholder="Ex: Compra de frango..." />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Valor (R$)</label>
-                  <input type="number" min="0" step="0.01" value={form.valor}
-                    onChange={e => setForm(prev => ({ ...prev, valor: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    placeholder="0,00" />
+            <div style={{
+              background: '#fff', border: '1.5px solid #E6DDD5',
+              borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              padding: 20, marginBottom: 20,
+            }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1A0E08', marginTop: 0, marginBottom: 16 }}>
+                {editandoId ? 'Editar Despesa' : 'Nova Despesa'}
+              </h2>
+
+              {/* Informações da despesa */}
+              <div style={{ background: '#FFF7ED', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
+                  Detalhes
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Categoria</label>
+                    <select value={form.categoria} onChange={e => setForm(prev => ({ ...prev, categoria: e.target.value }))}
+                      style={INPUT_BASE}>
+                      {CATEGORIAS_DESPESA.map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Data</label>
+                    <input type="date" value={form.data}
+                      onChange={e => setForm(prev => ({ ...prev, data: e.target.value }))}
+                      style={INPUT_BASE} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Descrição</label>
+                    <input type="text" value={form.descricao}
+                      onChange={e => setForm(prev => ({ ...prev, descricao: e.target.value }))}
+                      style={INPUT_BASE}
+                      placeholder="Ex: Compra de frango..." />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Valor (R$)</label>
+                    <input type="number" min="0" step="0.01" value={form.valor}
+                      onChange={e => setForm(prev => ({ ...prev, valor: e.target.value }))}
+                      style={INPUT_BASE}
+                      placeholder="0,00" />
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 mb-4">
+
+              {/* Status de pagamento */}
+              <div style={{ marginBottom: 16 }}>
                 <button
                   onClick={() => setForm(prev => ({ ...prev, pago: !prev.pago }))}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all ${form.pago ? 'bg-green-100 text-green-700 border-green-300' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                  {form.pago ? <><Check size={12} /> Pago</> : 'Não pago'}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', transition: 'all 0.15s',
+                    background: form.pago ? '#16A34A' : '#fff',
+                    color: form.pago ? '#fff' : '#6B5A4E',
+                    border: form.pago ? 'none' : '1.5px solid #CFC4BB',
+                  }}>
+                  {form.pago ? <><Check size={13} /> Pago</> : 'Não pago'}
                 </button>
               </div>
-              <div className="flex gap-2">
+
+              <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={salvar}
                   disabled={!form.descricao.trim() || !form.valor}
-                  className="flex items-center gap-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
-                  <Check size={15} /> {editandoId ? 'Salvar' : 'Adicionar'}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: !form.descricao.trim() || !form.valor ? '#D1D5DB' : '#16A34A',
+                    color: '#fff',
+                    boxShadow: !form.descricao.trim() || !form.valor ? 'none' : '0 2px 8px rgba(22,163,74,0.3)',
+                    borderRadius: 8, border: 'none',
+                    padding: '9px 20px', fontSize: 13, fontWeight: 600,
+                    cursor: !form.descricao.trim() || !form.valor ? 'not-allowed' : 'pointer',
+                  }}>
+                  <Check size={14} /> {editandoId ? 'Salvar' : 'Adicionar'}
                 </button>
-                <button onClick={cancelar}
-                  className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                  <X size={15} /> Cancelar
+                <button onClick={cancelar} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: '#fff', color: '#6B5A4E',
+                  border: '1.5px solid #CFC4BB',
+                  borderRadius: 8, padding: '9px 18px',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}>
+                  <X size={14} /> Cancelar
                 </button>
               </div>
             </div>
           )}
 
           {/* Filtros */}
-          <div className="flex gap-2 mb-4 flex-wrap">
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
             <select value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none">
+              style={{
+                border: '1.5px solid #E6DDD5', borderRadius: 8,
+                padding: '7px 12px', fontSize: 12, outline: 'none',
+                background: '#fff', color: '#6B5A4E', cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif',
+              }}>
               <option value="todas">Todas categorias</option>
               {CATEGORIAS_DESPESA.map(c => <option key={c}>{c}</option>)}
             </select>
             <select value={filtroPago} onChange={e => setFiltroPago(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none">
+              style={{
+                border: '1.5px solid #E6DDD5', borderRadius: 8,
+                padding: '7px 12px', fontSize: 12, outline: 'none',
+                background: '#fff', color: '#6B5A4E', cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif',
+              }}>
               <option value="todos">Pago e não pago</option>
               <option value="pago">Somente pagos</option>
               <option value="pendente">Somente pendentes</option>
             </select>
           </div>
 
-          {/* Totais filtrados */}
+          {/* Totais */}
           {despesasFiltradas.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm">
-                <p className="text-xs text-gray-500">Total filtrado</p>
-                <p className="text-lg font-bold text-gray-800">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 12, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Total filtrado</p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
                   R$ {despesasFiltradas.reduce((acc, d) => acc + Number(d.valor), 0).toFixed(2).replace('.', ',')}
                 </p>
               </div>
-              <div className="bg-green-50 border border-green-100 rounded-xl p-3 shadow-sm">
-                <p className="text-xs text-green-600">Pagos</p>
-                <p className="text-lg font-bold text-green-700">
+              <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 12, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                <p style={{ fontSize: 12, color: '#16A34A', margin: '0 0 4px' }}>Pagos</p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: '#15803D', margin: 0 }}>
                   R$ {despesasFiltradas.filter(d => d.pago).reduce((acc, d) => acc + Number(d.valor), 0).toFixed(2).replace('.', ',')}
                 </p>
               </div>
-              <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 shadow-sm">
-                <p className="text-xs text-orange-600">Pendentes</p>
-                <p className="text-lg font-bold text-orange-700">
+              <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                <p style={{ fontSize: 12, color: '#CA8A04', margin: '0 0 4px' }}>Pendentes</p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: '#92400E', margin: 0 }}>
                   R$ {despesasFiltradas.filter(d => !d.pago).reduce((acc, d) => acc + Number(d.valor), 0).toFixed(2).replace('.', ',')}
                 </p>
               </div>
@@ -200,37 +274,61 @@ export default function Financeiro() {
           )}
 
           {despesasFiltradas.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <TrendingUp size={40} className="mx-auto mb-3 opacity-40" />
-              <p className="text-sm">Nenhuma despesa encontrada</p>
+            <div style={{ textAlign: 'center', padding: '60px 0', color: '#9D8878' }}>
+              <TrendingUp size={40} style={{ margin: '0 auto 12px', opacity: 0.35 }} />
+              <p style={{ fontSize: 13 }}>Nenhuma despesa encontrada</p>
             </div>
           ) : (
-            <div className="grid gap-2">
-              {despesasFiltradas.map(d => (
-                <div key={d.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${CATEGORIA_COR[d.categoria] || 'bg-gray-100 text-gray-700'}`}>
-                        {d.categoria}
-                      </span>
-                      <span className="text-sm font-medium text-gray-800">{d.descricao}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {despesasFiltradas.map((d, idx) => {
+                const cat = CATEGORIA_COR[d.categoria] || { bg: '#6B7280', color: '#fff' }
+                return (
+                  <div key={d.id} style={{
+                    background: idx % 2 === 0 ? '#fff' : '#FAFAF8',
+                    border: '1.5px solid #E6DDD5',
+                    borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                    padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#FFF7ED'}
+                    onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : '#FAFAF8'}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: cat.bg, color: cat.color, fontWeight: 600 }}>
+                          {d.categoria}
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#1A0E08' }}>{d.descricao}</span>
+                      </div>
+                      <p style={{ fontSize: 12, color: '#9D8878', margin: '3px 0 0' }}>
+                        {new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR')}
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR')}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontWeight: 700, color: '#1A0E08', fontSize: 14 }}>R$ {Number(d.valor).toFixed(2).replace('.', ',')}</span>
+                      <button
+                        onClick={() => pagarDespesa(d.id)}
+                        style={{
+                          padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                          cursor: 'pointer', border: 'none',
+                          background: d.pago ? '#16A34A' : '#CA8A04',
+                          color: '#fff',
+                        }}>
+                        {d.pago ? '✓ Pago' : '⏳ Pendente'}
+                      </button>
+                      <button onClick={() => iniciarEdicao(d)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
+                        <Pencil size={14} />
+                      </button>
+                      <button onClick={() => removerDespesa(d.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
+                        <X size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-gray-800">R$ {Number(d.valor).toFixed(2).replace('.', ',')}</span>
-                    <button
-                      onClick={() => pagarDespesa(d.id)}
-                      className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${d.pago ? 'bg-green-100 text-green-700 border-green-300' : 'bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200'}`}>
-                      {d.pago ? '✓ Pago' : '⏳ Pendente'}
-                    </button>
-                    <button onClick={() => iniciarEdicao(d)} className="text-gray-400 hover:text-amber-600 text-xs">Editar</button>
-                    <button onClick={() => removerDespesa(d.id)} className="text-red-400 hover:text-red-600"><X size={14} /></button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -239,27 +337,33 @@ export default function Financeiro() {
       {/* Aba Fluxo */}
       {aba === 'fluxo' && (
         <div>
-          <p className="text-sm text-gray-500 mb-5">
+          <p style={{ fontSize: 13, color: '#9D8878', marginBottom: 20 }}>
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
 
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
-              <p className="text-xs font-bold text-green-700 uppercase tracking-wider mb-1">Receitas</p>
-              <p className="text-3xl font-bold text-green-800">R$ {receitasHoje.toFixed(2).replace('.', ',')}</p>
-              <p className="text-xs text-green-600 mt-1">{pedidosHoje.filter(p => p.statusPagamento === 'pago' || (!p.statusPagamento && p.pagamento !== 'Pendente' && p.pagamento !== 'Mensalista')).length} pedido(s) pago(s)</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 22 }}>
+            <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 12, padding: 20 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#15803D', marginTop: 0, marginBottom: 6 }}>Receitas</p>
+              <p style={{ fontSize: 28, fontWeight: 700, color: '#14532D', margin: 0 }}>R$ {receitasHoje.toFixed(2).replace('.', ',')}</p>
+              <p style={{ fontSize: 12, color: '#16A34A', marginTop: 4 }}>
+                {pedidosHoje.filter(p => p.statusPagamento === 'pago' || (!p.statusPagamento && p.pagamento !== 'Pendente' && p.pagamento !== 'Mensalista')).length} pedido(s) pago(s)
+              </p>
             </div>
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-              <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Despesas</p>
-              <p className="text-3xl font-bold text-red-800">R$ {despesasHoje.toFixed(2).replace('.', ',')}</p>
-              <p className="text-xs text-red-600 mt-1">{despesas.filter(d => d.data === hoje && d.pago).length} lançamento(s)</p>
+            <div style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 12, padding: 20 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#991B1B', marginTop: 0, marginBottom: 6 }}>Despesas</p>
+              <p style={{ fontSize: 28, fontWeight: 700, color: '#7F1D1D', margin: 0 }}>R$ {despesasHoje.toFixed(2).replace('.', ',')}</p>
+              <p style={{ fontSize: 12, color: '#DC2626', marginTop: 4 }}>{despesas.filter(d => d.data === hoje && d.pago).length} lançamento(s)</p>
             </div>
-            <div className={`border rounded-2xl p-5 ${liquidoHoje >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
-              <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${liquidoHoje >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>Líquido</p>
-              <p className={`text-3xl font-bold ${liquidoHoje >= 0 ? 'text-blue-800' : 'text-orange-800'}`}>
+            <div style={{
+              background: liquidoHoje >= 0 ? '#EFF6FF' : '#FFFBEB',
+              border: liquidoHoje >= 0 ? '1.5px solid #BFDBFE' : '1.5px solid #FDE68A',
+              borderRadius: 12, padding: 20,
+            }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: liquidoHoje >= 0 ? '#1D4ED8' : '#92400E', marginTop: 0, marginBottom: 6 }}>Líquido</p>
+              <p style={{ fontSize: 28, fontWeight: 700, color: liquidoHoje >= 0 ? '#1E3A8A' : '#78350F', margin: 0 }}>
                 R$ {Math.abs(liquidoHoje).toFixed(2).replace('.', ',')}
               </p>
-              <p className={`text-xs mt-1 ${liquidoHoje >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+              <p style={{ fontSize: 12, color: liquidoHoje >= 0 ? '#2563EB' : '#CA8A04', marginTop: 4 }}>
                 {liquidoHoje >= 0 ? 'Saldo positivo' : 'Saldo negativo'}
               </p>
             </div>
@@ -267,27 +371,40 @@ export default function Financeiro() {
 
           {/* Barra visual */}
           {(receitasHoje + despesasHoje) > 0 && (
-            <div className="bg-white border border-gray-100 rounded-xl p-4 mb-4 shadow-sm">
-              <p className="text-xs font-semibold text-gray-600 mb-3">Proporção Receitas vs Despesas</p>
-              <div className="h-6 bg-gray-100 rounded-full overflow-hidden flex">
+            <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#6B5A4E', marginTop: 0, marginBottom: 12 }}>Proporção Receitas vs Despesas</p>
+              <div style={{ height: 24, background: '#F3F0ED', borderRadius: 12, overflow: 'hidden', display: 'flex' }}>
                 {receitasHoje > 0 && (
                   <div
-                    className="bg-green-500 h-full flex items-center justify-center text-white text-xs font-bold transition-all"
-                    style={{ width: `${(receitasHoje / (receitasHoje + despesasHoje)) * 100}%` }}>
-                    {receitasHoje > 0 && ((receitasHoje / (receitasHoje + despesasHoje)) * 100).toFixed(0) > 15 ? `${((receitasHoje / (receitasHoje + despesasHoje)) * 100).toFixed(0)}%` : ''}
+                    style={{
+                      background: '#16A34A', height: '100%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontSize: 11, fontWeight: 700,
+                      width: `${(receitasHoje / (receitasHoje + despesasHoje)) * 100}%`,
+                      transition: 'width 0.3s',
+                    }}>
+                    {((receitasHoje / (receitasHoje + despesasHoje)) * 100).toFixed(0) > 15 ? `${((receitasHoje / (receitasHoje + despesasHoje)) * 100).toFixed(0)}%` : ''}
                   </div>
                 )}
                 {despesasHoje > 0 && (
                   <div
-                    className="bg-red-400 h-full flex items-center justify-center text-white text-xs font-bold"
-                    style={{ width: `${(despesasHoje / (receitasHoje + despesasHoje)) * 100}%` }}>
-                    {despesasHoje > 0 && ((despesasHoje / (receitasHoje + despesasHoje)) * 100).toFixed(0) > 15 ? `${((despesasHoje / (receitasHoje + despesasHoje)) * 100).toFixed(0)}%` : ''}
+                    style={{
+                      background: '#DC2626', height: '100%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontSize: 11, fontWeight: 700,
+                      width: `${(despesasHoje / (receitasHoje + despesasHoje)) * 100}%`,
+                    }}>
+                    {((despesasHoje / (receitasHoje + despesasHoje)) * 100).toFixed(0) > 15 ? `${((despesasHoje / (receitasHoje + despesasHoje)) * 100).toFixed(0)}%` : ''}
                   </div>
                 )}
               </div>
-              <div className="flex gap-4 mt-2">
-                <span className="text-xs text-green-600 flex items-center gap-1"><span className="w-3 h-3 bg-green-500 rounded-full inline-block"></span> Receitas</span>
-                <span className="text-xs text-red-600 flex items-center gap-1"><span className="w-3 h-3 bg-red-400 rounded-full inline-block"></span> Despesas</span>
+              <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                <span style={{ fontSize: 12, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 10, background: '#16A34A', borderRadius: '50%', display: 'inline-block' }}></span> Receitas
+                </span>
+                <span style={{ fontSize: 12, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 10, background: '#DC2626', borderRadius: '50%', display: 'inline-block' }}></span> Despesas
+                </span>
               </div>
             </div>
           )}
@@ -295,24 +412,39 @@ export default function Financeiro() {
           {/* Despesas de hoje */}
           {despesas.filter(d => d.data === hoje).length > 0 && (
             <div>
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Despesas de Hoje</h3>
-              <div className="grid gap-2">
-                {despesas.filter(d => d.data === hoje).map(d => (
-                  <div key={d.id} className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm flex items-center justify-between">
-                    <div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold mr-2 ${CATEGORIA_COR[d.categoria] || 'bg-gray-100 text-gray-700'}`}>
-                        {d.categoria}
-                      </span>
-                      <span className="text-sm text-gray-700">{d.descricao}</span>
+              <h3 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 12 }}>
+                Despesas de Hoje
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {despesas.filter(d => d.data === hoje).map((d, idx) => {
+                  const cat = CATEGORIA_COR[d.categoria] || { bg: '#6B7280', color: '#fff' }
+                  return (
+                    <div key={d.id} style={{
+                      background: idx % 2 === 0 ? '#fff' : '#FAFAF8',
+                      border: '1.5px solid #E6DDD5',
+                      borderRadius: 12, padding: '10px 14px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                    }}>
+                      <div>
+                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: cat.bg, color: cat.color, fontWeight: 600, marginRight: 8 }}>
+                          {d.categoria}
+                        </span>
+                        <span style={{ fontSize: 13, color: '#1A0E08' }}>{d.descricao}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontWeight: 700, color: '#1A0E08' }}>R$ {Number(d.valor).toFixed(2).replace('.', ',')}</span>
+                        <span style={{
+                          fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600,
+                          background: d.pago ? '#16A34A' : '#CA8A04',
+                          color: '#fff',
+                        }}>
+                          {d.pago ? 'Pago' : 'Pendente'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-gray-800">R$ {Number(d.valor).toFixed(2).replace('.', ',')}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${d.pago ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {d.pago ? 'Pago' : 'Pendente'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

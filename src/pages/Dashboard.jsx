@@ -12,12 +12,23 @@ const ICONE_PAGAMENTO = {
 }
 
 const COR_PAGAMENTO = {
-  'Dinheiro': 'bg-green-50 border-green-200 text-green-800',
-  'PIX': 'bg-blue-50 border-blue-200 text-blue-800',
-  'Cartão de Débito': 'bg-purple-50 border-purple-200 text-purple-800',
-  'Cartão de Crédito': 'bg-indigo-50 border-indigo-200 text-indigo-800',
-  'Mensalista': 'bg-orange-50 border-orange-200 text-orange-800',
-  'Pendente': 'bg-red-50 border-red-200 text-red-800',
+  'Dinheiro': { bg: '#16A34A', light: '#F0FDF4', border: '#BBF7D0', text: '#14532D' },
+  'PIX': { bg: '#2563EB', light: '#EFF6FF', border: '#BFDBFE', text: '#1E3A8A' },
+  'Cartão de Débito': { bg: '#7C3AED', light: '#F5F3FF', border: '#DDD6FE', text: '#4C1D95' },
+  'Cartão de Crédito': { bg: '#4338CA', light: '#EEF2FF', border: '#C7D2FE', text: '#312E81' },
+  'Mensalista': { bg: '#EA580C', light: '#FFF7ED', border: '#FED7AA', text: '#7C2D12' },
+  'Pendente': { bg: '#C8221A', light: '#FEF2F2', border: '#FECACA', text: '#7F1D1D' },
+}
+
+const INPUT_BASE = {
+  background: '#fff',
+  border: '1.5px solid #CFC4BB',
+  borderRadius: 8,
+  padding: '6px 10px',
+  fontSize: 12,
+  outline: 'none',
+  fontFamily: 'Inter, sans-serif',
+  color: '#1A0E08',
 }
 
 function dataInicioPeriodo(periodo, dataCustom) {
@@ -85,7 +96,6 @@ export default function Dashboard() {
   })
   const totalDespesas = despesasPeriodo.reduce((acc, d) => acc + Number(d.valor), 0)
 
-  // Salários proporcionais (para o mês)
   const funcionariosAtivos = funcionarios.filter(f => f.ativo !== false)
   const totalSalarios = funcionariosAtivos.reduce((acc, f) => acc + Number(f.salario || 0), 0)
   let salarioProporcional = totalSalarios
@@ -99,19 +109,16 @@ export default function Dashboard() {
 
   const lucroLiquido = totalReceitas - totalDespesas - (periodo === 'mes' ? totalSalarios : salarioProporcional)
 
-  // Por forma de pagamento
   const porForma = pedidosPagos.reduce((acc, p) => {
     acc[p.pagamento] = (acc[p.pagamento] || 0) + Number(p.total)
     return acc
   }, {})
 
-  // Pedidos pendentes de pagamento
   const pedidosPendentes = pedidos.filter(p =>
     (p.statusPagamento === 'pendente' || p.statusPagamento === 'mensalista') && p.status !== 'cancelado'
   )
   const totalPendente = pedidosPendentes.reduce((acc, p) => acc + Number(p.total), 0)
 
-  // Motoboys hoje
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0)
   const pedidosHojeEntregues = pedidos.filter(p => {
@@ -127,7 +134,6 @@ export default function Dashboard() {
     return acc
   }, {})
 
-  // Clientes com pendente
   const clientesComPendente = pedidosPendentes.reduce((acc, p) => {
     const key = p.clienteId || p.clienteNome
     if (!acc[key]) acc[key] = { nome: p.clienteNome, total: 0, pedidos: [] }
@@ -136,102 +142,141 @@ export default function Dashboard() {
     return acc
   }, {})
 
-  // Mensalistas com débito
   const mensalistasComDebito = clientes
     .filter(c => c.tipo === 'mensalista')
     .map(c => ({ ...c, debito: debitoPendente(c.id) }))
     .filter(c => c.debito > 0)
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
         <div>
-          <h1 className="text-2xl font-bold text-amber-900">Dashboard</h1>
-          <p className="text-sm text-gray-500">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
+            Dashboard
+          </h1>
+          <p style={{ fontSize: 13, color: '#9D8878', margin: '2px 0 0' }}>
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
         </div>
       </div>
 
       {/* Seletor de período */}
-      <div className="flex gap-2 mb-6 flex-wrap items-center">
+      <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap', alignItems: 'center' }}>
         {[['hoje', 'Hoje'], ['semana', 'Esta semana'], ['mes', 'Este mês'], ['custom', 'Personalizado']].map(([key, label]) => (
           <button key={key} onClick={() => setPeriodo(key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${periodo === key ? 'bg-amber-700 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-amber-400'}`}>
+            style={{
+              padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', transition: 'all 0.15s',
+              background: periodo === key ? '#C8221A' : '#fff',
+              color: periodo === key ? '#fff' : '#6B5A4E',
+              border: periodo === key ? 'none' : '1.5px solid #E6DDD5',
+            }}>
             {label}
           </button>
         ))}
         {periodo === 'custom' && (
-          <div className="flex items-center gap-2 ml-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
             <input type="date" value={dataCustom.inicio}
               onChange={e => setDataCustom(prev => ({ ...prev, inicio: e.target.value }))}
-              className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none" />
-            <span className="text-xs text-gray-400">até</span>
+              style={INPUT_BASE} />
+            <span style={{ fontSize: 12, color: '#9D8878' }}>até</span>
             <input type="date" value={dataCustom.fim}
               onChange={e => setDataCustom(prev => ({ ...prev, fim: e.target.value }))}
-              className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none" />
+              style={INPUT_BASE} />
           </div>
         )}
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-gradient-to-br from-amber-700 to-amber-900 text-white rounded-2xl p-4 shadow-lg">
-          <div className="flex items-center gap-2 mb-1 opacity-80">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+        {/* Receitas */}
+        <div style={{
+          background: 'linear-gradient(135deg, #C8221A 0%, #7F1D1D 100%)',
+          borderRadius: 14, padding: 18, boxShadow: '0 4px 16px rgba(200,34,26,0.3)',
+          color: '#fff',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, opacity: 0.85 }}>
             <TrendingUp size={14} />
-            <span className="text-xs">Receitas</span>
+            <span style={{ fontSize: 11, fontWeight: 600 }}>Receitas</span>
           </div>
-          <p className="text-2xl font-bold">R$ {totalReceitas.toFixed(2).replace('.', ',')}</p>
-          <p className="text-xs opacity-70 mt-1">{pedidosPagos.length} pedido(s)</p>
+          <p style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>R$ {totalReceitas.toFixed(2).replace('.', ',')}</p>
+          <p style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>{pedidosPagos.length} pedido(s)</p>
         </div>
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-1 text-red-500">
-            <TrendingUp size={14} className="rotate-180" />
-            <span className="text-xs text-gray-500">Despesas</span>
+
+        {/* Despesas */}
+        <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 14, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: '#9D8878' }}>
+            <TrendingUp size={14} style={{ transform: 'rotate(180deg)' }} />
+            <span style={{ fontSize: 11, fontWeight: 600 }}>Despesas</span>
           </div>
-          <p className="text-2xl font-bold text-red-700">R$ {totalDespesas.toFixed(2).replace('.', ',')}</p>
-          <p className="text-xs text-gray-400 mt-1">{despesasPeriodo.length} lançamento(s)</p>
+          <p style={{ fontSize: 22, fontWeight: 700, color: '#C8221A', margin: 0 }}>R$ {totalDespesas.toFixed(2).replace('.', ',')}</p>
+          <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>{despesasPeriodo.length} lançamento(s)</p>
         </div>
-        <div className={`border rounded-2xl p-4 shadow-sm ${lucroLiquido >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-gray-500">Lucro Líquido</span>
+
+        {/* Lucro Líquido */}
+        <div style={{
+          background: lucroLiquido >= 0 ? '#F0FDF4' : '#FEF2F2',
+          border: lucroLiquido >= 0 ? '1.5px solid #BBF7D0' : '1.5px solid #FECACA',
+          borderRadius: 14, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        }}>
+          <div style={{ marginBottom: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9D8878' }}>Lucro Líquido</span>
           </div>
-          <p className={`text-2xl font-bold ${lucroLiquido >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+          <p style={{ fontSize: 22, fontWeight: 700, color: lucroLiquido >= 0 ? '#15803D' : '#991B1B', margin: 0 }}>
             R$ {Math.abs(lucroLiquido).toFixed(2).replace('.', ',')}
           </p>
-          <p className={`text-xs mt-1 ${lucroLiquido >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <p style={{ fontSize: 11, color: lucroLiquido >= 0 ? '#16A34A' : '#C8221A', marginTop: 4 }}>
             {lucroLiquido >= 0 ? 'Lucro' : 'Prejuízo'}
           </p>
         </div>
-        <div className={`rounded-2xl p-4 shadow-sm border ${totalPendente > 0 ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-100'}`}>
-          <div className="flex items-center gap-2 mb-1">
-            <AlertCircle size={14} className={totalPendente > 0 ? 'text-orange-600' : 'text-gray-400'} />
-            <span className="text-xs text-gray-500">Pendente</span>
+
+        {/* Pendente */}
+        <div style={{
+          background: totalPendente > 0 ? '#FFFBEB' : '#fff',
+          border: totalPendente > 0 ? '1.5px solid #FDE68A' : '1.5px solid #E6DDD5',
+          borderRadius: 14, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <AlertCircle size={14} style={{ color: totalPendente > 0 ? '#CA8A04' : '#9D8878' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9D8878' }}>Pendente</span>
           </div>
-          <p className={`text-2xl font-bold ${totalPendente > 0 ? 'text-orange-700' : 'text-gray-800'}`}>
+          <p style={{ fontSize: 22, fontWeight: 700, color: totalPendente > 0 ? '#92400E' : '#1A0E08', margin: 0 }}>
             R$ {totalPendente.toFixed(2).replace('.', ',')}
           </p>
-          <p className="text-xs text-gray-400 mt-1">{pedidosPendentes.length} pedido(s)</p>
+          <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>{pedidosPendentes.length} pedido(s)</p>
         </div>
       </div>
 
       {/* Por forma de pagamento */}
       {Object.keys(porForma).length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Por Forma de Pagamento</h2>
-          <div className="grid grid-cols-2 gap-3">
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14 }}>
+            Por Forma de Pagamento
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {Object.entries(porForma).sort((a, b) => b[1] - a[1]).map(([forma, valor]) => {
               const Icon = ICONE_PAGAMENTO[forma] || CreditCard
               const percent = totalReceitas > 0 ? (valor / totalReceitas) * 100 : 0
+              const cor = COR_PAGAMENTO[forma] || { bg: '#6B7280', light: '#F9FAFB', border: '#E5E7EB', text: '#111827' }
               return (
-                <div key={forma} className={`rounded-xl border p-4 shadow-sm ${COR_PAGAMENTO[forma] || 'bg-white border-gray-100 text-gray-800'}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon size={16} />
-                    <span className="text-sm font-medium">{forma}</span>
+                <div key={forma} style={{
+                  background: cor.light,
+                  border: `1.5px solid ${cor.border}`,
+                  borderRadius: 12, padding: 16,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <div style={{ background: cor.bg, borderRadius: 8, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon size={14} style={{ color: '#fff' }} />
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: cor.text }}>{forma}</span>
                   </div>
-                  <p className="text-xl font-bold">R$ {valor.toFixed(2).replace('.', ',')}</p>
-                  <div className="mt-2 h-1.5 bg-black/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-current rounded-full opacity-40" style={{ width: `${percent}%` }} />
+                  <p style={{ fontSize: 20, fontWeight: 700, color: cor.text, margin: 0 }}>R$ {valor.toFixed(2).replace('.', ',')}</p>
+                  <div style={{ marginTop: 8, height: 5, background: 'rgba(0,0,0,0.08)', borderRadius: 10, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: cor.bg, borderRadius: 10, width: `${percent}%` }} />
                   </div>
-                  <p className="text-xs opacity-60 mt-1">{percent.toFixed(0)}% do total</p>
+                  <p style={{ fontSize: 11, color: cor.text, opacity: 0.65, marginTop: 4 }}>{percent.toFixed(0)}% do total</p>
                 </div>
               )
             })}
@@ -241,20 +286,27 @@ export default function Dashboard() {
 
       {/* Motoboys hoje */}
       {Object.keys(porMotoboy).length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Bike size={13} /> Motoboys Hoje
           </h2>
-          <div className="grid gap-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {Object.entries(porMotoboy).map(([nome, info]) => (
-              <div key={nome} className="bg-white border border-indigo-100 rounded-xl p-4 shadow-sm flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bike size={16} className="text-indigo-500" />
-                  <span className="font-medium text-gray-800">{nome}</span>
+              <div key={nome} style={{
+                background: '#fff', border: '1.5px solid #E6DDD5',
+                borderRadius: 12, padding: '12px 16px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 8, padding: 7, display: 'flex', alignItems: 'center' }}>
+                    <Bike size={15} style={{ color: '#2563EB' }} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: '#1A0E08', fontSize: 14 }}>{nome}</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-gray-500">{info.entregas} entrega(s)</span>
-                  <span className="font-bold text-green-700">R$ {info.valor.toFixed(2).replace('.', ',')}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <span style={{ fontSize: 12, color: '#9D8878' }}>{info.entregas} entrega(s)</span>
+                  <span style={{ fontWeight: 700, color: '#16A34A', fontSize: 14 }}>R$ {info.valor.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
             ))}
@@ -264,11 +316,11 @@ export default function Dashboard() {
 
       {/* Pagamentos pendentes */}
       {Object.keys(clientesComPendente).length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
             <AlertCircle size={13} /> Pagamentos Pendentes
           </h2>
-          <div className="grid gap-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {Object.values(clientesComPendente).map((c, idx) => (
               <ClientePendenteCard key={idx} cliente={c} onQuitar={quitarPedido} />
             ))}
@@ -278,16 +330,27 @@ export default function Dashboard() {
 
       {/* Mensalistas com débito */}
       {mensalistasComDebito.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Mensalistas com Débito</h2>
-          <div className="grid gap-2">
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14 }}>
+            Mensalistas com Débito
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {mensalistasComDebito.map(c => (
-              <div key={c.id} className="bg-white rounded-xl border border-orange-200 p-4 shadow-sm flex items-center justify-between">
+              <div key={c.id} style={{
+                background: '#fff', border: '1.5px solid #FDE68A',
+                borderRadius: 12, padding: '12px 16px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
                 <div>
-                  <p className="font-semibold text-gray-800">{c.nome}</p>
-                  <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full font-medium mt-1 inline-block">Mensalista</span>
+                  <p style={{ fontWeight: 700, color: '#1A0E08', fontSize: 14, margin: '0 0 4px' }}>{c.nome}</p>
+                  <span style={{ fontSize: 11, background: '#CA8A04', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                    Mensalista
+                  </span>
                 </div>
-                <span className="font-bold text-orange-700 text-lg">R$ {c.debito.toFixed(2).replace('.', ',')}</span>
+                <span style={{ fontWeight: 700, color: '#92400E', fontSize: 16 }}>
+                  R$ {c.debito.toFixed(2).replace('.', ',')}
+                </span>
               </div>
             ))}
           </div>
@@ -295,8 +358,10 @@ export default function Dashboard() {
       )}
 
       {/* Fechamento mensal */}
-      <div className="mb-6">
-        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Fechamento do Mês</h2>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14 }}>
+          Fechamento do Mês
+        </h2>
         <FechamentoMensal pedidos={pedidos} despesas={despesas} funcionarios={funcionariosAtivos} />
       </div>
     </div>
@@ -329,28 +394,37 @@ function FechamentoMensal({ pedidos, despesas, funcionarios }) {
   const positivo = lucro >= 0
 
   return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${positivo ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-      <div className="grid grid-cols-2 gap-4 mb-4">
+    <div style={{
+      background: positivo ? '#F0FDF4' : '#FEF2F2',
+      border: positivo ? '1.5px solid #BBF7D0' : '1.5px solid #FECACA',
+      borderRadius: 14, padding: 22,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Receitas totais</p>
-          <p className="text-xl font-bold text-green-700">R$ {receitasMes.toFixed(2).replace('.', ',')}</p>
+          <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Receitas totais</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: '#15803D', margin: 0 }}>R$ {receitasMes.toFixed(2).replace('.', ',')}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Despesas operacionais</p>
-          <p className="text-xl font-bold text-red-600">R$ {despesasMes.toFixed(2).replace('.', ',')}</p>
+          <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Despesas operacionais</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: '#C8221A', margin: 0 }}>R$ {despesasMes.toFixed(2).replace('.', ',')}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Salários</p>
-          <p className="text-xl font-bold text-orange-600">R$ {salarios.toFixed(2).replace('.', ',')}</p>
+          <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Salários</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: '#CA8A04', margin: 0 }}>R$ {salarios.toFixed(2).replace('.', ',')}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Resultado</p>
-          <p className={`text-2xl font-bold ${positivo ? 'text-green-800' : 'text-red-800'}`}>
+          <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Resultado</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: positivo ? '#14532D' : '#7F1D1D', margin: 0 }}>
             {positivo ? '+' : '-'} R$ {Math.abs(lucro).toFixed(2).replace('.', ',')}
           </p>
         </div>
       </div>
-      <div className={`text-center py-2 rounded-xl font-bold text-sm ${positivo ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'}`}>
+      <div style={{
+        textAlign: 'center', padding: '10px 0', borderRadius: 10, fontWeight: 700, fontSize: 13,
+        background: positivo ? '#BBF7D0' : '#FECACA',
+        color: positivo ? '#14532D' : '#7F1D1D',
+      }}>
         {positivo ? 'Mês com LUCRO' : 'Mês com PREJUÍZO'}
       </div>
     </div>
@@ -363,30 +437,47 @@ function ClientePendenteCard({ cliente, onQuitar }) {
   const [, forceUpdate] = useState(0)
 
   return (
-    <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setAberto(!aberto)}>
+    <div style={{
+      background: '#fff', border: '1.5px solid #FDE68A',
+      borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden',
+    }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', cursor: 'pointer' }}
+        onClick={() => setAberto(!aberto)}>
         <div>
-          <p className="font-semibold text-gray-800">{cliente.nome}</p>
-          <p className="text-xs text-gray-400">{cliente.pedidos.length} pedido(s) pendente(s)</p>
+          <p style={{ fontWeight: 700, color: '#1A0E08', fontSize: 14, margin: '0 0 2px' }}>{cliente.nome}</p>
+          <p style={{ fontSize: 12, color: '#9D8878', margin: 0 }}>{cliente.pedidos.length} pedido(s) pendente(s)</p>
         </div>
-        <span className="font-bold text-orange-700">R$ {cliente.total.toFixed(2).replace('.', ',')}</span>
+        <span style={{ fontWeight: 700, color: '#92400E', fontSize: 15 }}>R$ {cliente.total.toFixed(2).replace('.', ',')}</span>
       </div>
       {aberto && (
-        <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+        <div style={{ padding: '0 16px 16px', borderTop: '1px solid #FEF9C3' }}>
           {cliente.pedidos.map(p => (
-            <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-gray-50">
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #FEF9C3' }}>
               <div>
-                <p className="text-sm text-gray-700">{new Date(p.criadoEm).toLocaleDateString('pt-BR')} — {p.itens?.length} item(s)</p>
-                <p className="text-xs text-gray-400">{new Date(p.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p style={{ fontSize: 13, color: '#1A0E08', margin: '0 0 2px' }}>
+                  {new Date(p.criadoEm).toLocaleDateString('pt-BR')} — {p.itens?.length} item(s)
+                </p>
+                <p style={{ fontSize: 11, color: '#9D8878', margin: 0 }}>
+                  {new Date(p.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-700">R$ {Number(p.total).toFixed(2).replace('.', ',')}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#1A0E08' }}>R$ {Number(p.total).toFixed(2).replace('.', ',')}</span>
                 <select value={formaPagto} onChange={e => setFormaPagto(e.target.value)}
-                  className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none">
+                  style={{
+                    border: '1.5px solid #CFC4BB', borderRadius: 6, padding: '5px 8px',
+                    fontSize: 12, outline: 'none', background: '#fff', color: '#1A0E08',
+                    fontFamily: 'Inter, sans-serif',
+                  }}>
                   {['Dinheiro', 'PIX', 'Cartão de Débito', 'Cartão de Crédito'].map(f => <option key={f}>{f}</option>)}
                 </select>
-                <button onClick={() => { onQuitar(p.id, formaPagto); forceUpdate(n => n + 1) }}
-                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium">
+                <button
+                  onClick={() => { onQuitar(p.id, formaPagto); forceUpdate(n => n + 1) }}
+                  style={{
+                    background: '#16A34A', color: '#fff', border: 'none',
+                    borderRadius: 7, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  }}>
                   Quitar
                 </button>
               </div>

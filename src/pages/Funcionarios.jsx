@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { UserCheck, Plus, X, Check, Bike } from 'lucide-react'
+import { UserCheck, Plus, X, Check, Bike, Pencil } from 'lucide-react'
 
 const FORM_VAZIO = {
   nome: '',
@@ -9,6 +9,19 @@ const FORM_VAZIO = {
   dataAdmissao: '',
   ativo: true,
   observacoes: '',
+}
+
+const INPUT_BASE = {
+  background: '#fff',
+  border: '1.5px solid #CFC4BB',
+  borderRadius: 8,
+  padding: '8px 12px',
+  fontSize: 13,
+  width: '100%',
+  outline: 'none',
+  fontFamily: 'Inter, sans-serif',
+  color: '#1A0E08',
+  boxSizing: 'border-box',
 }
 
 export default function Funcionarios() {
@@ -63,7 +76,6 @@ export default function Funcionarios() {
   const ativos = funcionarios.filter(f => f.ativo !== false)
   const inativos = funcionarios.filter(f => f.ativo === false)
 
-  // Motoboys vindos dos funcionários (cargo contém motoboy ou entregador)
   const motoboysFuncionarios = funcionarios
     .filter(f => f.ativo !== false && (
       f.cargo?.toLowerCase().includes('motoboy') || f.cargo?.toLowerCase().includes('entregador')
@@ -71,95 +83,142 @@ export default function Funcionarios() {
     .map(f => f.nome)
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h1 className="text-2xl font-bold text-amber-900">Funcionários</h1>
-          <p className="text-sm text-gray-500">{ativos.length} ativo(s) • Folha: R$ {totalFolha.toFixed(2).replace('.', ',')}</p>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
+            Funcionários
+          </h1>
+          <p style={{ fontSize: 13, color: '#9D8878', margin: '2px 0 0' }}>
+            {ativos.length} ativo(s) • Folha: R$ {totalFolha.toFixed(2).replace('.', ',')}
+          </p>
         </div>
         <button
           onClick={() => { setMostrarForm(true); setEditandoId(null); setForm(FORM_VAZIO) }}
-          className="flex items-center gap-2 bg-amber-700 hover:bg-amber-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          <Plus size={16} /> Novo Funcionário
+          style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            background: '#C8221A', color: '#fff',
+            boxShadow: '0 2px 10px rgba(200,34,26,0.35)',
+            borderRadius: 8, border: 'none',
+            padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          }}>
+          <Plus size={15} /> Novo Funcionário
         </button>
       </div>
 
-      {/* Folha de pagamento */}
+      {/* Cards de resumo */}
       {funcionarios.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
-            <p className="text-xs text-amber-700">Folha de Pagamento</p>
-            <p className="text-2xl font-bold text-amber-900">R$ {totalFolha.toFixed(2).replace('.', ',')}</p>
-            <p className="text-xs text-amber-600 mt-1">{ativos.length} funcionário(s) ativo(s)</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 22 }}>
+          <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+            <p style={{ fontSize: 12, color: '#92400E', margin: '0 0 4px' }}>Folha de Pagamento</p>
+            <p style={{ fontSize: 24, fontWeight: 700, color: '#78350F', margin: 0 }}>R$ {totalFolha.toFixed(2).replace('.', ',')}</p>
+            <p style={{ fontSize: 12, color: '#CA8A04', marginTop: 4 }}>{ativos.length} funcionário(s) ativo(s)</p>
           </div>
-          <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-            <p className="text-xs text-gray-500">Ativos</p>
-            <p className="text-2xl font-bold text-green-700">{ativos.length}</p>
+          <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+            <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Ativos</p>
+            <p style={{ fontSize: 24, fontWeight: 700, color: '#16A34A', margin: 0 }}>{ativos.length}</p>
           </div>
-          <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-            <p className="text-xs text-gray-500">Inativos</p>
-            <p className="text-2xl font-bold text-gray-400">{inativos.length}</p>
+          <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+            <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Inativos</p>
+            <p style={{ fontSize: 24, fontWeight: 700, color: '#6B7280', margin: 0 }}>{inativos.length}</p>
           </div>
         </div>
       )}
 
+      {/* Formulário */}
       {mostrarForm && (
-        <div className="bg-white border border-amber-200 rounded-xl p-5 mb-5 shadow-sm">
-          <h2 className="font-semibold text-amber-900 mb-4">{editandoId ? 'Editar Funcionário' : 'Novo Funcionário'}</h2>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Nome</label>
-              <input type="text" value={form.nome}
-                onChange={e => setForm(prev => ({ ...prev, nome: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                placeholder="Nome completo" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Cargo</label>
-              <input type="text" value={form.cargo}
-                onChange={e => setForm(prev => ({ ...prev, cargo: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                placeholder="Ex: Motoboy, Cozinheiro..." />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Salário (R$)</label>
-              <input type="number" min="0" step="0.01" value={form.salario}
-                onChange={e => setForm(prev => ({ ...prev, salario: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                placeholder="0,00" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Data de Admissão</label>
-              <input type="date" value={form.dataAdmissao}
-                onChange={e => setForm(prev => ({ ...prev, dataAdmissao: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={() => setForm(prev => ({ ...prev, ativo: !prev.ativo }))}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border-2 transition-all ${
-                  form.ativo ? 'bg-green-100 text-green-700 border-green-300' : 'bg-gray-100 text-gray-500 border-gray-200'
-                }`}>
-                {form.ativo ? <><Check size={12} /> Ativo</> : 'Inativo'}
-              </button>
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
-              <input type="text" value={form.observacoes}
-                onChange={e => setForm(prev => ({ ...prev, observacoes: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                placeholder="Informações adicionais..." />
+        <div style={{
+          background: '#fff', border: '1.5px solid #E6DDD5',
+          borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          padding: 20, marginBottom: 20,
+        }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1A0E08', marginTop: 0, marginBottom: 16 }}>
+            {editandoId ? 'Editar Funcionário' : 'Novo Funcionário'}
+          </h2>
+
+          {/* Dados pessoais */}
+          <div style={{ background: '#FFF7ED', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
+              Dados Pessoais
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Nome</label>
+                <input type="text" value={form.nome}
+                  onChange={e => setForm(prev => ({ ...prev, nome: e.target.value }))}
+                  style={INPUT_BASE} placeholder="Nome completo" />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Cargo</label>
+                <input type="text" value={form.cargo}
+                  onChange={e => setForm(prev => ({ ...prev, cargo: e.target.value }))}
+                  style={INPUT_BASE} placeholder="Ex: Motoboy, Cozinheiro..." />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Data de Admissão</label>
+                <input type="date" value={form.dataAdmissao}
+                  onChange={e => setForm(prev => ({ ...prev, dataAdmissao: e.target.value }))}
+                  style={INPUT_BASE} />
+              </div>
             </div>
           </div>
-          <div className="flex gap-2">
+
+          {/* Salário e status */}
+          <div style={{ background: '#F0FDF4', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#16A34A', marginTop: 0, marginBottom: 12 }}>
+              Salário e Status
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, alignItems: 'end' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Salário (R$)</label>
+                <input type="number" min="0" step="0.01" value={form.salario}
+                  onChange={e => setForm(prev => ({ ...prev, salario: e.target.value }))}
+                  style={INPUT_BASE} placeholder="0,00" />
+              </div>
+              <button
+                onClick={() => setForm(prev => ({ ...prev, ativo: !prev.ativo }))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '9px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                  cursor: 'pointer', transition: 'all 0.15s', border: 'none',
+                  background: form.ativo ? '#16A34A' : '#6B7280',
+                  color: '#fff',
+                }}>
+                {form.ativo ? <><Check size={13} /> Ativo</> : 'Inativo'}
+              </button>
+            </div>
+          </div>
+
+          {/* Observações */}
+          <div style={{ background: '#F8F7F5', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Observações</label>
+            <input type="text" value={form.observacoes}
+              onChange={e => setForm(prev => ({ ...prev, observacoes: e.target.value }))}
+              style={INPUT_BASE} placeholder="Informações adicionais..." />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={salvar} disabled={!form.nome.trim()}
-              className="flex items-center gap-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
-              <Check size={15} /> {editandoId ? 'Salvar' : 'Adicionar'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: !form.nome.trim() ? '#D1D5DB' : '#16A34A',
+                color: '#fff',
+                boxShadow: !form.nome.trim() ? 'none' : '0 2px 8px rgba(22,163,74,0.3)',
+                borderRadius: 8, border: 'none',
+                padding: '9px 20px', fontSize: 13, fontWeight: 600,
+                cursor: !form.nome.trim() ? 'not-allowed' : 'pointer',
+              }}>
+              <Check size={14} /> {editandoId ? 'Salvar' : 'Adicionar'}
             </button>
-            <button onClick={cancelar}
-              className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              <X size={15} /> Cancelar
+            <button onClick={cancelar} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: '#fff', color: '#6B5A4E',
+              border: '1.5px solid #CFC4BB',
+              borderRadius: 8, padding: '9px 18px',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}>
+              <X size={14} /> Cancelar
             </button>
           </div>
         </div>
@@ -167,25 +226,33 @@ export default function Funcionarios() {
 
       {/* Lista de funcionários */}
       {ativos.length === 0 && inativos.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          <UserCheck size={40} className="mx-auto mb-3 opacity-40" />
-          <p className="text-sm">Nenhum funcionário cadastrado</p>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: '#9D8878' }}>
+          <UserCheck size={40} style={{ margin: '0 auto 12px', opacity: 0.35 }} />
+          <p style={{ fontSize: 13 }}>Nenhum funcionário cadastrado</p>
         </div>
       ) : (
         <>
           {ativos.length > 0 && (
-            <div className="mb-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Funcionários Ativos</h3>
-              <div className="grid gap-3">
-                {ativos.map(f => <FuncionarioCard key={f.id} funcionario={f} onEditar={iniciarEdicao} onRemover={removerFuncionario} onToggle={editarFuncionario} />)}
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 12 }}>
+                Funcionários Ativos
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {ativos.map(f => (
+                  <FuncionarioCard key={f.id} funcionario={f} onEditar={iniciarEdicao} onRemover={removerFuncionario} onToggle={editarFuncionario} />
+                ))}
               </div>
             </div>
           )}
           {inativos.length > 0 && (
             <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Inativos</h3>
-              <div className="grid gap-3">
-                {inativos.map(f => <FuncionarioCard key={f.id} funcionario={f} onEditar={iniciarEdicao} onRemover={removerFuncionario} onToggle={editarFuncionario} />)}
+              <h3 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#CFC4BB', marginBottom: 12 }}>
+                Inativos
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {inativos.map(f => (
+                  <FuncionarioCard key={f.id} funcionario={f} onEditar={iniciarEdicao} onRemover={removerFuncionario} onToggle={editarFuncionario} />
+                ))}
               </div>
             </div>
           )}
@@ -193,21 +260,21 @@ export default function Funcionarios() {
       )}
 
       {/* Seção Motoboys */}
-      <div className="mt-8">
-        <h2 className="text-lg font-bold text-amber-900 mb-1 flex items-center gap-2">
-          <Bike size={18} /> Motoboys para Entrega
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1.5px solid #E6DDD5' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A0E08', marginTop: 0, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Bike size={17} style={{ color: '#2563EB' }} /> Motoboys para Entrega
         </h2>
-        <p className="text-xs text-gray-500 mb-4">
+        <p style={{ fontSize: 12, color: '#9D8878', marginBottom: 16 }}>
           Lista usada na atribuição de entregas nos pedidos.
           {motoboysFuncionarios.length > 0 && ' Funcionários com cargo de motoboy/entregador são adicionados automaticamente.'}
         </p>
 
         {motoboysFuncionarios.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs text-gray-400 mb-2">Do cadastro de funcionários:</p>
-            <div className="flex flex-wrap gap-2">
+          <div style={{ marginBottom: 14 }}>
+            <p style={{ fontSize: 11, color: '#9D8878', marginBottom: 8 }}>Do cadastro de funcionários:</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {motoboysFuncionarios.map(nome => (
-                <span key={nome} className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium">
+                <span key={nome} style={{ background: '#2563EB', color: '#fff', fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
                   {nome}
                 </span>
               ))}
@@ -215,23 +282,40 @@ export default function Funcionarios() {
           </div>
         )}
 
-        <div className="flex gap-2 mb-3">
-          <input type="text" value={novoMotoboy} onChange={e => setNovoMotoboy(e.target.value)}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <input
+            type="text"
+            value={novoMotoboy}
+            onChange={e => setNovoMotoboy(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && adicionarMotoboyNovo()}
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-            placeholder="Adicionar motoboy avulso..." />
+            style={INPUT_BASE}
+            placeholder="Adicionar motoboy avulso..."
+          />
           <button onClick={adicionarMotoboyNovo}
-            className="bg-amber-700 hover:bg-amber-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            style={{
+              background: '#C8221A', color: '#fff',
+              border: 'none', borderRadius: 8,
+              padding: '0 16px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+              flexShrink: 0,
+            }}>
             <Plus size={16} />
           </button>
         </div>
 
         {motoboys.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {motoboys.map(nome => (
-              <div key={nome} className="flex items-center gap-1 bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">
+              <div key={nome} style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: '#FFFBEB', border: '1.5px solid #FDE68A',
+                color: '#92400E', fontSize: 12, padding: '5px 12px',
+                borderRadius: 20, fontWeight: 600,
+              }}>
                 {nome}
-                <button onClick={() => removerMotoboy(nome)} className="text-amber-600 hover:text-red-600 ml-1">
+                <button onClick={() => removerMotoboy(nome)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CA8A04', display: 'flex', alignItems: 'center', marginLeft: 2 }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#CA8A04'}>
                   <X size={12} />
                 </button>
               </div>
@@ -240,7 +324,7 @@ export default function Funcionarios() {
         )}
 
         {motoboys.length === 0 && motoboysFuncionarios.length === 0 && (
-          <p className="text-xs text-gray-400">Nenhum motoboy cadastrado. Adicione acima ou cadastre funcionários com cargo "Motoboy".</p>
+          <p style={{ fontSize: 12, color: '#9D8878' }}>Nenhum motoboy cadastrado. Adicione acima ou cadastre funcionários com cargo "Motoboy".</p>
         )}
       </div>
     </div>
@@ -249,31 +333,62 @@ export default function Funcionarios() {
 
 function FuncionarioCard({ funcionario: f, onEditar, onRemover, onToggle }) {
   return (
-    <div className={`bg-white rounded-xl border shadow-sm p-4 ${f.ativo === false ? 'border-gray-100 opacity-70' : 'border-gray-100'}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-gray-800">{f.nome}</span>
-            {f.cargo && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{f.cargo}</span>}
-            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${f.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+    <div style={{
+      background: '#fff', border: '1.5px solid #E6DDD5',
+      borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      padding: 16, opacity: f.ativo === false ? 0.65 : 1,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+            <span style={{ fontWeight: 700, color: '#1A0E08', fontSize: 14 }}>{f.nome}</span>
+            {f.cargo && (
+              <span style={{ fontSize: 11, background: '#2563EB', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                {f.cargo}
+              </span>
+            )}
+            <span style={{
+              fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600,
+              background: f.ativo !== false ? '#16A34A' : '#6B7280',
+              color: '#fff',
+            }}>
               {f.ativo !== false ? 'Ativo' : 'Inativo'}
             </span>
           </div>
           {Number(f.salario) > 0 && (
-            <p className="text-sm font-bold text-gray-700 mt-1">R$ {Number(f.salario).toFixed(2).replace('.', ',')}/mês</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#1A0E08', margin: '3px 0' }}>
+              R$ {Number(f.salario).toFixed(2).replace('.', ',')}/mês
+            </p>
           )}
           {f.dataAdmissao && (
-            <p className="text-xs text-gray-400">Desde {new Date(f.dataAdmissao + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+            <p style={{ fontSize: 12, color: '#9D8878', margin: '2px 0' }}>
+              Desde {new Date(f.dataAdmissao + 'T12:00:00').toLocaleDateString('pt-BR')}
+            </p>
           )}
-          {f.observacoes && <p className="text-xs text-gray-400 italic mt-0.5">{f.observacoes}</p>}
+          {f.observacoes && <p style={{ fontSize: 12, color: '#9D8878', fontStyle: 'italic', margin: '2px 0' }}>{f.observacoes}</p>}
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => onToggle(f.id, { ativo: f.ativo === false })}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${f.ativo !== false ? 'text-gray-400 border-gray-200 hover:border-gray-300' : 'text-green-600 border-green-200 hover:bg-green-50'}`}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 16 }}>
+          <button
+            onClick={() => onToggle(f.id, { ativo: f.ativo === false })}
+            style={{
+              fontSize: 11, padding: '5px 12px', borderRadius: 20, fontWeight: 600,
+              cursor: 'pointer', border: '1.5px solid',
+              background: 'transparent',
+              borderColor: f.ativo !== false ? '#CFC4BB' : '#BBF7D0',
+              color: f.ativo !== false ? '#6B5A4E' : '#16A34A',
+            }}>
             {f.ativo !== false ? 'Desativar' : 'Ativar'}
           </button>
-          <button onClick={() => onEditar(f)} className="text-xs text-gray-400 hover:text-amber-600">Editar</button>
-          <button onClick={() => onRemover(f.id)} className="text-red-400 hover:text-red-600"><X size={14} /></button>
+          <button onClick={() => onEditar(f)} style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
+            onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
+            <Pencil size={14} />
+          </button>
+          <button onClick={() => onRemover(f.id)} style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
+            onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
+            <X size={14} />
+          </button>
         </div>
       </div>
     </div>

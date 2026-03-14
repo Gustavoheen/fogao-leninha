@@ -1,12 +1,49 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Tokens de design ─────────────────────────────────────────────────────── */
+:root {
+  --brand-red:      #C8221A;
+  --brand-red-dark: #A01812;
+  --brand-brown:    #3D1A0E;
+  --sidebar-bg:     #110704;
+
+  --surface:        #FFFFFF;
+  --surface-2:      #F7F3EF;
+  --surface-3:      #EEE8E2;
+  --border:         #E6DDD5;
+  --border-strong:  #CFC4BB;
+
+  --text-primary:   #1A0E08;
+  --text-secondary: #6B5A4E;
+  --text-muted:     #9D8878;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
 }
 
+/* ── Tipografia base ──────────────────────────────────────────────────────── */
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background-color: #f5f0e8;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  line-height: 1.5;
+  font-size: 14px;
 }
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Inputs globais ───────────────────────────────────────────────────────── */
+input, select, textarea {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.875rem;
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
