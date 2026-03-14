@@ -5,15 +5,19 @@ const AppContext = createContext()
 const STORAGE_KEYS = {
   clientes: 'fogao_clientes',
   pedidos: 'fogao_pedidos',
-  cardapio: 'fogao_cardapio',       // refrigerantes e combos
+  cardapio: 'fogao_cardapio',         // refrigerantes e combos
   cardapioHoje: 'fogao_cardapio_hoje', // estrutura do almoço do dia
 }
 
+// Carnes são globais (valem para ambas as opções)
+// Acompanhamentos são por opção
 const CARDAPIO_HOJE_PADRAO = {
-  acompanhamentos: [],
+  carnes: ['', '', ''],   // até 3 proteínas (compartilhadas)
+  precoP: '',             // preço único para tamanho P
+  precoG: '',             // preço único para tamanho G
   opcoes: [
-    { id: 1, nome: 'Cardápio 1', proteinas: ['', '', ''], precoP: '', precoG: '', disponivel: true },
-    { id: 2, nome: 'Cardápio 2', proteinas: ['', '', ''], precoP: '', precoG: '', disponivel: true },
+    { id: 1, nome: 'Opção 1', acompanhamentos: [], disponivel: true },
+    { id: 2, nome: 'Opção 2', acompanhamentos: [], disponivel: true },
   ],
 }
 
@@ -34,7 +38,12 @@ export function AppProvider({ children }) {
   const [clientes, setClientes] = useState(() => load(STORAGE_KEYS.clientes, []))
   const [pedidos, setPedidos] = useState(() => load(STORAGE_KEYS.pedidos, []))
   const [cardapio, setCardapio] = useState(() => load(STORAGE_KEYS.cardapio, []))
-  const [cardapioHoje, setCardapioHoje] = useState(() => load(STORAGE_KEYS.cardapioHoje, CARDAPIO_HOJE_PADRAO))
+  const [cardapioHoje, setCardapioHoje] = useState(() => {
+    const saved = load(STORAGE_KEYS.cardapioHoje, null)
+    // Migração: se tinha estrutura antiga (com proteínas por opção), reseta
+    if (saved && saved.opcoes?.[0]?.proteinas !== undefined) return CARDAPIO_HOJE_PADRAO
+    return saved || CARDAPIO_HOJE_PADRAO
+  })
 
   useEffect(() => save(STORAGE_KEYS.clientes, clientes), [clientes])
   useEffect(() => save(STORAGE_KEYS.pedidos, pedidos), [pedidos])
@@ -99,15 +108,29 @@ export function AppProvider({ children }) {
     setPedidos(prev => prev.filter(p => p.id !== id))
   }
 
-  // ── Cardápio Hoje (almoço estruturado) ───────────────────
-  function salvarAcompanhamentos(lista) {
-    setCardapioHoje(prev => ({ ...prev, acompanhamentos: lista }))
+  // ── Cardápio Hoje ─────────────────────────────────────────
+  // Carnes globais
+  function salvarCarnes(carnes) {
+    setCardapioHoje(prev => ({ ...prev, carnes }))
   }
 
-  function salvarOpcaoAlmoco(id, dados) {
+  // Preços globais
+  function salvarPrecos(precoP, precoG) {
+    setCardapioHoje(prev => ({ ...prev, precoP, precoG }))
+  }
+
+  // Acompanhamentos por opção
+  function salvarAcompanhamentos(opcaoId, lista) {
     setCardapioHoje(prev => ({
       ...prev,
-      opcoes: prev.opcoes.map(o => o.id === id ? { ...o, ...dados } : o),
+      opcoes: prev.opcoes.map(o => o.id === opcaoId ? { ...o, acompanhamentos: lista } : o),
+    }))
+  }
+
+  function salvarNomeOpcao(opcaoId, nome) {
+    setCardapioHoje(prev => ({
+      ...prev,
+      opcoes: prev.opcoes.map(o => o.id === opcaoId ? { ...o, nome } : o),
     }))
   }
 
@@ -144,7 +167,7 @@ export function AppProvider({ children }) {
       clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente,
       pedidos, adicionarPedido, atualizarStatusPedido, quitarPedido, removerPedido,
       cardapio, adicionarItemCardapio, toggleDisponibilidade, removerItemCardapio,
-      cardapioHoje, salvarAcompanhamentos, salvarOpcaoAlmoco, toggleOpcaoAlmoco,
+      cardapioHoje, salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco,
     }}>
       {children}
     </AppContext.Provider>

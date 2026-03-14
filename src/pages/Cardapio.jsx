@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import {
   Plus, Trash2, ToggleLeft, ToggleRight, X, Check,
-  UtensilsCrossed, GlassWater, Package, Salad, Flame
+  UtensilsCrossed, GlassWater, Package, Flame, Beef
 } from 'lucide-react'
 
 const SUBTIPOS_REFRIGERANTE = ['Lata', 'Mini', '2 Litros']
@@ -11,107 +11,105 @@ const FORM_COMBO_VAZIO = { nome: '', descricao: '', preco: '' }
 
 export default function Cardapio() {
   const {
-    cardapioHoje, salvarAcompanhamentos, salvarOpcaoAlmoco, toggleOpcaoAlmoco,
+    cardapioHoje,
+    salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco,
     cardapio, adicionarItemCardapio, toggleDisponibilidade, removerItemCardapio,
   } = useApp()
 
-  // Acompanhamentos
-  const [novoAcomp, setNovoAcomp] = useState('')
+  const refrigerantes = cardapio.filter(i => i.categoria === 'Refrigerante')
+  const combos = cardapio.filter(i => i.categoria === 'Combo')
 
-  function adicionarAcomp() {
-    const val = novoAcomp.trim()
-    if (!val || cardapioHoje.acompanhamentos.includes(val)) return
-    salvarAcompanhamentos([...cardapioHoje.acompanhamentos, val])
-    setNovoAcomp('')
-  }
-
-  function removerAcomp(item) {
-    salvarAcompanhamentos(cardapioHoje.acompanhamentos.filter(a => a !== item))
-  }
-
-  // Refrigerante
+  // Formulários inline
   const [formRefrig, setFormRefrig] = useState(FORM_REFRIG_VAZIO)
   const [addRefrig, setAddRefrig] = useState(false)
-  const refrigerantes = cardapio.filter(i => i.categoria === 'Refrigerante')
+  const [formCombo, setFormCombo] = useState(FORM_COMBO_VAZIO)
+  const [addCombo, setAddCombo] = useState(false)
 
   function salvarRefrig() {
     if (!formRefrig.nome.trim() || !formRefrig.preco) return
     adicionarItemCardapio({ nome: formRefrig.nome, categoria: 'Refrigerante', subtipo: formRefrig.subtipo, preco: parseFloat(formRefrig.preco) })
-    setFormRefrig(FORM_REFRIG_VAZIO)
-    setAddRefrig(false)
+    setFormRefrig(FORM_REFRIG_VAZIO); setAddRefrig(false)
   }
-
-  // Combo
-  const [formCombo, setFormCombo] = useState(FORM_COMBO_VAZIO)
-  const [addCombo, setAddCombo] = useState(false)
-  const combos = cardapio.filter(i => i.categoria === 'Combo')
 
   function salvarCombo() {
     if (!formCombo.nome.trim() || !formCombo.preco) return
     adicionarItemCardapio({ nome: formCombo.nome, categoria: 'Combo', descricao: formCombo.descricao, preco: parseFloat(formCombo.preco) })
-    setFormCombo(FORM_COMBO_VAZIO)
-    setAddCombo(false)
+    setFormCombo(FORM_COMBO_VAZIO); setAddCombo(false)
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-amber-900">Cardápio do Dia</h1>
-        <p className="text-sm text-gray-500">Configure o almoço, acompanhamentos, refrigerantes e combos</p>
+        <p className="text-sm text-gray-500">Configure as opções, acompanhamentos, carnes e bebidas</p>
       </div>
 
-      {/* ── ACOMPANHAMENTOS ─────────────────────────── */}
+      {/* ── PREÇOS e CARNES (globais) ────────────────── */}
       <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h2 className="flex items-center gap-2 font-bold text-green-800 mb-4">
-          <Salad size={18} /> Acompanhamentos do Dia
+        <h2 className="flex items-center gap-2 font-bold text-red-800 mb-4">
+          <Beef size={18} /> Carnes e Tamanhos
+          <span className="text-xs font-normal text-gray-400 ml-1">(valem para as duas opções)</span>
         </h2>
 
-        <div className="flex flex-wrap gap-2 mb-3 min-h-8">
-          {cardapioHoje.acompanhamentos.length === 0 && (
-            <p className="text-xs text-gray-400 italic">Nenhum acompanhamento cadastrado</p>
-          )}
-          {cardapioHoje.acompanhamentos.map(a => (
-            <span key={a} className="flex items-center gap-1 bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium">
-              {a}
-              <button onClick={() => removerAcomp(a)} className="text-green-600 hover:text-red-500 ml-1">
-                <X size={13} />
-              </button>
-            </span>
-          ))}
+        {/* Preços */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Preço Pequena (R$)</label>
+            <input
+              type="number" min="0" step="0.01"
+              value={cardapioHoje.precoP}
+              onChange={e => salvarPrecos(e.target.value, cardapioHoje.precoG)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+              placeholder="Ex: 17,00"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Preço Grande (R$)</label>
+            <input
+              type="number" min="0" step="0.01"
+              value={cardapioHoje.precoG}
+              onChange={e => salvarPrecos(cardapioHoje.precoP, e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+              placeholder="Ex: 20,00"
+            />
+          </div>
         </div>
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={novoAcomp}
-            onChange={e => setNovoAcomp(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && adicionarAcomp()}
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-            placeholder="Ex: Arroz, Feijão, Macarrão, Batata Frita..."
-          />
-          <button onClick={adicionarAcomp}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
-            <Plus size={15} /> Adicionar
-          </button>
+        {/* 3 carnes */}
+        <p className="text-xs font-medium text-gray-500 mb-2">Opções de carne (até 3)</p>
+        <div className="space-y-2">
+          {[0, 1, 2].map(idx => (
+            <div key={idx} className="flex items-center gap-2">
+              <span className="text-xs text-gray-400 w-4 text-right">{idx + 1}.</span>
+              <input
+                type="text"
+                value={cardapioHoje.carnes?.[idx] || ''}
+                onChange={e => {
+                  const novas = [...(cardapioHoje.carnes || ['', '', ''])]
+                  novas[idx] = e.target.value
+                  salvarCarnes(novas)
+                }}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                placeholder={`Carne ${idx + 1} — ex: Filé de Frango a Parmegiana`}
+              />
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── OPÇÕES DE ALMOÇO ────────────────────────── */}
-      <section>
-        <h2 className="flex items-center gap-2 font-bold text-orange-800 mb-3">
-          <UtensilsCrossed size={18} /> Opções de Almoço
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          {cardapioHoje.opcoes.map(opcao => (
-            <OpcaoAlmoco
-              key={opcao.id}
-              opcao={opcao}
-              onSalvar={dados => salvarOpcaoAlmoco(opcao.id, dados)}
-              onToggle={() => toggleOpcaoAlmoco(opcao.id)}
-            />
-          ))}
-        </div>
-      </section>
+      <div className="grid grid-cols-2 gap-4">
+        {cardapioHoje.opcoes.map((opcao, idx) => (
+          <OpcaoCard
+            key={opcao.id}
+            opcao={opcao}
+            cor={idx === 0 ? 'orange' : 'amber'}
+            onNome={nome => salvarNomeOpcao(opcao.id, nome)}
+            onAcomp={lista => salvarAcompanhamentos(opcao.id, lista)}
+            onToggle={() => toggleOpcaoAlmoco(opcao.id)}
+          />
+        ))}
+      </div>
 
       {/* ── REFRIGERANTES ───────────────────────────── */}
       <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -129,7 +127,7 @@ export default function Cardapio() {
           <div className="bg-blue-50 rounded-xl p-3 mb-3 grid grid-cols-3 gap-2">
             <input type="text" value={formRefrig.nome} onChange={e => setFormRefrig({ ...formRefrig, nome: e.target.value })}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Nome (Ex: Coca-Cola)" />
+              placeholder="Nome (ex: Coca-Cola)" />
             <select value={formRefrig.subtipo} onChange={e => setFormRefrig({ ...formRefrig, subtipo: e.target.value })}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
               {SUBTIPOS_REFRIGERANTE.map(s => <option key={s}>{s}</option>)}
@@ -146,30 +144,14 @@ export default function Cardapio() {
           </div>
         )}
 
-        {refrigerantes.length === 0 ? (
-          <p className="text-xs text-gray-400 italic">Nenhum refrigerante cadastrado</p>
-        ) : (
-          <div className="grid gap-2">
-            {refrigerantes.map(item => (
-              <div key={item.id} className={`flex items-center justify-between py-2 px-3 rounded-lg border ${item.disponivel ? 'border-blue-100 bg-blue-50' : 'border-gray-100 bg-gray-50 opacity-50'}`}>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-800">{item.nome}</span>
-                  <span className="text-xs bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded-full">{item.subtipo}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-green-700">R$ {Number(item.preco).toFixed(2).replace('.', ',')}</span>
-                  <button onClick={() => toggleDisponibilidade(item.id)}
-                    className={item.disponivel ? 'text-green-600 hover:text-green-800' : 'text-gray-400 hover:text-gray-600'}>
-                    {item.disponivel ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-                  </button>
-                  <button onClick={() => removerItemCardapio(item.id)} className="text-gray-400 hover:text-red-600">
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {refrigerantes.length === 0
+          ? <p className="text-xs text-gray-400 italic">Nenhum refrigerante cadastrado</p>
+          : <div className="grid gap-2">
+              {refrigerantes.map(item => (
+                <ItemLine key={item.id} item={item} onToggle={toggleDisponibilidade} onRemover={removerItemCardapio} cor="blue" />
+              ))}
+            </div>
+        }
       </section>
 
       {/* ── COMBOS ──────────────────────────────────── */}
@@ -204,168 +186,133 @@ export default function Cardapio() {
           </div>
         )}
 
-        {combos.length === 0 ? (
-          <p className="text-xs text-gray-400 italic">Nenhum combo cadastrado</p>
-        ) : (
-          <div className="grid gap-2">
-            {combos.map(item => (
-              <div key={item.id} className={`flex items-center justify-between py-2 px-3 rounded-lg border ${item.disponivel ? 'border-purple-100 bg-purple-50' : 'border-gray-100 bg-gray-50 opacity-50'}`}>
-                <div>
-                  <span className="text-sm font-medium text-gray-800">{item.nome}</span>
-                  {item.descricao && <span className="text-xs text-gray-500 ml-2">{item.descricao}</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-green-700">R$ {Number(item.preco).toFixed(2).replace('.', ',')}</span>
-                  <button onClick={() => toggleDisponibilidade(item.id)}
-                    className={item.disponivel ? 'text-green-600 hover:text-green-800' : 'text-gray-400 hover:text-gray-600'}>
-                    {item.disponivel ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-                  </button>
-                  <button onClick={() => removerItemCardapio(item.id)} className="text-gray-400 hover:text-red-600">
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {combos.length === 0
+          ? <p className="text-xs text-gray-400 italic">Nenhum combo cadastrado</p>
+          : <div className="grid gap-2">
+              {combos.map(item => (
+                <ItemLine key={item.id} item={item} onToggle={toggleDisponibilidade} onRemover={removerItemCardapio} cor="purple" />
+              ))}
+            </div>
+        }
       </section>
     </div>
   )
 }
 
-// ── Componente de cada opção de almoço ──────────────────────
-function OpcaoAlmoco({ opcao, onSalvar, onToggle }) {
-  const [editando, setEditando] = useState(false)
-  const [form, setForm] = useState({
-    nome: opcao.nome,
-    proteinas: [...opcao.proteinas],
-    precoP: opcao.precoP,
-    precoG: opcao.precoG,
-  })
+// ── Card de cada opção de almoço ─────────────────────────────
+function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle }) {
+  const [novoItem, setNovoItem] = useState('')
+  const [editandoNome, setEditandoNome] = useState(false)
+  const [nomeTemp, setNomeTemp] = useState(opcao.nome)
 
-  function salvar() {
-    // Filtra proteínas vazias
-    const proteinas = form.proteinas.map(p => p.trim())
-    onSalvar({ ...form, proteinas })
-    setEditando(false)
+  const BG_HEADER = cor === 'orange' ? 'bg-orange-500' : 'bg-amber-600'
+  const RING = cor === 'orange' ? 'focus:ring-orange-300' : 'focus:ring-amber-400'
+
+  function adicionarItem() {
+    const val = novoItem.trim()
+    if (!val) return
+    onAcomp([...opcao.acompanhamentos, val])
+    setNovoItem('')
   }
 
-  function setProteina(idx, val) {
-    const nova = [...form.proteinas]
-    nova[idx] = val
-    setForm(prev => ({ ...prev, proteinas: nova }))
+  function removerItem(item) {
+    onAcomp(opcao.acompanhamentos.filter(a => a !== item))
   }
 
-  const proteinasAtivas = opcao.proteinas.filter(p => p.trim())
-  const temPrecos = opcao.precoG
+  function confirmarNome() {
+    if (nomeTemp.trim()) onNome(nomeTemp.trim())
+    setEditandoNome(false)
+  }
 
   return (
-    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${!opcao.disponivel ? 'opacity-60' : opcao.id === 1 ? 'border-orange-200' : 'border-amber-200'}`}>
-      {/* Cabeçalho */}
-      <div className={`px-5 py-3 flex items-center justify-between ${opcao.id === 1 ? 'bg-orange-500' : 'bg-amber-600'} text-white`}>
+    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${!opcao.disponivel ? 'opacity-60' : 'border-gray-100'}`}>
+      {/* Header */}
+      <div className={`${BG_HEADER} px-4 py-3 flex items-center justify-between`}>
         <div className="flex items-center gap-2">
-          <Flame size={16} />
-          {editando ? (
+          <Flame size={15} className="text-white/80" />
+          {editandoNome ? (
             <input
-              type="text"
-              value={form.nome}
-              onChange={e => setForm(prev => ({ ...prev, nome: e.target.value }))}
-              className="bg-white/20 border border-white/40 rounded px-2 py-0.5 text-sm font-bold text-white placeholder-white/70 w-32"
+              autoFocus
+              value={nomeTemp}
+              onChange={e => setNomeTemp(e.target.value)}
+              onBlur={confirmarNome}
+              onKeyDown={e => e.key === 'Enter' && confirmarNome()}
+              className="bg-white/20 border border-white/40 rounded px-2 py-0.5 text-sm font-bold text-white w-28"
             />
           ) : (
-            <span className="font-bold">{opcao.nome}</span>
+            <button onClick={() => { setNomeTemp(opcao.nome); setEditandoNome(true) }}
+              className="font-bold text-white hover:underline text-sm">{opcao.nome}</button>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={onToggle} className="opacity-80 hover:opacity-100">
-            {opcao.disponivel ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-          </button>
-          <button onClick={() => setEditando(!editando)}
-            className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded font-medium transition-colors">
-            {editando ? 'Cancelar' : 'Editar'}
-          </button>
-        </div>
+        <button onClick={onToggle} className="text-white/80 hover:text-white">
+          {opcao.disponivel ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+        </button>
       </div>
 
+      {/* Acompanhamentos */}
       <div className="p-4">
-        {editando ? (
-          // ── Modo edição ──
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Opções de Proteína</p>
-              {[0, 1, 2].map(idx => (
-                <div key={idx} className="flex items-center gap-2 mb-1.5">
-                  <span className="text-xs text-gray-400 w-4">{idx + 1}.</span>
-                  <input
-                    type="text"
-                    value={form.proteinas[idx] || ''}
-                    onChange={e => setProteina(idx, e.target.value)}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    placeholder={`Proteína ${idx + 1} (Ex: Frango grelhado)`}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Preço P (R$)</label>
-                <input type="number" min="0" step="0.01" value={form.precoP}
-                  onChange={e => setForm(prev => ({ ...prev, precoP: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  placeholder="0,00" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Preço G (R$) *</label>
-                <input type="number" min="0" step="0.01" value={form.precoG}
-                  onChange={e => setForm(prev => ({ ...prev, precoG: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  placeholder="0,00" />
-              </div>
-            </div>
-            <button onClick={salvar}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
-              <Check size={15} /> Salvar
-            </button>
-          </div>
-        ) : (
-          // ── Modo visualização ──
-          <div>
-            {/* Proteínas */}
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Proteínas</p>
-            {proteinasAtivas.length === 0 ? (
-              <p className="text-xs text-gray-400 italic mb-3">Nenhuma proteína cadastrada. Clique em Editar.</p>
-            ) : (
-              <div className="space-y-1 mb-3">
-                {proteinasAtivas.map((p, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className={`w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white ${opcao.id === 1 ? 'bg-orange-500' : 'bg-amber-600'}`}>
-                      {idx + 1}
-                    </span>
-                    <span className="text-sm text-gray-700">{p}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Acompanhamentos</p>
 
-            {/* Preços */}
-            {temPrecos ? (
-              <div className="flex gap-3 pt-2 border-t border-gray-100">
-                {opcao.precoP && (
-                  <div className="text-center">
-                    <p className="text-xs text-gray-400">Tamanho P</p>
-                    <p className="text-base font-bold text-green-700">R$ {Number(opcao.precoP).toFixed(2).replace('.', ',')}</p>
-                  </div>
-                )}
-                <div className="text-center">
-                  <p className="text-xs text-gray-400">Tamanho G</p>
-                  <p className="text-base font-bold text-green-700">R$ {Number(opcao.precoG).toFixed(2).replace('.', ',')}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-amber-600 italic">Preços não definidos</p>
-            )}
-          </div>
-        )}
+        {/* Chips existentes */}
+        <div className="flex flex-wrap gap-1.5 mb-3 min-h-6">
+          {opcao.acompanhamentos.length === 0 && (
+            <p className="text-xs text-gray-300 italic">Nenhum item ainda</p>
+          )}
+          {opcao.acompanhamentos.map(a => (
+            <span key={a} className="flex items-center gap-1 bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full">
+              {a}
+              <button onClick={() => removerItem(a)} className="text-gray-400 hover:text-red-500 ml-0.5">
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+
+        {/* Input para adicionar */}
+        <div className="flex gap-1.5">
+          <input
+            type="text"
+            value={novoItem}
+            onChange={e => setNovoItem(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && adicionarItem()}
+            className={`flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 ${RING}`}
+            placeholder="Ex: Arroz, Feijão, Farofa..."
+          />
+          <button onClick={adicionarItem}
+            className={`${BG_HEADER} text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 transition-opacity`}>
+            <Plus size={13} />
+          </button>
+        </div>
+
+        {/* Tag: usa carnes globais? */}
+        <div className="mt-3 pt-3 border-t border-gray-50">
+          <p className="text-xs text-gray-400">
+            🥩 Carnes: <span className="font-medium text-gray-600">globais (configuradas acima)</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Item de linha (refrigerante / combo) ─────────────────────
+function ItemLine({ item, onToggle, onRemover, cor }) {
+  const BADGE = cor === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+  return (
+    <div className={`flex items-center justify-between py-2 px-3 rounded-lg border ${item.disponivel ? `border-${cor}-100 bg-${cor}-50` : 'border-gray-100 bg-gray-50 opacity-50'}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-gray-800">{item.nome}</span>
+        {item.subtipo && <span className={`text-xs px-1.5 py-0.5 rounded-full ${BADGE}`}>{item.subtipo}</span>}
+        {item.descricao && <span className="text-xs text-gray-400">{item.descricao}</span>}
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-bold text-green-700">R$ {Number(item.preco).toFixed(2).replace('.', ',')}</span>
+        <button onClick={() => onToggle(item.id)} className={item.disponivel ? 'text-green-600' : 'text-gray-400'}>
+          {item.disponivel ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+        </button>
+        <button onClick={() => onRemover(item.id)} className="text-gray-400 hover:text-red-600">
+          <Trash2 size={15} />
+        </button>
       </div>
     </div>
   )

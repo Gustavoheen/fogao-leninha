@@ -53,14 +53,17 @@ export default function Pedidos() {
     setSugestoes([])
   }
 
-  // Cardápio separado por tipo
-  const opcoesAlmoco = (cardapioHoje?.opcoes || []).filter(o => o.disponivel && o.precoG)
+  // Cardápio do dia
+  const opcoesAlmoco = (cardapioHoje?.opcoes || []).filter(o => o.disponivel)
+  const carnesGlobais = (cardapioHoje?.carnes || []).filter(c => c.trim())
+  const precoP = Number(cardapioHoje?.precoP || 0)
+  const precoG = Number(cardapioHoje?.precoG || 0)
   const combos = cardapio.filter(i => i.disponivel && i.categoria === 'Combo')
   const refrigerantes = cardapio.filter(i => i.disponivel && i.categoria === 'Refrigerante')
 
   // Adicionar marmitex ao pedido (via cardapioHoje)
   function adicionarMarmitex(opcao, proteina, tamanho) {
-    const preco = tamanho === 'P' ? Number(opcao.precoP || opcao.precoG) : Number(opcao.precoG)
+    const preco = tamanho === 'P' ? precoP : precoG
     setForm(prev => ({
       ...prev,
       itensMarmitex: [...prev.itensMarmitex, {
@@ -256,11 +259,14 @@ export default function Pedidos() {
               </div>
             )}
 
-            {opcoesAlmoco.length === 0 ? (
-              <p className="text-xs text-gray-400">Nenhuma opção de almoço configurada. Acesse Cardápio do Dia.</p>
+            {opcoesAlmoco.length === 0 || !precoG ? (
+              <p className="text-xs text-gray-400">Configure as opções e preços em Cardápio do Dia.</p>
             ) : (
               <SeletorMarmitex
                 opcoesAlmoco={opcoesAlmoco}
+                carnesGlobais={carnesGlobais}
+                precoP={precoP}
+                precoG={precoG}
                 onAdicionar={adicionarMarmitex}
               />
             )}
@@ -442,74 +448,87 @@ export default function Pedidos() {
   )
 }
 
-// ── Seletor de Marmitex em 3 passos: Cardápio → Proteína → Tamanho ──────────
-function SeletorMarmitex({ opcoesAlmoco, onAdicionar }) {
-  const [opcaoSel, setOpcaoSel] = useState(null)   // opcao do cardápio
-  const [proteinaSel, setProteinaSel] = useState('') // proteína escolhida
+// ── Seletor de Marmitex ──────────────────────────────────────────────────────
+// Fluxo A (tem carnes globais): Opção → Carne → Tamanho
+// Fluxo B (sem carnes / prato completo): Opção → Tamanho direto
+function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicionar }) {
+  const [opcaoSel, setOpcaoSel] = useState(null)
+  const [carneSel, setCarneSel] = useState('')
 
-  const COR = ['bg-orange-500', 'bg-amber-600']
+  const COR_BADGE = ['bg-orange-500', 'bg-amber-600']
 
   function confirmar(tamanho) {
     if (!opcaoSel) return
-    onAdicionar(opcaoSel, proteinaSel, tamanho)
+    onAdicionar(opcaoSel, carneSel, tamanho)
     setOpcaoSel(null)
-    setProteinaSel('')
+    setCarneSel('')
   }
+
+  const temCarnes = carnesGlobais.length > 0
+  const prontoParaTamanho = opcaoSel && (!temCarnes || carneSel !== '')
 
   return (
     <div>
-      {/* Passo 1 – escolher cardápio */}
+      {/* Passo 1 – escolher opção */}
       <div className="grid grid-cols-2 gap-2 mb-2">
         {opcoesAlmoco.map((opcao, idx) => (
-          <button
-            key={opcao.id}
-            onClick={() => { setOpcaoSel(opcao); setProteinaSel('') }}
+          <button key={opcao.id}
+            onClick={() => { setOpcaoSel(opcao); setCarneSel('') }}
             className={`rounded-xl p-3 text-left border-2 transition-all ${opcaoSel?.id === opcao.id ? 'border-amber-600 bg-white shadow-md' : 'border-transparent bg-white hover:border-amber-300'}`}
           >
-            <p className={`text-xs font-bold px-2 py-0.5 rounded-full text-white inline-block mb-1 ${COR[idx] || 'bg-gray-500'}`}>{opcao.nome}</p>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full text-white inline-block mb-1.5 ${COR_BADGE[idx] || 'bg-gray-500'}`}>
+              {opcao.nome}
+            </span>
             <div className="space-y-0.5">
-              {opcao.proteinas.filter(p => p.trim()).map((p, i) => (
-                <p key={i} className="text-xs text-gray-600">· {p}</p>
-              ))}
+              {(opcao.acompanhamentos || []).length > 0
+                ? opcao.acompanhamentos.map((a, i) => (
+                    <p key={i} className="text-xs text-gray-600 leading-tight">· {a}</p>
+                  ))
+                : <p className="text-xs text-gray-300 italic">Sem acompanhamentos</p>
+              }
             </div>
             <div className="flex gap-2 mt-2">
-              {opcao.precoP && <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-bold">P R$ {Number(opcao.precoP).toFixed(2).replace('.', ',')}</span>}
-              <span className="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-bold">G R$ {Number(opcao.precoG).toFixed(2).replace('.', ',')}</span>
+              {precoP > 0 && <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-bold">P R$ {precoP.toFixed(2).replace('.', ',')}</span>}
+              {precoG > 0 && <span className="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-bold">G R$ {precoG.toFixed(2).replace('.', ',')}</span>}
             </div>
           </button>
         ))}
       </div>
 
-      {/* Passo 2 – escolher proteína (se houver) */}
-      {opcaoSel && opcaoSel.proteinas.filter(p => p.trim()).length > 0 && (
-        <div className="bg-white border border-amber-200 rounded-xl p-3 mb-2">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Proteína — {opcaoSel.nome}</p>
+      {/* Passo 2 – escolher carne (só se houver carnes globais) */}
+      {opcaoSel && temCarnes && (
+        <div className="bg-white border border-red-100 rounded-xl p-3 mb-2">
+          <p className="text-xs font-semibold text-gray-600 mb-2">
+            🥩 Escolha a carne <span className="text-red-400">*</span>
+          </p>
           <div className="flex gap-2 flex-wrap">
-            {opcaoSel.proteinas.filter(p => p.trim()).map((p, i) => (
-              <button key={i} onClick={() => setProteinaSel(p)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${proteinaSel === p ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-400'}`}>
-                {p}
+            {carnesGlobais.map((c, i) => (
+              <button key={i} onClick={() => setCarneSel(c)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium border-2 transition-colors ${
+                  carneSel === c ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-200 hover:border-red-300'
+                }`}>
+                {c}
               </button>
             ))}
           </div>
+          {!carneSel && <p className="text-xs text-red-400 mt-2">Selecione a carne para continuar</p>}
         </div>
       )}
 
-      {/* Passo 3 – escolher tamanho e confirmar */}
+      {/* Passo 3 – tamanho */}
       {opcaoSel && (
         <div className="flex gap-2">
-          {opcaoSel.precoP && (
-            <button onClick={() => confirmar('P')}
-              className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-2 rounded-lg text-sm transition-colors">
-              + Marmitex P — R$ {Number(opcaoSel.precoP).toFixed(2).replace('.', ',')}
+          {precoP > 0 && (
+            <button onClick={() => prontoParaTamanho && confirmar('P')} disabled={!prontoParaTamanho}
+              className={`flex-1 font-bold py-2.5 rounded-lg text-sm transition-colors ${prontoParaTamanho ? 'bg-amber-100 hover:bg-amber-200 text-amber-800' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+              + Marmitex P — R$ {precoP.toFixed(2).replace('.', ',')}
             </button>
           )}
-          <button onClick={() => confirmar('G')}
-            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-sm transition-colors">
-            + Marmitex G — R$ {Number(opcaoSel.precoG).toFixed(2).replace('.', ',')}
+          <button onClick={() => prontoParaTamanho && confirmar('G')} disabled={!prontoParaTamanho}
+            className={`flex-1 font-bold py-2.5 rounded-lg text-sm transition-colors ${prontoParaTamanho ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+            + Marmitex G — R$ {precoG.toFixed(2).replace('.', ',')}
           </button>
-          <button onClick={() => { setOpcaoSel(null); setProteinaSel('') }}
-            className="p-2 text-gray-400 hover:text-gray-600">
+          <button onClick={() => { setOpcaoSel(null); setCarneSel('') }} className="p-2 text-gray-400 hover:text-gray-600">
             <X size={16} />
           </button>
         </div>
