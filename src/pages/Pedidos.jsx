@@ -1,7 +1,91 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { ClipboardList, Plus, X, Check, ChevronDown, User, MapPin, UtensilsCrossed, GlassWater, Package, Clock, Bike } from 'lucide-react'
+import { ClipboardList, Plus, X, Check, ChevronDown, User, MapPin, UtensilsCrossed, GlassWater, Package, Clock, Bike, Printer } from 'lucide-react'
 import { formatarEndereco, ENDERECO_VAZIO } from '../utils/endereco'
+
+function imprimirComanda(pedido) {
+  const hora = new Date(pedido.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const data = new Date(pedido.criadoEm).toLocaleDateString('pt-BR')
+  const num = String(pedido.id).slice(-4)
+  const endereco = formatarEndereco(pedido)
+
+  const linhasItens = (pedido.itens || [])
+    .filter(i => i.tipo !== 'refrigerante' && i.tipo !== 'embalagem')
+    .map(item => {
+      let html = `<div class="item">
+        <div class="item-titulo">${item.qtd}x ${item.nome}${item.tamanho ? ` (${item.tamanho})` : ''}${item.proteina ? ` — ${item.proteina}` : ''}</div>`
+      if (item.retirados && item.retirados.length > 0)
+        html += `<div class="retirar">SEM: ${item.retirados.join(', ')}</div>`
+      if (item.extras)
+        html += `<div class="adicionar">+ ${item.extras}</div>`
+      if (item.adicionais)
+        html += `<div class="adicionar">+ ${item.adicionais}</div>`
+      if (item.remover)
+        html += `<div class="retirar">- ${item.remover}</div>`
+      html += `</div>`
+      return html
+    }).join('')
+
+  const bebs = (pedido.itens || []).filter(i => i.tipo === 'refrigerante')
+  const linhasBebidas = bebs.length > 0
+    ? `<div class="secao">BEBIDAS</div>` + bebs.map(i => `<div class="item"><div class="item-titulo">${i.qtd}x ${i.nome} (${i.subtipo})</div></div>`).join('')
+    : ''
+
+  const emb = (pedido.itens || []).find(i => i.tipo === 'embalagem')
+  const linhaEmbalagem = emb ? `<div class="item"><div class="item-titulo">${emb.qtd}x Embalagem adicional</div></div>` : ''
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Comanda #${num}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Courier New', monospace; font-size: 13px; color: #000; width: 280px; padding: 8px; }
+  .restaurante { text-align:center; font-size:15px; font-weight:bold; margin-bottom:2px; }
+  .subtitulo { text-align:center; font-size:11px; margin-bottom:6px; }
+  .linha { border-top:1px dashed #000; margin:6px 0; }
+  .num { text-align:center; font-size:22px; font-weight:bold; margin:4px 0; }
+  .info { display:flex; justify-content:space-between; font-size:12px; margin:2px 0; }
+  .cliente { font-size:14px; font-weight:bold; margin:4px 0 2px; }
+  .endereco { font-size:11px; color:#333; margin-bottom:4px; }
+  .horario { font-size:12px; font-weight:bold; margin:2px 0; }
+  .secao { font-size:11px; font-weight:bold; text-transform:uppercase; letter-spacing:1px; margin-top:8px; margin-bottom:3px; border-bottom:1px solid #000; }
+  .item { margin:4px 0 6px; }
+  .item-titulo { font-size:14px; font-weight:bold; }
+  .retirar { font-size:12px; padding-left:10px; font-weight:bold; }
+  .adicionar { font-size:12px; padding-left:10px; }
+  .obs { font-size:12px; font-style:italic; margin-top:6px; border-left:2px solid #000; padding-left:6px; }
+  .total { text-align:right; font-size:16px; font-weight:bold; margin-top:8px; }
+  @media print { body { width:auto; } }
+</style>
+</head>
+<body>
+  <div class="restaurante">Fogão a Lenha da Leninha</div>
+  <div class="subtitulo">— COZINHA —</div>
+  <div class="linha"></div>
+  <div class="num">#${num}</div>
+  <div class="info"><span>${data}</span><span>${hora}</span></div>
+  <div class="linha"></div>
+  <div class="cliente">${pedido.clienteNome}</div>
+  ${endereco ? `<div class="endereco">${endereco}</div>` : ''}
+  ${pedido.horarioEntrega ? `<div class="horario">Entrega: ${pedido.horarioEntrega}</div>` : ''}
+  <div class="linha"></div>
+  ${linhasItens ? `<div class="secao">PEDIDO</div>${linhasItens}` : ''}
+  ${linhasBebidas}
+  ${linhaEmbalagem}
+  ${pedido.observacoes ? `<div class="obs">Obs: ${pedido.observacoes}</div>` : ''}
+  <div class="linha"></div>
+  <div class="total">R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}</div>
+</body>
+</html>`
+
+  const w = window.open('', '_blank', 'width=340,height=600')
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  setTimeout(() => { w.print(); w.close() }, 300)
+}
 
 export const STATUS_LABELS = {
   aberto: { label: 'Aberto', color: 'bg-blue-100 text-blue-700' },
@@ -777,6 +861,10 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
 
           {/* Ações */}
           <div className="flex gap-2 flex-wrap mt-3">
+            <button onClick={() => imprimirComanda(pedido)}
+              className="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors flex items-center gap-1">
+              <Printer size={12} /> Imprimir Comanda
+            </button>
             {pedido.status !== 'entregue' && (
               <>
                 {!mostrarEntrega ? (
