@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Users, ClipboardList, BookOpen, TrendingUp, Package, Truck, UserCheck, BarChart3, Flame } from 'lucide-react'
+import { Users, ClipboardList, BookOpen, TrendingUp, Package, Truck, UserCheck, BarChart3 } from 'lucide-react'
 
 const navItems = [
   { to: '/pedidos', label: 'Pedidos', icon: ClipboardList },
@@ -17,12 +17,8 @@ export default function Layout({ children }) {
     <div className="flex h-screen bg-amber-50">
       {/* Sidebar */}
       <aside className="w-56 bg-amber-900 text-amber-50 flex flex-col shadow-xl">
-        <div className="p-5 border-b border-amber-700">
-          <div className="flex items-center gap-2 mb-1">
-            <Flame className="text-orange-400" size={24} />
-            <span className="font-bold text-lg leading-tight">Fogão a Lenha</span>
-          </div>
-          <span className="text-amber-300 text-xs">da Leninha</span>
+        <div className="p-4 border-b border-amber-700 flex items-center justify-center">
+          <img src="/logo-vertical.png" alt="Fogão a Lenha da Leninha" className="w-36 object-contain drop-shadow-md" />
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto">
           {navItems.map(({ to, label, icon: Icon }) => (
