@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { ClipboardList, Plus, X, Check, ChevronDown, User, MapPin, UtensilsCrossed, GlassWater, Package } from 'lucide-react'
+import { formatarEndereco, ENDERECO_VAZIO } from '../utils/endereco'
 
 export const STATUS_LABELS = {
   aberto: { label: 'Aberto', color: 'bg-blue-100 text-blue-700' },
@@ -11,12 +12,22 @@ export const STATUS_LABELS = {
   cancelado: { label: 'Cancelado', color: 'bg-red-100 text-red-600' },
 }
 
-const FORMAS_PAGAMENTO = ['Dinheiro', 'PIX', 'Cartão de Débito', 'Cartão de Crédito', 'Pendente']
+const FORMAS_PAGAMENTO_OPCOES = [
+  { value: 'Dinheiro',          label: 'Dinheiro',          cor: 'bg-green-100 text-green-800' },
+  { value: 'PIX',               label: 'PIX',               cor: 'bg-blue-100 text-blue-800' },
+  { value: 'Cartão de Débito',  label: 'Cartão Débito',     cor: 'bg-purple-100 text-purple-800' },
+  { value: 'Cartão de Crédito', label: 'Cartão Crédito',    cor: 'bg-indigo-100 text-indigo-800' },
+  { value: 'Mensalista',        label: 'Mensalista',        cor: 'bg-orange-100 text-orange-800' },
+  { value: 'Pendente',          label: 'Pendente',          cor: 'bg-red-100 text-red-700' },
+]
 
 const FORM_VAZIO = {
   clienteNome: '',
-  clienteEndereco: '',
   clienteTelefone: '',
+  clienteRua: '',
+  clienteBairro: '',
+  clienteNumero: '',
+  clienteReferencia: '',
   itensMarmitex: [],
   itensRefrigerante: [],
   itensCombo: [],
@@ -47,8 +58,13 @@ export default function Pedidos() {
     setForm(prev => ({
       ...prev,
       clienteNome: c.nome,
-      clienteEndereco: c.endereco || prev.clienteEndereco,
       clienteTelefone: c.telefone || prev.clienteTelefone,
+      clienteRua: c.rua || prev.clienteRua,
+      clienteBairro: c.bairro || prev.clienteBairro,
+      clienteNumero: c.numero || prev.clienteNumero,
+      clienteReferencia: c.referencia || prev.clienteReferencia,
+      // Se for mensalista, pré-seleciona forma de pagamento
+      pagamento: c.tipo === 'mensalista' ? 'Mensalista' : prev.pagamento,
     }))
     setSugestoes([])
   }
@@ -142,8 +158,11 @@ export default function Pedidos() {
     ]
     adicionarPedido({
       clienteNome: form.clienteNome || 'Cliente não identificado',
-      clienteEndereco: form.clienteEndereco,
       clienteTelefone: form.clienteTelefone,
+      rua: form.clienteRua,
+      bairro: form.clienteBairro,
+      numero: form.clienteNumero,
+      referencia: form.clienteReferencia,
       itens: todosItens,
       pagamento: form.pagamento,
       observacoes: form.observacoes,
@@ -210,9 +229,13 @@ export default function Pedidos() {
                     {sugestoes.map(c => (
                       <button key={c.id} onClick={() => selecionarCliente(c)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 border-b border-gray-50 last:border-0">
-                        <span className="font-medium">{c.nome}</span>
-                        {c.endereco && <span className="text-gray-400 text-xs ml-2">{c.endereco}</span>}
-                        {c.tipo === 'mensalista' && <span className="ml-2 text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">Mensalista</span>}
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{c.nome}</span>
+                          {c.tipo === 'mensalista' && <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">Mensalista</span>}
+                        </div>
+                        {(c.rua || c.bairro) && (
+                          <span className="text-gray-400 text-xs">{formatarEndereco(c)}</span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -228,17 +251,41 @@ export default function Pedidos() {
                   placeholder="(32) 99999-9999"
                 />
               </div>
+              {/* Endereço — 4 campos */}
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
-                  <MapPin size={11} /> Endereço
+                <label className="block text-xs font-medium text-gray-500 mb-2 flex items-center gap-1">
+                  <MapPin size={11} /> Endereço de Entrega
                 </label>
-                <input
-                  type="text"
-                  value={form.clienteEndereco}
-                  onChange={e => setForm(prev => ({ ...prev, clienteEndereco: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-                  placeholder="Rua, número, bairro..."
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Rua</label>
+                    <input type="text" value={form.clienteRua}
+                      onChange={e => setForm(prev => ({ ...prev, clienteRua: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                      placeholder="Nome da rua" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Bairro</label>
+                    <input type="text" value={form.clienteBairro}
+                      onChange={e => setForm(prev => ({ ...prev, clienteBairro: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                      placeholder="Bairro" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Número</label>
+                    <input type="text" value={form.clienteNumero}
+                      onChange={e => setForm(prev => ({ ...prev, clienteNumero: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                      placeholder="Ex: 123" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Referência</label>
+                    <input type="text" value={form.clienteReferencia}
+                      onChange={e => setForm(prev => ({ ...prev, clienteReferencia: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                      placeholder="Próximo ao..." />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -388,21 +435,32 @@ export default function Pedidos() {
           </div>
 
           {/* Pagamento e total */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Forma de Pagamento</label>
-              <select value={form.pagamento} onChange={e => setForm(prev => ({ ...prev, pagamento: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
-                {FORMAS_PAGAMENTO.map(f => <option key={f}>{f}</option>)}
-              </select>
+          {/* Pagamento */}
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-2">Forma de Pagamento</label>
+            <div className="flex flex-wrap gap-2">
+              {FORMAS_PAGAMENTO_OPCOES.map(f => (
+                <button key={f.value} onClick={() => setForm(prev => ({ ...prev, pagamento: f.value }))}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold border-2 transition-all ${
+                    form.pagamento === f.value
+                      ? `${f.cor} border-current shadow-sm scale-105`
+                      : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                  }`}>
+                  {f.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Observações gerais</label>
-              <input type="text" value={form.observacoes}
-                onChange={e => setForm(prev => ({ ...prev, observacoes: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                placeholder="Observações adicionais..." />
-            </div>
+            {(form.pagamento === 'Pendente' || form.pagamento === 'Mensalista') && (
+              <p className="text-xs text-orange-600 mt-2">⚠ Pedido ficará em aberto até o pagamento ser confirmado</p>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Observações gerais</label>
+            <input type="text" value={form.observacoes}
+              onChange={e => setForm(prev => ({ ...prev, observacoes: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              placeholder="Observações adicionais..." />
           </div>
 
           {/* Resumo total */}
@@ -542,18 +600,29 @@ function PedidoCard({ pedido, onStatus, onQuitar, onRemover }) {
   const [formaPagtoQuitar, setFormaPagtoQuitar] = useState('Dinheiro')
   const statusInfo = STATUS_LABELS[pedido.status] || STATUS_LABELS.aberto
   const hora = new Date(pedido.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  const isPendente = pedido.pagamento === 'Pendente' || pedido.status === 'pendente'
+  const isPendente = ['Pendente', 'Mensalista'].includes(pedido.pagamento) || pedido.status === 'pendente'
+  const endFormatado = formatarEndereco(pedido)
+
+  const BADGE_PAGTO = FORMAS_PAGAMENTO_OPCOES.find(f => f.value === pedido.pagamento)
 
   return (
     <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${isPendente ? 'border-orange-200' : 'border-gray-100'}`}>
       <div className="flex items-center justify-between p-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-gray-800">{pedido.clienteNome}</p>
-            {isPendente && <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-medium">Pendente</span>}
+            {BADGE_PAGTO && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${BADGE_PAGTO.cor}`}>
+                {BADGE_PAGTO.label}
+              </span>
+            )}
           </div>
-          {pedido.clienteEndereco && <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><MapPin size={10} />{pedido.clienteEndereco}</p>}
-          <p className="text-xs text-gray-400 mt-0.5">{hora} · {pedido.pagamento}</p>
+          {endFormatado && (
+            <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+              <MapPin size={10} />{endFormatado}
+            </p>
+          )}
+          <p className="text-xs text-gray-400 mt-0.5">{hora}</p>
         </div>
         <div className="flex items-center gap-3">
           <span className="font-bold text-green-700 text-sm">R$ {Number(pedido.total).toFixed(2).replace('.', ',')}</span>

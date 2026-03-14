@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { UserPlus, Search, Pencil, Trash2, Phone, MapPin, X, Check, AlertCircle, Star } from 'lucide-react'
+import { formatarEndereco, ENDERECO_VAZIO } from '../utils/endereco'
 
-const VAZIO = { nome: '', telefone: '', endereco: '', observacoes: '', tipo: 'normal' }
+const VAZIO = { nome: '', telefone: '', ...ENDERECO_VAZIO, observacoes: '', tipo: 'normal' }
 
 export default function Clientes() {
   const { clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente } = useApp()
@@ -13,9 +14,12 @@ export default function Clientes() {
   const [mostrarForm, setMostrarForm] = useState(false)
 
   const filtrados = clientes.filter(c => {
-    const buscaOk = c.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    const endStr = formatarEndereco(c).toLowerCase()
+    const buscaOk =
+      c.nome.toLowerCase().includes(busca.toLowerCase()) ||
       (c.telefone || '').includes(busca) ||
-      (c.endereco || '').toLowerCase().includes(busca.toLowerCase())
+      endStr.includes(busca.toLowerCase()) ||
+      (c.bairro || '').toLowerCase().includes(busca.toLowerCase())
     const tipoOk = filtroTipo === 'todos' || c.tipo === filtroTipo
     return buscaOk && tipoOk
   })
@@ -39,9 +43,12 @@ export default function Clientes() {
 
   function iniciarEdicao(cliente) {
     setForm({
-      nome: cliente.nome,
+      nome: cliente.nome || '',
       telefone: cliente.telefone || '',
-      endereco: cliente.endereco || '',
+      rua: cliente.rua || '',
+      bairro: cliente.bairro || '',
+      numero: cliente.numero || '',
+      referencia: cliente.referencia || '',
       observacoes: cliente.observacoes || '',
       tipo: cliente.tipo || 'normal',
     })
@@ -68,7 +75,6 @@ export default function Clientes() {
         </button>
       </div>
 
-      {/* Alerta de débito mensalistas */}
       {totalDebitoPendente > 0 && (
         <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex items-center gap-3">
           <AlertCircle size={18} className="text-orange-600 shrink-0" />
@@ -82,7 +88,7 @@ export default function Clientes() {
       <div className="flex gap-2 mb-4">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Buscar por nome, telefone ou endereço..."
+          <input type="text" placeholder="Buscar por nome, telefone, rua ou bairro..."
             value={busca} onChange={e => setBusca(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white" />
         </div>
@@ -101,6 +107,8 @@ export default function Clientes() {
         <div className="bg-white border border-amber-200 rounded-xl p-5 mb-5 shadow-sm">
           <h2 className="font-semibold text-amber-900 mb-4">{editandoId ? 'Editar Cliente' : 'Novo Cliente'}</h2>
           <div className="grid grid-cols-2 gap-3">
+
+            {/* Nome e Telefone */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
               <input type="text" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })}
@@ -113,12 +121,40 @@ export default function Clientes() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                 placeholder="(32) 99999-9999" />
             </div>
+
+            {/* Endereço — 4 campos */}
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Endereço</label>
-              <input type="text" value={form.endereco} onChange={e => setForm({ ...form, endereco: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                placeholder="Rua, número, bairro" />
+              <label className="block text-xs font-medium text-gray-500 mb-2 flex items-center gap-1">
+                <MapPin size={11} /> Endereço
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Rua</label>
+                  <input type="text" value={form.rua} onChange={e => setForm({ ...form, rua: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="Nome da rua" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Bairro</label>
+                  <input type="text" value={form.bairro} onChange={e => setForm({ ...form, bairro: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="Bairro" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Número</label>
+                  <input type="text" value={form.numero} onChange={e => setForm({ ...form, numero: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="Ex: 123" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Referência</label>
+                  <input type="text" value={form.referencia} onChange={e => setForm({ ...form, referencia: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="Ex: Próximo ao mercado" />
+                </div>
+              </div>
             </div>
+
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de Cliente</label>
               <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}
@@ -134,6 +170,7 @@ export default function Clientes() {
                 placeholder="Preferências, alergias..." />
             </div>
           </div>
+
           <div className="flex gap-2 mt-4">
             <button onClick={salvar} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
               <Check size={15} /> Salvar
@@ -155,10 +192,11 @@ export default function Clientes() {
         <div className="grid gap-3">
           {filtrados.map(cliente => {
             const debito = debitoPendente(cliente.id)
+            const endFormatado = formatarEndereco(cliente)
             return (
-              <div key={cliente.id} className={`bg-white rounded-xl border p-4 shadow-sm flex items-center justify-between ${debito > 0 ? 'border-orange-200' : 'border-gray-100'}`}>
-                <div>
-                  <div className="flex items-center gap-2">
+              <div key={cliente.id} className={`bg-white rounded-xl border p-4 shadow-sm flex items-start justify-between ${debito > 0 ? 'border-orange-200' : 'border-gray-100'}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-gray-800">{cliente.nome}</p>
                     {cliente.tipo === 'mensalista' && (
                       <span className="flex items-center gap-0.5 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full font-medium">
@@ -170,18 +208,26 @@ export default function Clientes() {
                     {cliente.telefone && (
                       <span className="flex items-center gap-1 text-xs text-gray-500"><Phone size={11} /> {cliente.telefone}</span>
                     )}
-                    {cliente.endereco && (
-                      <span className="flex items-center gap-1 text-xs text-gray-500"><MapPin size={11} /> {cliente.endereco}</span>
-                    )}
                   </div>
+                  {endFormatado && (
+                    <div className="flex items-start gap-1 mt-1">
+                      <MapPin size={11} className="text-gray-400 mt-0.5 shrink-0" />
+                      <div className="text-xs text-gray-500 leading-relaxed">
+                        {cliente.rua && <span>{cliente.rua}</span>}
+                        {cliente.numero && <span>, nº {cliente.numero}</span>}
+                        {cliente.bairro && <span> — {cliente.bairro}</span>}
+                        {cliente.referencia && <span className="block text-gray-400 italic">{cliente.referencia}</span>}
+                      </div>
+                    </div>
+                  )}
                   {cliente.observacoes && <p className="text-xs text-amber-600 mt-1">{cliente.observacoes}</p>}
                   {debito > 0 && (
                     <p className="text-xs text-orange-700 font-semibold mt-1 flex items-center gap-1">
-                      <AlertCircle size={11} /> Débito pendente: R$ {debito.toFixed(2).replace('.', ',')}
+                      <AlertCircle size={11} /> Débito: R$ {debito.toFixed(2).replace('.', ',')}
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 shrink-0 ml-3">
                   <button onClick={() => iniciarEdicao(cliente)} className="p-2 text-gray-400 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors">
                     <Pencil size={15} />
                   </button>

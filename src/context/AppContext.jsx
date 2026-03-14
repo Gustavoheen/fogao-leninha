@@ -70,20 +70,22 @@ export function AppProvider({ children }) {
     setClientes(prev => prev.filter(c => c.id !== id))
   }
 
-  function autoRegistrarCliente(nome, endereco, telefone = '') {
+  function autoRegistrarCliente(nome, end = {}, telefone = '') {
     if (!nome.trim()) return null
     const jaExiste = clientes.find(c => c.nome.toLowerCase().trim() === nome.toLowerCase().trim())
     if (jaExiste) {
-      if (endereco && !jaExiste.endereco) editarCliente(jaExiste.id, { endereco })
+      // Atualiza endereço se cliente ainda não tinha
+      if (!jaExiste.rua && end.rua) editarCliente(jaExiste.id, end)
       return jaExiste
     }
-    return adicionarCliente({ nome: nome.trim(), endereco, telefone })
+    return adicionarCliente({ nome: nome.trim(), ...end, telefone })
   }
 
   // ── Pedidos ───────────────────────────────────────────────
   function adicionarPedido(dados) {
-    const cliente = autoRegistrarCliente(dados.clienteNome, dados.clienteEndereco, dados.clienteTelefone)
-    const statusInicial = dados.pagamento === 'Pendente' ? 'pendente' : 'aberto'
+    const enderecoObj = { rua: dados.rua, bairro: dados.bairro, numero: dados.numero, referencia: dados.referencia }
+    const cliente = autoRegistrarCliente(dados.clienteNome, enderecoObj, dados.clienteTelefone)
+    const statusInicial = ['Pendente', 'Mensalista'].includes(dados.pagamento) ? 'pendente' : 'aberto'
     const novo = {
       id: Date.now(), ...dados,
       clienteId: cliente?.id || null,
