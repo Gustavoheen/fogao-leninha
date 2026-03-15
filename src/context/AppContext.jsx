@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, supabaseConfigured } from '../lib/supabase'
 
 const AppContext = createContext()
 
@@ -13,60 +13,89 @@ const CARDAPIO_HOJE_PADRAO = {
   ],
 }
 
-export function AppProvider({ children }) {
-  const [clientes, setClientes] = useState([])
-  const [pedidos, setPedidos] = useState([])
-  const [cardapio, setCardapio] = useState([])
-  const [cardapioHoje, setCardapioHoje] = useState(CARDAPIO_HOJE_PADRAO)
-  const [despesas, setDespesas] = useState([])
-  const [estoque, setEstoque] = useState([])
-  const [fornecedores, setFornecedores] = useState([])
-  const [funcionarios, setFuncionarios] = useState([])
-  const [motoboys, setMotoboys] = useState([])
+// ── Helpers de localStorage ────────────────────────────────
+function lsGet(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback }
+  catch { return fallback }
+}
+function lsSet(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
+}
 
-  // ── Loading inicial ────────────────────────────────────────
+export function AppProvider({ children }) {
+  const [clientes, setClientes] = useState(() => lsGet('clientes', []))
+  const [pedidos, setPedidos] = useState(() => lsGet('pedidos', []))
+  const [cardapio, setCardapio] = useState(() => lsGet('cardapio', []))
+  const [cardapioHoje, setCardapioHoje] = useState(() => lsGet('cardapioHoje', CARDAPIO_HOJE_PADRAO))
+  const [despesas, setDespesas] = useState(() => lsGet('despesas', []))
+  const [estoque, setEstoque] = useState(() => lsGet('estoque', []))
+  const [fornecedores, setFornecedores] = useState(() => lsGet('fornecedores', []))
+  const [funcionarios, setFuncionarios] = useState(() => lsGet('funcionarios', []))
+  const [motoboys, setMotoboys] = useState(() => lsGet('motoboys', []))
+
+  // ── Persistir no localStorage sempre que o state mudar ────
+  useEffect(() => { lsSet('clientes', clientes) }, [clientes])
+  useEffect(() => { lsSet('pedidos', pedidos) }, [pedidos])
+  useEffect(() => { lsSet('cardapio', cardapio) }, [cardapio])
+  useEffect(() => { lsSet('cardapioHoje', cardapioHoje) }, [cardapioHoje])
+  useEffect(() => { lsSet('despesas', despesas) }, [despesas])
+  useEffect(() => { lsSet('estoque', estoque) }, [estoque])
+  useEffect(() => { lsSet('fornecedores', fornecedores) }, [fornecedores])
+  useEffect(() => { lsSet('funcionarios', funcionarios) }, [funcionarios])
+  useEffect(() => { lsSet('motoboys', motoboys) }, [motoboys])
+
+  // ── Loading do Supabase (quando configurado) ───────────────
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('clientes').select('*').order('"criadoEm"', { ascending: false })
       .then(({ data }) => { if (data) setClientes(data) })
   }, [])
 
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('cardapio').select('*').order('"criadoEm"', { ascending: false })
       .then(({ data }) => { if (data) setCardapio(data) })
   }, [])
 
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('cardapio_hoje').select('*').eq('id', 1).single()
       .then(({ data }) => { if (data) setCardapioHoje(data) })
   }, [])
 
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('despesas').select('*').order('"criadoEm"', { ascending: false })
       .then(({ data }) => { if (data) setDespesas(data) })
   }, [])
 
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('estoque').select('*').order('"criadoEm"', { ascending: false })
       .then(({ data }) => { if (data) setEstoque(data) })
   }, [])
 
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('fornecedores').select('*').order('"criadoEm"', { ascending: false })
       .then(({ data }) => { if (data) setFornecedores(data) })
   }, [])
 
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('funcionarios').select('*').order('"criadoEm"', { ascending: false })
       .then(({ data }) => { if (data) setFuncionarios(data) })
   }, [])
 
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('motoboys').select('nome')
       .then(({ data }) => { if (data) setMotoboys(data.map(m => m.nome)) })
   }, [])
 
   // ── Pedidos: loading + real-time ───────────────────────────
   useEffect(() => {
+    if (!supabaseConfigured) return
     supabase.from('pedidos').select('*').order('"criadoEm"', { ascending: false })
       .then(({ data }) => { if (data) setPedidos(data) })
 
