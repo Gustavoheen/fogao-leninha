@@ -13,7 +13,7 @@ const CARDAPIO_HOJE_PADRAO = {
   ],
 }
 
-// ── Helpers de localStorage ────────────────────────────────
+// ── Helpers de localStorage (cache local) ─────────────────
 function lsGet(key, fallback) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback }
   catch { return fallback }
@@ -22,31 +22,18 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
 
-// ── Merge seguro: Supabase nunca apaga dado local ──────────
-// Une os dados do Supabase com os locais. Itens do Supabase têm
-// prioridade para ATUALIZAÇÕES (status, edição), mas itens que
-// existem apenas no local são preservados. Nada é deletado pelo
-// banco — só o admin pode deletar clicando em "excluir".
-function mergeComLocal(localData, supaData) {
-  if (!supaData || supaData.length === 0) return localData
-  const supaMap = new Map(supaData.map(item => [String(item.id), item]))
-  const merged = [...supaData]
-  localData.forEach(localItem => {
-    if (!supaMap.has(String(localItem.id))) merged.push(localItem)
-  })
-  return merged
-}
-
 export function AppProvider({ children }) {
-  const [clientes, setClientes] = useState(() => lsGet('clientes', []))
-  const [pedidos, setPedidos] = useState(() => lsGet('pedidos', []))
-  const [cardapio, setCardapio] = useState(() => lsGet('cardapio', []))
+  // Quando Supabase está configurado, começa com estado vazio e aguarda o banco.
+  // Quando não está configurado (dev local), usa localStorage como fallback.
+  const [clientes, setClientes] = useState(() => supabaseConfigured ? [] : lsGet('clientes', []))
+  const [pedidos, setPedidos] = useState(() => supabaseConfigured ? [] : lsGet('pedidos', []))
+  const [cardapio, setCardapio] = useState(() => supabaseConfigured ? [] : lsGet('cardapio', []))
   const [cardapioHoje, setCardapioHoje] = useState(() => lsGet('cardapioHoje', CARDAPIO_HOJE_PADRAO))
-  const [despesas, setDespesas] = useState(() => lsGet('despesas', []))
-  const [estoque, setEstoque] = useState(() => lsGet('estoque', []))
-  const [fornecedores, setFornecedores] = useState(() => lsGet('fornecedores', []))
-  const [funcionarios, setFuncionarios] = useState(() => lsGet('funcionarios', []))
-  const [motoboys, setMotoboys] = useState(() => lsGet('motoboys', []))
+  const [despesas, setDespesas] = useState(() => supabaseConfigured ? [] : lsGet('despesas', []))
+  const [estoque, setEstoque] = useState(() => supabaseConfigured ? [] : lsGet('estoque', []))
+  const [fornecedores, setFornecedores] = useState(() => supabaseConfigured ? [] : lsGet('fornecedores', []))
+  const [funcionarios, setFuncionarios] = useState(() => supabaseConfigured ? [] : lsGet('funcionarios', []))
+  const [motoboys, setMotoboys] = useState(() => supabaseConfigured ? [] : lsGet('motoboys', []))
   const [config, setConfig] = useState(() => lsGet('fogao_config', {
     whatsapp: '',
     pixChave: '',
@@ -54,7 +41,7 @@ export function AppProvider({ children }) {
     pixBanco: '',
   }))
 
-  // ── Persistir no localStorage sempre que o state mudar ────
+  // ── Persistir no localStorage como cache ───────────────────
   useEffect(() => { lsSet('clientes', clientes) }, [clientes])
   useEffect(() => { lsSet('pedidos', pedidos) }, [pedidos])
   useEffect(() => { lsSet('cardapio', cardapio) }, [cardapio])
@@ -66,101 +53,66 @@ export function AppProvider({ children }) {
   useEffect(() => { lsSet('motoboys', motoboys) }, [motoboys])
   useEffect(() => { lsSet('fogao_config', config) }, [config])
 
-  // ── Loading do Supabase (quando configurado) ───────────────
-  // REGRA: Supabase nunca apaga dado local. Só faz merge/atualização.
-  // Dados são deletados APENAS quando o admin clica em "excluir" no painel.
+  // ── Loading do Supabase — banco é a única fonte de verdade ─
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('clientes').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => {
-        if (data) setClientes(prev => mergeComLocal(prev, data))
-      })
+      .then(({ data }) => { if (data) setClientes(data) })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('cardapio').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => {
-        if (data) setCardapio(prev => mergeComLocal(prev, data))
-      })
+      .then(({ data }) => { if (data) setCardapio(data) })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
-    // Só sobrescreve cardápio do dia se o Supabase tiver dado mais recente E
-    // o dado do Supabase não for um registro vazio (padrão do banco sem edição)
-    const localTs = lsGet('cardapioHoje', {}).atualizadoEm
     supabase.from('cardapio_hoje').select('*').eq('id', 1).single()
-      .then(({ data }) => {
-        if (!data) return
-        const supaTime = data.atualizadoEm ? new Date(data.atualizadoEm).getTime() : 0
-        const localTime = localTs ? new Date(localTs).getTime() : 0
-        // Só aplica se Supabase for mais recente E tiver conteúdo real
-        const temConteudo = (data.carnes?.some(c => c)) || data.precoP || data.precoG
-        if (supaTime > localTime && temConteudo) setCardapioHoje(data)
-      })
+      .then(({ data }) => { if (data) setCardapioHoje(data) })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('despesas').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => {
-        if (data) setDespesas(prev => mergeComLocal(prev, data))
-      })
+      .then(({ data }) => { if (data) setDespesas(data) })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('estoque').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => {
-        if (data) setEstoque(prev => mergeComLocal(prev, data))
-      })
+      .then(({ data }) => { if (data) setEstoque(data) })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('fornecedores').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => {
-        if (data) setFornecedores(prev => mergeComLocal(prev, data))
-      })
+      .then(({ data }) => { if (data) setFornecedores(data) })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('funcionarios').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => {
-        if (data) setFuncionarios(prev => mergeComLocal(prev, data))
-      })
+      .then(({ data }) => { if (data) setFuncionarios(data) })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('motoboys').select('nome')
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          // Merge: mantém motoboys locais não sincronizados
-          setMotoboys(prev => {
-            const supaNames = data.map(m => m.nome)
-            const soLocal = prev.filter(n => !supaNames.includes(n))
-            return [...supaNames, ...soLocal]
-          })
-        }
-      })
+      .then(({ data }) => { if (data) setMotoboys(data.map(m => m.nome)) })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('configuracoes').select('*').eq('id', 1).single()
-      .then(({ data }) => { if (data) setConfig(prev => ({ ...prev, ...data })) })
+      .then(({ data }) => { if (data) setConfig(data) })
   }, [])
 
   // ── Pedidos: loading + real-time ───────────────────────────
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('pedidos').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => {
-        if (data) setPedidos(prev => mergeComLocal(prev, data))
-      })
+      .then(({ data }) => { if (data) setPedidos(data) })
 
     const channel = supabase
       .channel('pedidos-changes')
@@ -183,7 +135,13 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setClientes(prev => [novo, ...prev])
-    supabase.from('clientes').insert(novo)
+    supabase.from('clientes').insert(novo).then(({ error }) => {
+      if (error) {
+        console.error('Erro ao salvar cliente:', error)
+        setClientes(prev => prev.filter(c => c.id !== novo.id))
+        alert('Erro ao salvar cliente. Tente novamente.')
+      }
+    })
     return novo
   }
 
@@ -227,7 +185,13 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setPedidos(prev => [novo, ...prev])
-    supabase.from('pedidos').insert(novo)
+    supabase.from('pedidos').insert(novo).then(({ error }) => {
+      if (error) {
+        console.error('Erro ao salvar pedido:', error)
+        setPedidos(prev => prev.filter(p => p.id !== novo.id))
+        alert('Erro ao salvar pedido. Tente novamente.')
+      }
+    })
     return novo
   }
 
@@ -285,7 +249,6 @@ export function AppProvider({ children }) {
     const ts = new Date().toISOString()
     setCardapioHoje(prev => {
       const opcoes = prev.opcoes.map(o => o.id === opcaoId ? { ...o, acompanhamentos: lista } : o)
-      // side effect fora do setState para evitar chamadas duplicadas em StrictMode
       setTimeout(() => {
         supabase.from('cardapio_hoje').update({ opcoes, atualizadoEm: ts }).eq('id', 1)
       }, 0)
@@ -319,7 +282,13 @@ export function AppProvider({ children }) {
   function adicionarItemCardapio(dados) {
     const novo = { id: Date.now(), ...dados, disponivel: true }
     setCardapio(prev => [novo, ...prev])
-    supabase.from('cardapio').insert(novo)
+    supabase.from('cardapio').insert(novo).then(({ error }) => {
+      if (error) {
+        console.error('Erro ao salvar item do cardápio:', error)
+        setCardapio(prev => prev.filter(i => i.id !== novo.id))
+        alert('Erro ao salvar item. Tente novamente.')
+      }
+    })
   }
 
   function toggleDisponibilidade(id) {
@@ -357,7 +326,13 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setDespesas(prev => [nova, ...prev])
-    supabase.from('despesas').insert(nova)
+    supabase.from('despesas').insert(nova).then(({ error }) => {
+      if (error) {
+        console.error('Erro ao salvar despesa:', error)
+        setDespesas(prev => prev.filter(d => d.id !== nova.id))
+        alert('Erro ao salvar despesa. Tente novamente.')
+      }
+    })
     return nova
   }
 
@@ -372,7 +347,6 @@ export function AppProvider({ children }) {
   }
 
   function pagarDespesa(id) {
-    const updates = { pago: true, pagadoEm: new Date().toISOString() }
     setDespesas(prev => prev.map(d => {
       if (d.id === id) {
         const novo = { ...d, pago: !d.pago, pagadoEm: new Date().toISOString() }
@@ -398,7 +372,13 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setEstoque(prev => [novo, ...prev])
-    supabase.from('estoque').insert(novo)
+    supabase.from('estoque').insert(novo).then(({ error }) => {
+      if (error) {
+        console.error('Erro ao salvar estoque:', error)
+        setEstoque(prev => prev.filter(e => e.id !== novo.id))
+        alert('Erro ao salvar item de estoque. Tente novamente.')
+      }
+    })
     return novo
   }
 
@@ -439,7 +419,13 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setFornecedores(prev => [novo, ...prev])
-    supabase.from('fornecedores').insert(novo)
+    supabase.from('fornecedores').insert(novo).then(({ error }) => {
+      if (error) {
+        console.error('Erro ao salvar fornecedor:', error)
+        setFornecedores(prev => prev.filter(f => f.id !== novo.id))
+        alert('Erro ao salvar fornecedor. Tente novamente.')
+      }
+    })
     return novo
   }
 
@@ -478,7 +464,13 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setFuncionarios(prev => [novo, ...prev])
-    supabase.from('funcionarios').insert(novo)
+    supabase.from('funcionarios').insert(novo).then(({ error }) => {
+      if (error) {
+        console.error('Erro ao salvar funcionário:', error)
+        setFuncionarios(prev => prev.filter(f => f.id !== novo.id))
+        alert('Erro ao salvar funcionário. Tente novamente.')
+      }
+    })
     return novo
   }
 
@@ -496,7 +488,13 @@ export function AppProvider({ children }) {
   function adicionarMotoboy(nome) {
     if (!nome.trim()) return
     setMotoboys(prev => prev.includes(nome.trim()) ? prev : [...prev, nome.trim()])
-    supabase.from('motoboys').insert({ nome: nome.trim() })
+    supabase.from('motoboys').insert({ nome: nome.trim() }).then(({ error }) => {
+      if (error) {
+        console.error('Erro ao salvar motoboy:', error)
+        setMotoboys(prev => prev.filter(m => m !== nome.trim()))
+        alert('Erro ao salvar motoboy. Tente novamente.')
+      }
+    })
   }
 
   function removerMotoboy(nome) {
