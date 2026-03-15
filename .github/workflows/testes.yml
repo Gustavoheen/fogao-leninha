@@ -1,0 +1,144 @@
+name: Testes Automáticos — Fogão a Lenha
+
+on:
+  schedule:
+    - cron: '0 11 * * 1,4'  # Segunda e quinta às 8h BRT (11h UTC)
+  workflow_dispatch:          # Permite rodar manualmente pelo GitHub
+
+jobs:
+  testar-banco:
+    name: Testar Supabase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Testar tabela clientes
+        run: |
+          ID=7777777777001
+          TS="2026-01-01T00:00:00Z"
+          R=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/clientes" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"id\":${ID},\"nome\":\"TESTE_AUTO\",\"telefone\":\"32999\",\"rua\":\"R\",\"bairro\":\"B\",\"numero\":\"1\",\"referencia\":\"\",\"observacoes\":\"\",\"tipo\":\"normal\",\"criadoEm\":\"${TS}\"}")
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/clientes?id=eq.${ID}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null
+          [ "$R" = "201" ] && echo "✅ clientes OK" || (echo "❌ clientes FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela pedidos
+        run: |
+          ID=7777777777002
+          TS="2026-01-01T00:00:00Z"
+          R=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/pedidos" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"id\":${ID},\"clienteNome\":\"TESTE_AUTO\",\"clienteTelefone\":\"32999\",\"status\":\"aberto\",\"statusPagamento\":\"pago\",\"total\":10,\"criadoEm\":\"${TS}\"}")
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/pedidos?id=eq.${ID}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null
+          [ "$R" = "201" ] && echo "✅ pedidos OK" || (echo "❌ pedidos FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela despesas
+        run: |
+          ID=7777777777003
+          R=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/despesas" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"id\":${ID},\"categoria\":\"TESTE\",\"descricao\":\"TESTE\",\"valor\":1,\"data\":\"2026-01-01\",\"pago\":false,\"criadoEm\":\"2026-01-01T00:00:00Z\"}")
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/despesas?id=eq.${ID}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null
+          [ "$R" = "201" ] && echo "✅ despesas OK" || (echo "❌ despesas FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela estoque
+        run: |
+          ID=7777777777004
+          R=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/estoque" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"id\":${ID},\"nome\":\"TESTE\",\"categoria\":\"TESTE\",\"quantidade\":1,\"unidade\":\"un\",\"qtdMinima\":0,\"preco\":0,\"criadoEm\":\"2026-01-01T00:00:00Z\"}")
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/estoque?id=eq.${ID}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null
+          [ "$R" = "201" ] && echo "✅ estoque OK" || (echo "❌ estoque FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela fornecedores
+        run: |
+          ID=7777777777005
+          R=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/fornecedores" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"id\":${ID},\"nome\":\"TESTE\",\"contato\":\"TESTE\",\"telefone\":\"32999\",\"produtos\":\"TESTE\",\"valorMensal\":0,\"diaPagamento\":1,\"pago\":false,\"observacoes\":\"\",\"criadoEm\":\"2026-01-01T00:00:00Z\"}")
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/fornecedores?id=eq.${ID}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null
+          [ "$R" = "201" ] && echo "✅ fornecedores OK" || (echo "❌ fornecedores FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela funcionarios
+        run: |
+          ID=7777777777006
+          R=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/funcionarios" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"id\":${ID},\"nome\":\"TESTE\",\"cargo\":\"TESTE\",\"salario\":0,\"dataAdmissao\":\"\",\"ativo\":true,\"observacoes\":\"\",\"criadoEm\":\"2026-01-01T00:00:00Z\"}")
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/funcionarios?id=eq.${ID}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null
+          [ "$R" = "201" ] && echo "✅ funcionarios OK" || (echo "❌ funcionarios FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela motoboys
+        run: |
+          R=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/motoboys" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"nome\":\"TESTE_AUTO_GH\"}")
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/motoboys?nome=eq.TESTE_AUTO_GH" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null
+          [ "$R" = "201" ] && echo "✅ motoboys OK" || (echo "❌ motoboys FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela cardapio
+        run: |
+          ID=7777777777007
+          R=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/cardapio" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"id\":${ID},\"nome\":\"TESTE\",\"preco\":1,\"disponivel\":true}")
+          curl -s -X DELETE "${{ secrets.SUPABASE_URL }}/rest/v1/cardapio?id=eq.${ID}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null
+          [ "$R" = "201" ] && echo "✅ cardapio OK" || (echo "❌ cardapio FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela cardapio_hoje
+        run: |
+          R=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.SUPABASE_URL }}/rest/v1/cardapio_hoje?id=eq.1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          [ "$R" = "200" ] && echo "✅ cardapio_hoje OK" || (echo "❌ cardapio_hoje FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar tabela configuracoes
+        run: |
+          R=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.SUPABASE_URL }}/rest/v1/configuracoes?id=eq.1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          [ "$R" = "200" ] && echo "✅ configuracoes OK" || (echo "❌ configuracoes FALHOU (HTTP $R)" && exit 1)
+
+      - name: Testar site no ar
+        run: |
+          R=$(curl -s -o /dev/null -w "%{http_code}" https://fogaoleninha2.vercel.app)
+          [ "$R" = "200" ] && echo "✅ site online OK" || (echo "❌ site fora do ar (HTTP $R)" && exit 1)
