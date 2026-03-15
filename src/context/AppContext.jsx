@@ -22,6 +22,21 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
 
+// ── Merge seguro: Supabase nunca apaga dado local ──────────
+// Une os dados do Supabase com os locais. Itens do Supabase têm
+// prioridade para ATUALIZAÇÕES (status, edição), mas itens que
+// existem apenas no local são preservados. Nada é deletado pelo
+// banco — só o admin pode deletar clicando em "excluir".
+function mergeComLocal(localData, supaData) {
+  if (!supaData || supaData.length === 0) return localData
+  const supaMap = new Map(supaData.map(item => [String(item.id), item]))
+  const merged = [...supaData]
+  localData.forEach(localItem => {
+    if (!supaMap.has(String(localItem.id))) merged.push(localItem)
+  })
+  return merged
+}
+
 export function AppProvider({ children }) {
   const [clientes, setClientes] = useState(() => lsGet('clientes', []))
   const [pedidos, setPedidos] = useState(() => lsGet('pedidos', []))
@@ -52,61 +67,85 @@ export function AppProvider({ children }) {
   useEffect(() => { lsSet('fogao_config', config) }, [config])
 
   // ── Loading do Supabase (quando configurado) ───────────────
+  // REGRA: Supabase nunca apaga dado local. Só faz merge/atualização.
+  // Dados são deletados APENAS quando o admin clica em "excluir" no painel.
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('clientes').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => { if (data) setClientes(data) })
+      .then(({ data }) => {
+        if (data) setClientes(prev => mergeComLocal(prev, data))
+      })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('cardapio').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => { if (data) setCardapio(data) })
+      .then(({ data }) => {
+        if (data) setCardapio(prev => mergeComLocal(prev, data))
+      })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
-    // Captura o timestamp local antes de qualquer atualização
+    // Só sobrescreve cardápio do dia se o Supabase tiver dado mais recente E
+    // o dado do Supabase não for um registro vazio (padrão do banco sem edição)
     const localTs = lsGet('cardapioHoje', {}).atualizadoEm
     supabase.from('cardapio_hoje').select('*').eq('id', 1).single()
       .then(({ data }) => {
         if (!data) return
-        // Só sobrescreve se o Supabase tiver dado mais recente que o localStorage
-        const supaTs = data.atualizadoEm
-        const supaTime = supaTs ? new Date(supaTs).getTime() : 0
+        const supaTime = data.atualizadoEm ? new Date(data.atualizadoEm).getTime() : 0
         const localTime = localTs ? new Date(localTs).getTime() : 0
-        if (supaTime >= localTime) setCardapioHoje(data)
+        // Só aplica se Supabase for mais recente E tiver conteúdo real
+        const temConteudo = (data.carnes?.some(c => c)) || data.precoP || data.precoG
+        if (supaTime > localTime && temConteudo) setCardapioHoje(data)
       })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('despesas').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => { if (data) setDespesas(data) })
+      .then(({ data }) => {
+        if (data) setDespesas(prev => mergeComLocal(prev, data))
+      })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('estoque').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => { if (data) setEstoque(data) })
+      .then(({ data }) => {
+        if (data) setEstoque(prev => mergeComLocal(prev, data))
+      })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('fornecedores').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => { if (data) setFornecedores(data) })
+      .then(({ data }) => {
+        if (data) setFornecedores(prev => mergeComLocal(prev, data))
+      })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('funcionarios').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => { if (data) setFuncionarios(data) })
+      .then(({ data }) => {
+        if (data) setFuncionarios(prev => mergeComLocal(prev, data))
+      })
   }, [])
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('motoboys').select('nome')
-      .then(({ data }) => { if (data) setMotoboys(data.map(m => m.nome)) })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          // Merge: mantém motoboys locais não sincronizados
+          setMotoboys(prev => {
+            const supaNames = data.map(m => m.nome)
+            const soLocal = prev.filter(n => !supaNames.includes(n))
+            return [...supaNames, ...soLocal]
+          })
+        }
+      })
   }, [])
 
   useEffect(() => {
@@ -119,7 +158,9 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.from('pedidos').select('*').order('"criadoEm"', { ascending: false })
-      .then(({ data }) => { if (data) setPedidos(data) })
+      .then(({ data }) => {
+        if (data) setPedidos(prev => mergeComLocal(prev, data))
+      })
 
     const channel = supabase
       .channel('pedidos-changes')
