@@ -1,18 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 const AppContext = createContext()
-
-const STORAGE_KEYS = {
-  clientes: 'fogao_clientes',
-  pedidos: 'fogao_pedidos',
-  cardapio: 'fogao_cardapio',
-  cardapioHoje: 'fogao_cardapio_hoje',
-  despesas: 'fogao_despesas',
-  estoque: 'fogao_estoque',
-  fornecedores: 'fogao_fornecedores',
-  funcionarios: 'fogao_funcionarios',
-  motoboys: 'fogao_motoboys',
-}
 
 const CARDAPIO_HOJE_PADRAO = {
   carnes: ['', '', ''],
@@ -24,62 +13,96 @@ const CARDAPIO_HOJE_PADRAO = {
   ],
 }
 
-function load(key, fallback) {
-  try {
-    const data = localStorage.getItem(key)
-    return data ? JSON.parse(data) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-function save(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
 export function AppProvider({ children }) {
-  const [clientes, setClientes] = useState(() => load(STORAGE_KEYS.clientes, []))
-  const [pedidos, setPedidos] = useState(() => load(STORAGE_KEYS.pedidos, []))
-  const [cardapio, setCardapio] = useState(() => load(STORAGE_KEYS.cardapio, []))
-  const [cardapioHoje, setCardapioHoje] = useState(() => {
-    const saved = load(STORAGE_KEYS.cardapioHoje, null)
-    if (saved && saved.opcoes?.[0]?.proteinas !== undefined) return CARDAPIO_HOJE_PADRAO
-    return saved || CARDAPIO_HOJE_PADRAO
-  })
-  const [despesas, setDespesas] = useState(() => load(STORAGE_KEYS.despesas, []))
-  const [estoque, setEstoque] = useState(() => load(STORAGE_KEYS.estoque, []))
-  const [fornecedores, setFornecedores] = useState(() => load(STORAGE_KEYS.fornecedores, []))
-  const [funcionarios, setFuncionarios] = useState(() => load(STORAGE_KEYS.funcionarios, []))
-  const [motoboys, setMotoboys] = useState(() => load(STORAGE_KEYS.motoboys, []))
+  const [clientes, setClientes] = useState([])
+  const [pedidos, setPedidos] = useState([])
+  const [cardapio, setCardapio] = useState([])
+  const [cardapioHoje, setCardapioHoje] = useState(CARDAPIO_HOJE_PADRAO)
+  const [despesas, setDespesas] = useState([])
+  const [estoque, setEstoque] = useState([])
+  const [fornecedores, setFornecedores] = useState([])
+  const [funcionarios, setFuncionarios] = useState([])
+  const [motoboys, setMotoboys] = useState([])
 
-  useEffect(() => save(STORAGE_KEYS.clientes, clientes), [clientes])
-  useEffect(() => save(STORAGE_KEYS.pedidos, pedidos), [pedidos])
-  useEffect(() => save(STORAGE_KEYS.cardapio, cardapio), [cardapio])
-  useEffect(() => save(STORAGE_KEYS.cardapioHoje, cardapioHoje), [cardapioHoje])
-  useEffect(() => save(STORAGE_KEYS.despesas, despesas), [despesas])
-  useEffect(() => save(STORAGE_KEYS.estoque, estoque), [estoque])
-  useEffect(() => save(STORAGE_KEYS.fornecedores, fornecedores), [fornecedores])
-  useEffect(() => save(STORAGE_KEYS.funcionarios, funcionarios), [funcionarios])
-  useEffect(() => save(STORAGE_KEYS.motoboys, motoboys), [motoboys])
+  // ── Loading inicial ────────────────────────────────────────
+  useEffect(() => {
+    supabase.from('clientes').select('*').order('"criadoEm"', { ascending: false })
+      .then(({ data }) => { if (data) setClientes(data) })
+  }, [])
+
+  useEffect(() => {
+    supabase.from('cardapio').select('*').order('"criadoEm"', { ascending: false })
+      .then(({ data }) => { if (data) setCardapio(data) })
+  }, [])
+
+  useEffect(() => {
+    supabase.from('cardapio_hoje').select('*').eq('id', 1).single()
+      .then(({ data }) => { if (data) setCardapioHoje(data) })
+  }, [])
+
+  useEffect(() => {
+    supabase.from('despesas').select('*').order('"criadoEm"', { ascending: false })
+      .then(({ data }) => { if (data) setDespesas(data) })
+  }, [])
+
+  useEffect(() => {
+    supabase.from('estoque').select('*').order('"criadoEm"', { ascending: false })
+      .then(({ data }) => { if (data) setEstoque(data) })
+  }, [])
+
+  useEffect(() => {
+    supabase.from('fornecedores').select('*').order('"criadoEm"', { ascending: false })
+      .then(({ data }) => { if (data) setFornecedores(data) })
+  }, [])
+
+  useEffect(() => {
+    supabase.from('funcionarios').select('*').order('"criadoEm"', { ascending: false })
+      .then(({ data }) => { if (data) setFuncionarios(data) })
+  }, [])
+
+  useEffect(() => {
+    supabase.from('motoboys').select('nome')
+      .then(({ data }) => { if (data) setMotoboys(data.map(m => m.nome)) })
+  }, [])
+
+  // ── Pedidos: loading + real-time ───────────────────────────
+  useEffect(() => {
+    supabase.from('pedidos').select('*').order('"criadoEm"', { ascending: false })
+      .then(({ data }) => { if (data) setPedidos(data) })
+
+    const channel = supabase
+      .channel('pedidos-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
+        if (payload.eventType === 'INSERT') setPedidos(prev => [payload.new, ...prev])
+        if (payload.eventType === 'UPDATE') setPedidos(prev => prev.map(p => p.id === payload.new.id ? payload.new : p))
+        if (payload.eventType === 'DELETE') setPedidos(prev => prev.filter(p => p.id !== payload.old.id))
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
+  }, [])
 
   // ── Clientes ──────────────────────────────────────────────
   function adicionarCliente(dados) {
     const novo = {
-      id: Date.now(), nome: '', telefone: '', endereco: '',
-      observacoes: '', tipo: 'normal',
+      id: Date.now(), nome: '', telefone: '', rua: '', bairro: '', numero: '',
+      referencia: '', observacoes: '', tipo: 'normal',
       ...dados,
       criadoEm: new Date().toISOString(),
     }
     setClientes(prev => [novo, ...prev])
+    supabase.from('clientes').insert(novo)
     return novo
   }
 
   function editarCliente(id, dados) {
     setClientes(prev => prev.map(c => c.id === id ? { ...c, ...dados } : c))
+    supabase.from('clientes').update(dados).eq('id', id)
   }
 
   function removerCliente(id) {
     setClientes(prev => prev.filter(c => c.id !== id))
+    supabase.from('clientes').delete().eq('id', id)
   }
 
   function autoRegistrarCliente(nome, end = {}, telefone = '') {
@@ -112,77 +135,102 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setPedidos(prev => [novo, ...prev])
+    supabase.from('pedidos').insert(novo)
     return novo
   }
 
   function atualizarStatusPedido(id, status) {
     setPedidos(prev => prev.map(p => p.id === id ? { ...p, status } : p))
+    supabase.from('pedidos').update({ status }).eq('id', id)
   }
 
   function atualizarPagamentoPedido(id, statusPagamento) {
     setPedidos(prev => prev.map(p => p.id === id ? { ...p, statusPagamento } : p))
+    supabase.from('pedidos').update({ statusPagamento }).eq('id', id)
   }
 
   function atribuirMotoboy(id, motoboy) {
     setPedidos(prev => prev.map(p => p.id === id ? { ...p, motoboy } : p))
+    supabase.from('pedidos').update({ motoboy }).eq('id', id)
   }
 
   function quitarPedido(id, formaPagamento) {
-    setPedidos(prev => prev.map(p =>
-      p.id === id ? { ...p, pagamento: formaPagamento, status: 'entregue', statusPagamento: 'pago', quitadoEm: new Date().toISOString() } : p
-    ))
+    const updates = {
+      pagamento: formaPagamento,
+      status: 'entregue',
+      statusPagamento: 'pago',
+      quitadoEm: new Date().toISOString(),
+    }
+    setPedidos(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
+    supabase.from('pedidos').update(updates).eq('id', id)
   }
 
   function removerPedido(id) {
     setPedidos(prev => prev.filter(p => p.id !== id))
+    supabase.from('pedidos').delete().eq('id', id)
   }
 
   function marcarComandaImpressa(id) {
-    setPedidos(prev => prev.map(p => p.id === id ? { ...p, comandaImpressaEm: new Date().toISOString() } : p))
+    const ts = new Date().toISOString()
+    setPedidos(prev => prev.map(p => p.id === id ? { ...p, comandaImpressaEm: ts } : p))
+    supabase.from('pedidos').update({ comandaImpressaEm: ts }).eq('id', id)
   }
 
   // ── Cardápio Hoje ─────────────────────────────────────────
   function salvarCarnes(carnes) {
     setCardapioHoje(prev => ({ ...prev, carnes }))
+    supabase.from('cardapio_hoje').upsert({ id: 1, carnes }).eq('id', 1)
   }
 
   function salvarPrecos(precoP, precoG) {
     setCardapioHoje(prev => ({ ...prev, precoP, precoG }))
+    supabase.from('cardapio_hoje').update({ precoP, precoG }).eq('id', 1)
   }
 
   function salvarAcompanhamentos(opcaoId, lista) {
-    setCardapioHoje(prev => ({
-      ...prev,
-      opcoes: prev.opcoes.map(o => o.id === opcaoId ? { ...o, acompanhamentos: lista } : o),
-    }))
+    setCardapioHoje(prev => {
+      const opcoes = prev.opcoes.map(o => o.id === opcaoId ? { ...o, acompanhamentos: lista } : o)
+      supabase.from('cardapio_hoje').update({ opcoes }).eq('id', 1)
+      return { ...prev, opcoes }
+    })
   }
 
   function salvarNomeOpcao(opcaoId, nome) {
-    setCardapioHoje(prev => ({
-      ...prev,
-      opcoes: prev.opcoes.map(o => o.id === opcaoId ? { ...o, nome } : o),
-    }))
+    setCardapioHoje(prev => {
+      const opcoes = prev.opcoes.map(o => o.id === opcaoId ? { ...o, nome } : o)
+      supabase.from('cardapio_hoje').update({ opcoes }).eq('id', 1)
+      return { ...prev, opcoes }
+    })
   }
 
   function toggleOpcaoAlmoco(id) {
-    setCardapioHoje(prev => ({
-      ...prev,
-      opcoes: prev.opcoes.map(o => o.id === id ? { ...o, disponivel: !o.disponivel } : o),
-    }))
+    setCardapioHoje(prev => {
+      const opcoes = prev.opcoes.map(o => o.id === id ? { ...o, disponivel: !o.disponivel } : o)
+      supabase.from('cardapio_hoje').update({ opcoes }).eq('id', 1)
+      return { ...prev, opcoes }
+    })
   }
 
   // ── Cardápio geral (refrigerantes / combos) ───────────────
   function adicionarItemCardapio(dados) {
     const novo = { id: Date.now(), ...dados, disponivel: true }
     setCardapio(prev => [novo, ...prev])
+    supabase.from('cardapio').insert(novo)
   }
 
   function toggleDisponibilidade(id) {
-    setCardapio(prev => prev.map(i => i.id === id ? { ...i, disponivel: !i.disponivel } : i))
+    setCardapio(prev => prev.map(i => {
+      if (i.id === id) {
+        supabase.from('cardapio').update({ disponivel: !i.disponivel }).eq('id', id)
+        return { ...i, disponivel: !i.disponivel }
+      }
+      return i
+    }))
   }
 
   function removerItemCardapio(id) {
     setCardapio(prev => prev.filter(i => i.id !== id))
+    supabase.from('cardapio').delete().eq('id', id)
   }
 
   // ── Financeiro ────────────────────────────────────────────
@@ -205,19 +253,30 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setDespesas(prev => [nova, ...prev])
+    supabase.from('despesas').insert(nova)
     return nova
   }
 
   function editarDespesa(id, dados) {
     setDespesas(prev => prev.map(d => d.id === id ? { ...d, ...dados } : d))
+    supabase.from('despesas').update(dados).eq('id', id)
   }
 
   function removerDespesa(id) {
     setDespesas(prev => prev.filter(d => d.id !== id))
+    supabase.from('despesas').delete().eq('id', id)
   }
 
   function pagarDespesa(id) {
-    setDespesas(prev => prev.map(d => d.id === id ? { ...d, pago: !d.pago, pagadoEm: new Date().toISOString() } : d))
+    const updates = { pago: true, pagadoEm: new Date().toISOString() }
+    setDespesas(prev => prev.map(d => {
+      if (d.id === id) {
+        const novo = { ...d, pago: !d.pago, pagadoEm: new Date().toISOString() }
+        supabase.from('despesas').update({ pago: novo.pago, pagadoEm: novo.pagadoEm }).eq('id', id)
+        return novo
+      }
+      return d
+    }))
   }
 
   // ── Estoque ───────────────────────────────────────────────
@@ -235,19 +294,29 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setEstoque(prev => [novo, ...prev])
+    supabase.from('estoque').insert(novo)
     return novo
   }
 
   function editarEstoque(id, dados) {
     setEstoque(prev => prev.map(e => e.id === id ? { ...e, ...dados } : e))
+    supabase.from('estoque').update(dados).eq('id', id)
   }
 
   function removerEstoque(id) {
     setEstoque(prev => prev.filter(e => e.id !== id))
+    supabase.from('estoque').delete().eq('id', id)
   }
 
   function atualizarQuantidade(id, delta) {
-    setEstoque(prev => prev.map(e => e.id === id ? { ...e, quantidade: Math.max(0, Number(e.quantidade) + delta) } : e))
+    setEstoque(prev => prev.map(e => {
+      if (e.id === id) {
+        const quantidade = Math.max(0, Number(e.quantidade) + delta)
+        supabase.from('estoque').update({ quantidade }).eq('id', id)
+        return { ...e, quantidade }
+      }
+      return e
+    }))
   }
 
   // ── Fornecedores ──────────────────────────────────────────
@@ -266,19 +335,29 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setFornecedores(prev => [novo, ...prev])
+    supabase.from('fornecedores').insert(novo)
     return novo
   }
 
   function editarFornecedor(id, dados) {
     setFornecedores(prev => prev.map(f => f.id === id ? { ...f, ...dados } : f))
+    supabase.from('fornecedores').update(dados).eq('id', id)
   }
 
   function removerFornecedor(id) {
     setFornecedores(prev => prev.filter(f => f.id !== id))
+    supabase.from('fornecedores').delete().eq('id', id)
   }
 
   function pagarFornecedor(id) {
-    setFornecedores(prev => prev.map(f => f.id === id ? { ...f, pago: !f.pago, pagadoEm: new Date().toISOString() } : f))
+    setFornecedores(prev => prev.map(f => {
+      if (f.id === id) {
+        const novo = { ...f, pago: !f.pago, pagadoEm: new Date().toISOString() }
+        supabase.from('fornecedores').update({ pago: novo.pago, pagadoEm: novo.pagadoEm }).eq('id', id)
+        return novo
+      }
+      return f
+    }))
   }
 
   // ── Funcionários ──────────────────────────────────────────
@@ -295,25 +374,30 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setFuncionarios(prev => [novo, ...prev])
+    supabase.from('funcionarios').insert(novo)
     return novo
   }
 
   function editarFuncionario(id, dados) {
     setFuncionarios(prev => prev.map(f => f.id === id ? { ...f, ...dados } : f))
+    supabase.from('funcionarios').update(dados).eq('id', id)
   }
 
   function removerFuncionario(id) {
     setFuncionarios(prev => prev.filter(f => f.id !== id))
+    supabase.from('funcionarios').delete().eq('id', id)
   }
 
   // ── Motoboys ──────────────────────────────────────────────
   function adicionarMotoboy(nome) {
     if (!nome.trim()) return
     setMotoboys(prev => prev.includes(nome.trim()) ? prev : [...prev, nome.trim()])
+    supabase.from('motoboys').insert({ nome: nome.trim() })
   }
 
   function removerMotoboy(nome) {
     setMotoboys(prev => prev.filter(m => m !== nome))
+    supabase.from('motoboys').delete().eq('nome', nome)
   }
 
   return (
