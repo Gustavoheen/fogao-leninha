@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import {
   ShoppingCart, Plus, Minus, Trash2, ChevronLeft,
-  Copy, Check, X, ChevronRight, UtensilsCrossed, User,
+  Copy, Check, X, ChevronRight, UtensilsCrossed, User, Settings,
 } from 'lucide-react'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -298,6 +299,7 @@ function CarrinhoItem({ item, onRemover, numero }) {
 
 // ── Componente principal ────────────────────────────────────────────────────────
 export default function PedidoOnline() {
+  const navigate = useNavigate()
   const [cardapioHoje, setCardapioHoje] = useState(null)
   const [clientes, setClientes] = useState([])
   const [config, setConfig] = useState({ pixChave: '', pixNome: '', restauranteWhatsapp: '', lojaAberta: true })
@@ -451,10 +453,17 @@ export default function PedidoOnline() {
       {/* Logo */}
       <div className="flex items-center gap-4">
         <img src="/logo-vertical.png" alt="Fogão a Lenha da Leninha" className="h-16 w-auto" />
-        <div>
+        <div className="flex-1">
           <h1 className="text-white font-black text-xl leading-tight">Fogão a Lenha da Leninha</h1>
           <p className="text-orange-400 text-sm">Peça agora e retire na hora!</p>
         </div>
+        <button
+          onClick={() => navigate('/login')}
+          title="Painel admin"
+          className="text-stone-600 hover:text-stone-400 transition-colors p-1"
+        >
+          <Settings size={18} />
+        </button>
       </div>
 
       {lojaFechada && (
@@ -642,10 +651,17 @@ export default function PedidoOnline() {
       {/* Header */}
       <div className="bg-stone-900 border-b border-stone-800 px-4 py-5 flex items-center gap-4">
         <img src="/logo-vertical.png" alt="Logo" className="h-12 w-auto" />
-        <div>
+        <div className="flex-1">
           <h1 className="text-white font-black text-base leading-tight">Fogão a Lenha da Leninha</h1>
           <p className="text-orange-400 text-xs">Monte seu pedido</p>
         </div>
+        <button
+          onClick={() => navigate('/login')}
+          title="Painel admin"
+          className="text-stone-700 hover:text-stone-500 transition-colors p-1"
+        >
+          <Settings size={16} />
+        </button>
       </div>
 
       <div className="px-4 py-5 space-y-5">
