@@ -3,6 +3,10 @@
 /* ── Reset ────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Esconde scrollbar nas abas mobile */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ── Tokens de design ─────────────────────────────────────────────────────── */
 :root {
   --brand-red:      #C8221A;

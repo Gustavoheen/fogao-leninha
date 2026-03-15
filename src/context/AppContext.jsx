@@ -32,6 +32,12 @@ export function AppProvider({ children }) {
   const [fornecedores, setFornecedores] = useState(() => lsGet('fornecedores', []))
   const [funcionarios, setFuncionarios] = useState(() => lsGet('funcionarios', []))
   const [motoboys, setMotoboys] = useState(() => lsGet('motoboys', []))
+  const [config, setConfig] = useState(() => lsGet('fogao_config', {
+    whatsapp: '',
+    pixChave: '',
+    pixNome: 'Fogão a Lenha da Leninha',
+    pixBanco: '',
+  }))
 
   // ── Persistir no localStorage sempre que o state mudar ────
   useEffect(() => { lsSet('clientes', clientes) }, [clientes])
@@ -43,6 +49,7 @@ export function AppProvider({ children }) {
   useEffect(() => { lsSet('fornecedores', fornecedores) }, [fornecedores])
   useEffect(() => { lsSet('funcionarios', funcionarios) }, [funcionarios])
   useEffect(() => { lsSet('motoboys', motoboys) }, [motoboys])
+  useEffect(() => { lsSet('fogao_config', config) }, [config])
 
   // ── Loading do Supabase (quando configurado) ───────────────
   useEffect(() => {
@@ -59,8 +66,17 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (!supabaseConfigured) return
+    // Captura o timestamp local antes de qualquer atualização
+    const localTs = lsGet('cardapioHoje', {}).atualizadoEm
     supabase.from('cardapio_hoje').select('*').eq('id', 1).single()
-      .then(({ data }) => { if (data) setCardapioHoje(data) })
+      .then(({ data }) => {
+        if (!data) return
+        // Só sobrescreve se o Supabase tiver dado mais recente que o localStorage
+        const supaTs = data.atualizadoEm
+        const supaTime = supaTs ? new Date(supaTs).getTime() : 0
+        const localTime = localTs ? new Date(localTs).getTime() : 0
+        if (supaTime >= localTime) setCardapioHoje(data)
+      })
   }, [])
 
   useEffect(() => {
@@ -91,6 +107,12 @@ export function AppProvider({ children }) {
     if (!supabaseConfigured) return
     supabase.from('motoboys').select('nome')
       .then(({ data }) => { if (data) setMotoboys(data.map(m => m.nome)) })
+  }, [])
+
+  useEffect(() => {
+    if (!supabaseConfigured) return
+    supabase.from('configuracoes').select('*').eq('id', 1).single()
+      .then(({ data }) => { if (data) setConfig(prev => ({ ...prev, ...data })) })
   }, [])
 
   // ── Pedidos: loading + real-time ───────────────────────────
@@ -207,36 +229,48 @@ export function AppProvider({ children }) {
 
   // ── Cardápio Hoje ─────────────────────────────────────────
   function salvarCarnes(carnes) {
-    setCardapioHoje(prev => ({ ...prev, carnes }))
-    supabase.from('cardapio_hoje').upsert({ id: 1, carnes }).eq('id', 1)
+    const ts = new Date().toISOString()
+    setCardapioHoje(prev => ({ ...prev, carnes, atualizadoEm: ts }))
+    supabase.from('cardapio_hoje').upsert({ id: 1, carnes, atualizadoEm: ts })
   }
 
   function salvarPrecos(precoP, precoG) {
-    setCardapioHoje(prev => ({ ...prev, precoP, precoG }))
-    supabase.from('cardapio_hoje').update({ precoP, precoG }).eq('id', 1)
+    const ts = new Date().toISOString()
+    setCardapioHoje(prev => ({ ...prev, precoP, precoG, atualizadoEm: ts }))
+    supabase.from('cardapio_hoje').update({ precoP, precoG, atualizadoEm: ts }).eq('id', 1)
   }
 
   function salvarAcompanhamentos(opcaoId, lista) {
+    const ts = new Date().toISOString()
     setCardapioHoje(prev => {
       const opcoes = prev.opcoes.map(o => o.id === opcaoId ? { ...o, acompanhamentos: lista } : o)
-      supabase.from('cardapio_hoje').update({ opcoes }).eq('id', 1)
-      return { ...prev, opcoes }
+      // side effect fora do setState para evitar chamadas duplicadas em StrictMode
+      setTimeout(() => {
+        supabase.from('cardapio_hoje').update({ opcoes, atualizadoEm: ts }).eq('id', 1)
+      }, 0)
+      return { ...prev, opcoes, atualizadoEm: ts }
     })
   }
 
   function salvarNomeOpcao(opcaoId, nome) {
+    const ts = new Date().toISOString()
     setCardapioHoje(prev => {
       const opcoes = prev.opcoes.map(o => o.id === opcaoId ? { ...o, nome } : o)
-      supabase.from('cardapio_hoje').update({ opcoes }).eq('id', 1)
-      return { ...prev, opcoes }
+      setTimeout(() => {
+        supabase.from('cardapio_hoje').update({ opcoes, atualizadoEm: ts }).eq('id', 1)
+      }, 0)
+      return { ...prev, opcoes, atualizadoEm: ts }
     })
   }
 
   function toggleOpcaoAlmoco(id) {
+    const ts = new Date().toISOString()
     setCardapioHoje(prev => {
       const opcoes = prev.opcoes.map(o => o.id === id ? { ...o, disponivel: !o.disponivel } : o)
-      supabase.from('cardapio_hoje').update({ opcoes }).eq('id', 1)
-      return { ...prev, opcoes }
+      setTimeout(() => {
+        supabase.from('cardapio_hoje').update({ opcoes, atualizadoEm: ts }).eq('id', 1)
+      }, 0)
+      return { ...prev, opcoes, atualizadoEm: ts }
     })
   }
 
@@ -429,6 +463,12 @@ export function AppProvider({ children }) {
     supabase.from('motoboys').delete().eq('nome', nome)
   }
 
+  function salvarConfig(dados) {
+    const ts = new Date().toISOString()
+    setConfig(prev => ({ ...prev, ...dados }))
+    supabase.from('configuracoes').upsert({ id: 1, ...dados, atualizadoEm: ts })
+  }
+
   return (
     <AppContext.Provider value={{
       // Clientes
@@ -448,6 +488,8 @@ export function AppProvider({ children }) {
       funcionarios, adicionarFuncionario, editarFuncionario, removerFuncionario,
       // Motoboys
       motoboys, adicionarMotoboy, removerMotoboy,
+      // Config
+      config, salvarConfig,
     }}>
       {children}
     </AppContext.Provider>

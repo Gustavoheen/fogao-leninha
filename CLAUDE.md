@@ -54,9 +54,45 @@ src/
 - [x] Funcionários: lista + salários + seção motoboys
 - [x] Dashboard: KPIs do dia, período selecionável, fechamento mensal
 
-## Próximas melhorias planejadas
+## Rotas públicas (sem login)
+- `/` → PedidoOnline.jsx — cardápio do dia para clientes pedirem online
+- `/equipe` → PedidoEquipe.jsx — coleta rápida de pedidos pela equipe via celular (protegida por PIN)
+
+## Tabela configuracoes (Supabase)
+```sql
+-- Rodar no SQL Editor do Supabase se ainda não existir:
+CREATE TABLE IF NOT EXISTS configuracoes (
+  id int PRIMARY KEY DEFAULT 1,
+  "pixChave" text DEFAULT '',
+  "pixNome" text DEFAULT 'Fogão a Lenha da Leninha',
+  "pixBanco" text DEFAULT '',
+  "restauranteWhatsapp" text DEFAULT '',
+  "lojaAberta" boolean DEFAULT true,
+  "equipePIN" text DEFAULT '1234',
+  "atualizadoEm" timestamptz DEFAULT now()
+);
+INSERT INTO configuracoes (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+```
+- Config salva pelo painel admin via `salvarConfig()` no AppContext
+- Lida diretamente pelas páginas públicas sem AppContext
+
+## PedidoOnline.jsx — Página pública de pedidos
+- Desktop: 2 colunas (catálogo + carrinho/checkout lado a lado)
+- Mobile: steps (cardápio → carrinho → checkout → confirmado)
+- Lê cardapio_hoje, clientes e configuracoes direto do Supabase
+- Detecção automática de mensalista pelo nome
+- Pagamento: Pix (mostra chave + botão copiar) ou Dinheiro
+- Confirmação com número sequencial do pedido
+
+## PedidoEquipe.jsx — Área da equipe (/equipe)
+- Protegida por PIN (padrão: 1234, configurável em configuracoes.equipePIN)
+- Fluxo: nome do cliente → opção+tamanho → remover acompanhamentos → revisar → confirmar
+- Autocomplete de clientes cadastrados, detecção de mensalista
+- Inserção direta no Supabase com origem: 'equipe'
+
+## Pendente
+- WhatsApp automático ao confirmar pedido (aguarda API — Z-API ou Evolution API)
 - Impressão de comanda
-- Conversão para Electron (.exe)
 - Relatórios por período com exportação
 
 ## GitHub

@@ -27,10 +27,14 @@ export default function Cardapio() {
     cardapioHoje,
     salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco,
     cardapio, adicionarItemCardapio, toggleDisponibilidade, removerItemCardapio,
+    config, salvarConfig,
   } = useApp()
 
   const refrigerantes = cardapio.filter(i => i.categoria === 'Refrigerante')
   const combos = cardapio.filter(i => i.categoria === 'Combo')
+
+  const [configLocal, setConfigLocal] = useState({ whatsapp: config?.whatsapp || '', pixChave: config?.pixChave || '', pixNome: config?.pixNome || 'Fogão a Lenha da Leninha' })
+  const [configSalvo, setConfigSalvo] = useState(false)
 
   const [formRefrig, setFormRefrig] = useState(FORM_REFRIG_VAZIO)
   const [addRefrig, setAddRefrig] = useState(false)
@@ -59,6 +63,12 @@ export default function Cardapio() {
         <p style={{ fontSize: 13, color: '#9D8878', margin: '2px 0 0' }}>
           Configure as opções, acompanhamentos, carnes e bebidas
         </p>
+        {cardapioHoje?.atualizadoEm && (
+          <p style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16A34A', display: 'inline-block' }} />
+            Configurado: {new Date(cardapioHoje.atualizadoEm).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })} às {new Date(cardapioHoje.atualizadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        )}
       </div>
 
       {/* Carnes e Tamanhos */}
@@ -238,6 +248,48 @@ export default function Cardapio() {
               ))}
             </div>
         }
+      </section>
+
+      {/* Config Pedido Online */}
+      <section style={{
+        background: '#fff', border: '1.5px solid #E6DDD5',
+        borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', padding: 20,
+      }}>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, color: '#1D4ED8', marginTop: 0, marginBottom: 16 }}>
+          ⚙️ Configurações do Pedido Online
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>WhatsApp do restaurante (com DDI, ex: 5532999999999)</label>
+            <input type="text" value={configLocal.whatsapp}
+              onChange={e => setConfigLocal(p => ({ ...p, whatsapp: e.target.value }))}
+              style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
+              placeholder="5532999999999" />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Chave PIX</label>
+            <input type="text" value={configLocal.pixChave}
+              onChange={e => setConfigLocal(p => ({ ...p, pixChave: e.target.value }))}
+              style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
+              placeholder="CPF, email, telefone ou chave aleatória" />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Nome do titular PIX</label>
+            <input type="text" value={configLocal.pixNome}
+              onChange={e => setConfigLocal(p => ({ ...p, pixNome: e.target.value }))}
+              style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
+              placeholder="Nome completo ou do restaurante" />
+          </div>
+        </div>
+        <button onClick={() => { salvarConfig(configLocal); setConfigSalvo(true); setTimeout(() => setConfigSalvo(false), 2000) }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: configSalvo ? '#16A34A' : '#1D4ED8', color: '#fff',
+            padding: '8px 18px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+            border: 'none', cursor: 'pointer', transition: 'background 0.2s',
+          }}>
+          {configSalvo ? '✓ Salvo!' : 'Salvar Configurações'}
+        </button>
       </section>
     </div>
   )

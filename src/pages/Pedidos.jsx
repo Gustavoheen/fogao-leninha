@@ -131,6 +131,7 @@ const FORM_VAZIO = {
   clienteBairro: '',
   clienteNumero: '',
   clienteReferencia: '',
+  tipoEntrega: 'entrega', // 'entrega' | 'retirada'
   itensMarmitex: [],
   itensRefrigerante: [],
   itensCombo: [],
@@ -295,10 +296,12 @@ export default function Pedidos() {
     adicionarPedido({
       clienteNome: form.clienteNome || 'Cliente não identificado',
       clienteTelefone: form.clienteTelefone,
-      rua: form.clienteRua,
-      bairro: form.clienteBairro,
-      numero: form.clienteNumero,
-      referencia: form.clienteReferencia,
+      rua: form.tipoEntrega === 'retirada' ? '' : form.clienteRua,
+      bairro: form.tipoEntrega === 'retirada' ? '' : form.clienteBairro,
+      numero: form.tipoEntrega === 'retirada' ? '' : form.clienteNumero,
+      referencia: form.tipoEntrega === 'retirada' ? '' : form.clienteReferencia,
+      tipoEntrega: form.tipoEntrega,
+      motoboy: form.tipoEntrega === 'retirada' ? 'Retirar no local' : '',
       itens: todosItens,
       pagamento: form.pagamento,
       observacoes: form.observacoes,
@@ -394,6 +397,37 @@ export default function Pedidos() {
             Novo Pedido
           </h2>
 
+          {/* ── Seção: Tipo de entrega ── */}
+          <div style={{
+            background: '#EFF6FF', border: '1.5px solid #BFDBFE',
+            borderRadius: 10, padding: 12, marginBottom: 12,
+          }}>
+            <p style={{ ...SECTION_LABEL, color: '#1D4ED8', marginBottom: 10 }}>
+              <Bike size={13} /> Tipo de entrega
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[
+                { value: 'entrega', label: '🛵  Entrega' },
+                { value: 'retirada', label: '🏠  Retirar no local' },
+              ].map(op => (
+                <button
+                  key={op.value}
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, tipoEntrega: op.value }))}
+                  style={{
+                    flex: 1, padding: '9px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                    border: form.tipoEntrega === op.value ? '2px solid #1D4ED8' : '1.5px solid #CFC4BB',
+                    background: form.tipoEntrega === op.value ? '#DBEAFE' : '#fff',
+                    color: form.tipoEntrega === op.value ? '#1D4ED8' : '#6B5A4E',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                >
+                  {op.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* ── Seção: Dados do Cliente ── */}
           <div style={{
             background: '#F0FDF4', border: '1.5px solid #BBF7D0',
@@ -452,7 +486,7 @@ export default function Pedidos() {
                   placeholder="(32) 99999-9999"
                 />
               </div>
-              <div style={{ gridColumn: '1 / -1' }}>
+              {form.tipoEntrega !== 'retirada' && <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 8 }}>
                   <MapPin size={11} /> Endereço de Entrega
                 </label>
@@ -482,7 +516,7 @@ export default function Pedidos() {
                       style={INPUT_BASE} placeholder="Próximo ao..." />
                   </div>
                 </div>
-              </div>
+              </div>}
             </div>
           </div>
 
@@ -1076,7 +1110,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
 // ── PedidoCard ────────────────────────────────────────────────────────────────
 function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, onQuitar, onRemover, motoboys, autoImprimir, onImpresso }) {
   const [aberto, setAberto] = useState(false)
-  const [mostrarEntrega, setMostrarEntrega] = useState(false)
+  const [mostrarMotoboy, setMostrarMotoboy] = useState(false)
   const [motoboyInput, setMotoboyInput] = useState('')
 
   const statusInfo = STATUS_LABELS[pedido.status] || STATUS_LABELS.aberto
@@ -1099,12 +1133,12 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
     mensalista: { background: '#EA580C', color: '#fff' },
   }
 
-  function confirmarEntrega() {
-    if (motoboyInput.trim()) {
-      onAtribuirMotoboy(pedido.id, motoboyInput.trim())
+  function confirmarMotoboy() {
+    if (motoboyInput) {
+      onAtribuirMotoboy(pedido.id, motoboyInput)
     }
-    onStatus(pedido.id, 'entregue')
-    setMostrarEntrega(false)
+    setMostrarMotoboy(false)
+    setMotoboyInput('')
   }
 
   return (
@@ -1251,56 +1285,93 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
               <Printer size={12} /> {pedido.comandaImpressaEm ? 'Reimprimir' : 'Imprimir Comanda'}
             </button>
 
+            {/* Motoboy — botão separado */}
             {pedido.status !== 'entregue' && (
               <>
-                {!mostrarEntrega ? (
-                  <button onClick={() => setMostrarEntrega(true)}
+                <button onClick={() => setMostrarMotoboy(v => !v)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    background: pedido.motoboy ? '#EEF2FF' : '#F8FAFC',
+                    color: pedido.motoboy ? '#4338CA' : '#475569',
+                    border: pedido.motoboy ? '1.5px solid #C7D2FE' : '1.5px solid #CBD5E1',
+                    cursor: 'pointer',
+                  }}>
+                  <Bike size={12} />
+                  {pedido.motoboy ? pedido.motoboy : 'Motoboy / Retirada'}
+                </button>
+
+                <button onClick={() => onStatus(pedido.id, 'entregue')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    background: '#F0FDF4', color: '#16A34A',
+                    border: '1.5px solid #BBF7D0', cursor: 'pointer',
+                  }}>
+                  <Check size={12} /> Marcar Entregue
+                </button>
+              </>
+            )}
+
+            {/* Painel de seleção de motoboy */}
+            {mostrarMotoboy && pedido.status !== 'entregue' && (
+              <div style={{
+                width: '100%', marginTop: 2,
+                background: '#F8FAFC', border: '1.5px solid #CBD5E1',
+                borderRadius: 8, padding: 12,
+              }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Bike size={12} /> Selecionar motoboy ou retirada
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                  <button
+                    onClick={() => { onAtribuirMotoboy(pedido.id, 'Retirar no local'); setMostrarMotoboy(false) }}
                     style={{
                       padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                      background: '#F8FAFC', color: '#475569',
-                      border: '1.5px solid #CBD5E1', cursor: 'pointer',
+                      background: pedido.motoboy === 'Retirar no local' ? '#DBEAFE' : '#fff',
+                      color: pedido.motoboy === 'Retirar no local' ? '#1D4ED8' : '#475569',
+                      border: pedido.motoboy === 'Retirar no local' ? '1.5px solid #93C5FD' : '1.5px solid #CBD5E1',
+                      cursor: 'pointer',
                     }}>
-                    Marcar como Entregue
+                    🏠 Retirar no local
                   </button>
-                ) : (
-                  <div style={{
-                    width: '100%', marginTop: 4,
-                    background: '#F8FAFC', border: '1.5px solid #CBD5E1',
-                    borderRadius: 8, padding: 12,
-                  }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Bike size={12} /> Atribuir Motoboy
-                    </p>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {motoboys && motoboys.length > 0 ? (
-                        <select value={motoboyInput} onChange={e => setMotoboyInput(e.target.value)}
-                          style={{ ...INPUT_BASE, flex: 1, fontSize: 12, padding: '6px 10px' }}>
-                          <option value="">Selecionar motoboy...</option>
-                          {motoboys.map(m => <option key={m} value={m}>{m}</option>)}
-                        </select>
-                      ) : (
-                        <input type="text" value={motoboyInput} onChange={e => setMotoboyInput(e.target.value)}
-                          style={{ ...INPUT_BASE, flex: 1, fontSize: 12, padding: '6px 10px' }}
-                          placeholder="Nome do motoboy (opcional)" />
-                      )}
-                      <button onClick={confirmarEntrega}
-                        style={{
-                          background: '#16A34A', color: '#fff',
-                          padding: '6px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-                          border: 'none', cursor: 'pointer',
-                          boxShadow: '0 1px 4px rgba(22,163,74,0.30)',
-                          display: 'flex', alignItems: 'center', gap: 4,
-                        }}>
-                        <Check size={12} /> Confirmar Entrega
-                      </button>
-                      <button onClick={() => setMostrarEntrega(false)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', padding: '0 4px' }}>
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
+                  {(motoboys || []).map(m => (
+                    <button key={m}
+                      onClick={() => { onAtribuirMotoboy(pedido.id, m); setMostrarMotoboy(false) }}
+                      style={{
+                        padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                        background: pedido.motoboy === m ? '#EEF2FF' : '#fff',
+                        color: pedido.motoboy === m ? '#4338CA' : '#475569',
+                        border: pedido.motoboy === m ? '1.5px solid #C7D2FE' : '1.5px solid #CBD5E1',
+                        cursor: 'pointer',
+                      }}>
+                      🛵 {m}
+                    </button>
+                  ))}
+                </div>
+                {(!motoboys || motoboys.length === 0) && (
+                  <p style={{ fontSize: 11, color: '#9D8878', marginBottom: 8 }}>
+                    Nenhum motoboy cadastrado. Cadastre em Funcionários.
+                  </p>
                 )}
-              </>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input type="text" value={motoboyInput} onChange={e => setMotoboyInput(e.target.value)}
+                    style={{ ...INPUT_BASE, flex: 1, fontSize: 12, padding: '6px 10px' }}
+                    placeholder="Ou digite o nome do motoboy..." />
+                  <button onClick={confirmarMotoboy}
+                    style={{
+                      background: '#16A34A', color: '#fff',
+                      padding: '6px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                      border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                    }}>
+                    <Check size={12} /> OK
+                  </button>
+                  <button onClick={() => setMostrarMotoboy(false)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878' }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
             )}
 
             <button onClick={() => onRemover(pedido.id)}

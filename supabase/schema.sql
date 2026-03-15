@@ -120,8 +120,20 @@ CREATE TABLE IF NOT EXISTS motoboys (
   nome text PRIMARY KEY
 );
 
+-- Configurações do restaurante (documento único, id=1)
+CREATE TABLE IF NOT EXISTS configuracoes (
+  id int PRIMARY KEY DEFAULT 1,
+  "pixChave" text DEFAULT '',
+  "pixNome" text DEFAULT 'Fogão a Lenha da Leninha',
+  "pixBanco" text DEFAULT '',
+  "restauranteWhatsapp" text DEFAULT '',
+  "lojaAberta" boolean DEFAULT true,
+  "equipePIN" text DEFAULT '1234',
+  "atualizadoEm" timestamptz DEFAULT now()
+);
+
 -- ============================================================
--- Registro padrão do cardápio do dia
+-- Registros padrão
 -- ============================================================
 INSERT INTO cardapio_hoje (id, carnes, opcoes)
 VALUES (
@@ -130,3 +142,5 @@ VALUES (
   '[{"id":1,"nome":"Opção 1","acompanhamentos":[],"disponivel":true},{"id":2,"nome":"Opção 2","acompanhamentos":[],"disponivel":true}]'
 )
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO configuracoes (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
