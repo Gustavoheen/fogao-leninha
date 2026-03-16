@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { BarChart3, TrendingUp, ShoppingBag, AlertCircle, Banknote, Smartphone, CreditCard, CircleDollarSign, Bike, HandCoins, ChevronDown, ChevronUp } from 'lucide-react'
+import { BarChart3, TrendingUp, ShoppingBag, AlertCircle, Banknote, Smartphone, CreditCard, CircleDollarSign, Bike, HandCoins, ChevronDown, ChevronUp, Printer, FileText } from 'lucide-react'
 
 const ICONE_PAGAMENTO = {
   'Dinheiro': Banknote,
@@ -166,6 +166,27 @@ export default function Dashboard() {
   }, {})
   const fiadoLista = Object.values(fiadoPorCliente).sort((a, b) => b.total - a.total)
   const totalFiadoGeral = fiadoLista.reduce((acc, c) => acc + c.total, 0)
+
+  // Extrato do período — todos os pedidos fiado do período selecionado (pago ou não)
+  const extratoPeriodo = pedidosPeriodo.filter(p =>
+    p.statusPagamento === 'mensalista' || ['Mensalista', 'Semanal', 'Quinzenal'].includes(p.pagamento)
+  )
+  const extratoPorCliente = extratoPeriodo.reduce((acc, p) => {
+    const key = p.clienteId || p.clienteNome
+    if (!acc[key]) {
+      const reg = clientes.find(c => c.id === p.clienteId)
+      acc[key] = {
+        nome: p.clienteNome,
+        tipo: reg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
+        pedidos: [],
+        total: 0,
+      }
+    }
+    acc[key].pedidos.push(p)
+    acc[key].total += Number(p.total)
+    return acc
+  }, {})
+  const extratoLista = Object.values(extratoPorCliente).sort((a, b) => a.nome.localeCompare(b.nome))
 
   // Contagem de itens vendidos no período
   const contagemItens = pedidosPeriodo.reduce((acc, p) => {
@@ -467,6 +488,23 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Extrato Fiado por período */}
+      {extratoLista.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <FileText size={13} /> Extrato Fiado — {periodo === 'hoje' ? 'Hoje' : periodo === 'semana' ? 'Esta Semana' : periodo === 'mes' ? 'Este Mês' : 'Período'}
+            </h2>
+            <span style={{ fontSize: 11, color: '#9D8878' }}>{extratoLista.length} cliente(s)</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {extratoLista.map((c, idx) => (
+              <ExtratoCard key={c.nome + idx} cliente={c} inicio={inicio} fim={fim} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Fechamento mensal */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14 }}>
@@ -537,6 +575,160 @@ function FechamentoMensal({ pedidos, despesas, funcionarios }) {
       }}>
         {positivo ? 'Mês com LUCRO' : 'Mês com PREJUÍZO'}
       </div>
+    </div>
+  )
+}
+
+function imprimirExtrato(cliente, inicio, fim) {
+  const periodoStr = inicio.toLocaleDateString('pt-BR') === fim.toLocaleDateString('pt-BR')
+    ? inicio.toLocaleDateString('pt-BR')
+    : `${inicio.toLocaleDateString('pt-BR')} a ${fim.toLocaleDateString('pt-BR')}`
+
+  const linhasPedidos = cliente.pedidos
+    .slice()
+    .sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm))
+    .map((p, i) => {
+      const data = new Date(p.criadoEm).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
+      const hora = new Date(p.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      const itens = (p.itens || []).filter(it => it.tipo === 'marmitex' || it.tipo === 'combo' || it.tipo === 'refrigerante' || it.tipo === 'salada')
+      const descItens = itens.map(it => {
+        if (it.tipo === 'marmitex') return `${it.tamanho || ''} ${it.nome || ''}${it.proteina ? ' — ' + it.proteina : ''}`.trim()
+        if (it.tipo === 'salada') return 'Salada personalizada'
+        if (it.tipo === 'refrigerante') return `${it.qtd || 1}x ${it.nome} (${it.subtipo || ''})`
+        return it.nome || ''
+      }).join(', ') || '—'
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${data} ${hora}</td>
+        <td>${descItens}</td>
+        <td style="text-align:right;font-weight:bold">R$ ${Number(p.total).toFixed(2).replace('.', ',')}</td>
+      </tr>`
+    }).join('')
+
+  const tipoBadge = { mensalista: 'MENSALISTA', semanal: 'SEMANAL', quinzenal: 'QUINZENAL' }
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Extrato — ${cliente.nome}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Courier New', monospace; font-size: 13px; color: #000; max-width: 600px; margin: 0 auto; padding: 20px; }
+  .restaurante { text-align:center; font-size:18px; font-weight:bold; margin-bottom:4px; }
+  .subtitulo { text-align:center; font-size:11px; letter-spacing:2px; margin-bottom:16px; }
+  .linha { border-top:1px dashed #000; margin:10px 0; }
+  .cliente-nome { font-size:17px; font-weight:bold; margin-bottom:4px; }
+  .badge { display:inline-block; font-size:10px; font-weight:bold; background:#000; color:#fff; padding:2px 8px; border-radius:4px; margin-bottom:4px; }
+  .periodo { font-size:12px; color:#555; margin-bottom:12px; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th { font-size:10px; text-transform:uppercase; letter-spacing:1px; border-bottom:2px solid #000; padding:6px 4px; text-align:left; }
+  td { padding:7px 4px; border-bottom:1px solid #ddd; font-size:12px; vertical-align:top; }
+  tr:nth-child(even) td { background:#f9f9f9; }
+  .total-row td { border-top:2px solid #000; border-bottom:none; font-size:15px; font-weight:bold; padding-top:10px; }
+  .rodape { text-align:center; font-size:11px; margin-top:20px; color:#555; }
+  @media print { body { padding:10px; } }
+</style></head><body>
+  <div class="restaurante">Fogão a Lenha da Leninha</div>
+  <div class="subtitulo">— EXTRATO DE CONTA —</div>
+  <div class="linha"></div>
+  <div class="cliente-nome">${cliente.nome}</div>
+  <span class="badge">${tipoBadge[cliente.tipo] || 'FIADO'}</span>
+  <div class="periodo">Período: ${periodoStr}</div>
+  <table>
+    <thead><tr><th>#</th><th>Data / Hora</th><th>Pedido</th><th style="text-align:right">Valor</th></tr></thead>
+    <tbody>${linhasPedidos}</tbody>
+    <tfoot><tr class="total-row"><td colspan="3">TOTAL DO PERÍODO</td><td style="text-align:right">R$ ${cliente.total.toFixed(2).replace('.', ',')}</td></tr></tfoot>
+  </table>
+  <div class="linha"></div>
+  <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} — Fogão a Lenha da Leninha</div>
+</body></html>`
+
+  const w = window.open('', '_blank', 'width=680,height=800')
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  setTimeout(() => w.print(), 400)
+}
+
+function ExtratoCard({ cliente, inicio, fim }) {
+  const [aberto, setAberto] = useState(false)
+  const badge = BADGE_FIADO[cliente.tipo] || BADGE_FIADO.mensalista
+  const pedidosOrdenados = [...cliente.pedidos].sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm))
+
+  return (
+    <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+      {/* Cabeçalho */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', cursor: 'pointer' }}
+        onClick={() => setAberto(!aberto)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div>
+            <p style={{ fontWeight: 700, color: '#1A0E08', fontSize: 15, margin: '0 0 3px' }}>{cliente.nome}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11, background: badge.bg, color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{badge.label}</span>
+              <span style={{ fontSize: 11, color: '#9D8878' }}>{cliente.pedidos.length} pedido(s)</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontWeight: 800, color: '#1A0E08', fontSize: 15 }}>R$ {cliente.total.toFixed(2).replace('.', ',')}</span>
+          <button
+            onClick={e => { e.stopPropagation(); imprimirExtrato(cliente, inicio, fim) }}
+            title="Imprimir extrato"
+            style={{ background: '#C8221A', color: '#fff', border: 'none', borderRadius: 7, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600 }}>
+            <Printer size={13} /> Imprimir
+          </button>
+          {aberto ? <ChevronUp size={15} color="#9D8878" /> : <ChevronDown size={15} color="#9D8878" />}
+        </div>
+      </div>
+
+      {/* Tabela de pedidos */}
+      {aberto && (
+        <div style={{ borderTop: '1px solid #F3F0ED' }}>
+          {/* Header */}
+          <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr auto', gap: 8, padding: '8px 16px', background: '#FAFAF8', fontSize: 11, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span>Data</span>
+            <span>Itens</span>
+            <span>Valor</span>
+          </div>
+          {pedidosOrdenados.map((p, i) => {
+            const itensMarmitex = (p.itens || []).filter(it => it.tipo === 'marmitex')
+            const itensExtras = (p.itens || []).filter(it => it.tipo === 'salada' || it.tipo === 'refrigerante' || it.tipo === 'combo')
+            return (
+              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '90px 1fr auto', gap: 8, padding: '10px 16px', borderTop: i > 0 ? '1px solid #F3F0ED' : 'none', alignItems: 'start' }}>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
+                    {new Date(p.criadoEm).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                  </p>
+                  <p style={{ fontSize: 11, color: '#9D8878', margin: 0 }}>
+                    {new Date(p.criadoEm).toLocaleDateString('pt-BR', { weekday: 'short' })} · {new Date(p.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <div>
+                  {itensMarmitex.map((it, j) => (
+                    <p key={j} style={{ fontSize: 12, color: '#1A0E08', margin: '0 0 2px' }}>
+                      🍱 <strong>{it.tamanho}</strong> {it.nome}{it.proteina ? <span style={{ color: '#6B5A4E' }}> — {it.proteina}</span> : null}
+                    </p>
+                  ))}
+                  {itensExtras.map((it, j) => (
+                    <p key={j} style={{ fontSize: 11, color: '#6B5A4E', margin: '0 0 2px' }}>
+                      {it.tipo === 'salada' ? '🥗 Salada' : it.tipo === 'refrigerante' ? `🥤 ${it.qtd || 1}x ${it.nome}` : `📦 ${it.nome}`}
+                    </p>
+                  ))}
+                  {itensMarmitex.length === 0 && itensExtras.length === 0 && (
+                    <p style={{ fontSize: 12, color: '#9D8878', margin: 0, fontStyle: 'italic' }}>—</p>
+                  )}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#1A0E08', whiteSpace: 'nowrap' }}>
+                  R$ {Number(p.total).toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+            )
+          })}
+          {/* Total */}
+          <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr auto', gap: 8, padding: '10px 16px', borderTop: '2px solid #E6DDD5', background: '#FAFAF8' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#9D8878', gridColumn: '1/3' }}>TOTAL DO PERÍODO</span>
+            <span style={{ fontSize: 15, fontWeight: 900, color: '#C8221A' }}>R$ {cliente.total.toFixed(2).replace('.', ',')}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
