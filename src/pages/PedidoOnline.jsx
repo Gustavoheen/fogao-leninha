@@ -136,7 +136,10 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
     ? Number(cardapioHoje?.precoP || 0)
     : Number(cardapioHoje?.precoG || 0)
 
-  const podeAdicionar = !!configurando.opcaoId
+  const tipoCarnes = opcaoAtual?.tipoCarnes || 'globais'
+  const carnesDisponiveis = cardapioHoje?.carnes?.filter(c => c) || []
+  const precisaProteinaLivre = tipoCarnes === 'globais' && carnesDisponiveis.length > 0
+  const podeAdicionar = !!configurando.opcaoId && (!precisaProteinaLivre || !!configurando.proteina)
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-end md:items-center justify-center p-0 md:p-4">
@@ -246,8 +249,40 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
             </div>
           )}
 
-          {/* Carnes do dia */}
-          {cardapioHoje?.carnes?.some(c => c) && (
+          {/* Proteína */}
+          {opcaoAtual?.tipoCarnes === 'especial' && opcaoAtual?.pratoEspecial && (
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+              <p className="text-orange-400 text-xs uppercase tracking-wide mb-2">🍲 Prato especial</p>
+              <p className="text-white font-bold text-base">{opcaoAtual.pratoEspecial}</p>
+              <p className="text-stone-400 text-xs mt-1">Proteína já inclusa no prato</p>
+            </div>
+          )}
+          {(tipoCarnes === 'globais') && carnesDisponiveis.length > 0 && (
+            <div>
+              <p className="text-stone-400 text-sm mb-1">
+                Escolha a carne <span className="text-red-400">*</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {carnesDisponiveis.map((c, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setConfigurando(prev => ({ ...prev, proteina: c }))}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                      configurando.proteina === c
+                        ? 'bg-orange-500 border-orange-500 text-white'
+                        : 'bg-stone-800 border-stone-600 text-stone-300 hover:border-orange-500'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+              {!configurando.proteina && (
+                <p className="text-red-400 text-xs mt-2">Selecione a carne para continuar</p>
+              )}
+            </div>
+          )}
+          {tipoCarnes === 'globais' && carnesDisponiveis.length === 0 && cardapioHoje?.carnes?.some(c => c) && (
             <div className="bg-stone-800 rounded-xl p-4">
               <p className="text-stone-400 text-xs uppercase tracking-wide mb-2">Carnes do dia</p>
               {cardapioHoje.carnes.filter(c => c).map((c, i) => (
@@ -365,14 +400,19 @@ export default function PedidoOnline() {
       semItens: [],
       nome: '',
       tamanho: 'P',
+      proteina: '',
     })
   }
 
   function adicionarAoCarrinho() {
     if (!configurando?.opcaoId) return
     const opcao = cardapioHoje.opcoes.find(o => o.id === configurando.opcaoId)
+    const tipoCarnes = opcao?.tipoCarnes || 'globais'
+    const proteina = tipoCarnes === 'especial' ? (opcao?.pratoEspecial || '') : configurando.proteina
+    const carnesDisponiveis = (cardapioHoje?.carnes || []).filter(c => c)
+    if (tipoCarnes === 'globais' && carnesDisponiveis.length > 0 && !proteina) return
     const preco = configurando.tamanho === 'P' ? Number(cardapioHoje.precoP) : Number(cardapioHoje.precoG)
-    setCarrinho(prev => [...prev, { ...configurando, opcao, preco }])
+    setCarrinho(prev => [...prev, { ...configurando, opcao, preco, proteina }])
     setConfigurando(null)
   }
 

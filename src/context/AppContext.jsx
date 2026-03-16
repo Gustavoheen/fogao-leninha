@@ -8,8 +8,8 @@ const CARDAPIO_HOJE_PADRAO = {
   precoP: '',
   precoG: '',
   opcoes: [
-    { id: 1, nome: 'Opção 1', acompanhamentos: [], disponivel: true },
-    { id: 2, nome: 'Opção 2', acompanhamentos: [], disponivel: true },
+    { id: 1, nome: 'Opção 1', acompanhamentos: [], disponivel: true, tipoCarnes: 'globais', pratoEspecial: '' },
+    { id: 2, nome: 'Opção 2', acompanhamentos: [], disponivel: true, tipoCarnes: 'globais', pratoEspecial: '' },
   ],
 }
 
@@ -330,6 +330,16 @@ export function AppProvider({ children }) {
     })
   }
 
+  function salvarOpcao(opcaoId, dados) {
+    const ts = new Date().toISOString()
+    setCardapioHoje(prev => {
+      const opcoes = prev.opcoes.map(o => o.id === opcaoId ? { ...o, ...dados } : o)
+      supabase.from('cardapio_hoje').update({ opcoes, atualizadoEm: ts }).eq('id', 1)
+        .then(({ error }) => { if (error) erroSave('cardapio_hoje', error) })
+      return { ...prev, opcoes, atualizadoEm: ts }
+    })
+  }
+
   // ── Cardápio geral ──────────────────────────────────────────
   function adicionarItemCardapio(dados) {
     const novo = { id: Date.now(), ...dados, disponivel: true, criadoEm: new Date().toISOString() }
@@ -592,7 +602,7 @@ export function AppProvider({ children }) {
       clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente,
       pedidos, adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atribuirMotoboy, quitarPedido, removerPedido, marcarComandaImpressa,
       cardapio, adicionarItemCardapio, editarItemCardapio, toggleDisponibilidade, removerItemCardapio,
-      cardapioHoje, salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco,
+      cardapioHoje, salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco, salvarOpcao,
       despesas, adicionarDespesa, editarDespesa, removerDespesa, pagarDespesa,
       estoque, adicionarEstoque, editarEstoque, removerEstoque, atualizarQuantidade,
       fornecedores, adicionarFornecedor, editarFornecedor, removerFornecedor, pagarFornecedor,

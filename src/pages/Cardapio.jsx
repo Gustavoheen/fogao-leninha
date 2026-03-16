@@ -25,7 +25,7 @@ const INPUT_BASE = {
 export default function Cardapio() {
   const {
     cardapioHoje,
-    salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco,
+    salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco, salvarOpcao,
     cardapio, adicionarItemCardapio, toggleDisponibilidade, removerItemCardapio,
   } = useApp()
 
@@ -142,6 +142,7 @@ export default function Cardapio() {
             onNome={nome => salvarNomeOpcao(opcao.id, nome)}
             onAcomp={lista => salvarAcompanhamentos(opcao.id, lista)}
             onToggle={() => toggleOpcaoAlmoco(opcao.id)}
+            onOpcao={dados => salvarOpcao(opcao.id, dados)}
           />
         ))}
       </div>
@@ -252,10 +253,13 @@ export default function Cardapio() {
 }
 
 // Card de cada opção de almoço
-function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle }) {
+function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
   const [novoItem, setNovoItem] = useState('')
   const [editandoNome, setEditandoNome] = useState(false)
   const [nomeTemp, setNomeTemp] = useState(opcao.nome)
+  const tipoCarnes = opcao.tipoCarnes || 'globais'
+  const pratoEspecial = opcao.pratoEspecial || ''
+  const [pratoTemp, setPratoTemp] = useState(pratoEspecial)
 
   const HEADER_BG = cor === 'orange' ? '#EA580C' : '#B45309'
 
@@ -355,10 +359,58 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle }) {
           </button>
         </div>
 
+        {/* Tipo de carnes para esta opção */}
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F3F0ED' }}>
-          <p style={{ fontSize: 13, color: '#9D8878', margin: 0 }}>
-            🥩 Carnes: <span style={{ fontWeight: 600, color: '#6B5A4E' }}>globais (configuradas acima)</span>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#6B5A4E', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Proteína desta opção
           </p>
+          <div style={{ display: 'flex', gap: 6, marginBottom: tipoCarnes === 'especial' ? 8 : 0 }}>
+            <button
+              onClick={() => onOpcao({ tipoCarnes: 'globais', pratoEspecial: '' })}
+              style={{
+                flex: 1, padding: '8px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                border: tipoCarnes === 'globais' ? `2px solid ${HEADER_BG}` : '1.5px solid #CFC4BB',
+                background: tipoCarnes === 'globais' ? '#FFF7ED' : '#fff',
+                color: tipoCarnes === 'globais' ? HEADER_BG : '#9D8878',
+                cursor: 'pointer',
+              }}
+            >
+              🥩 Carnes livres
+            </button>
+            <button
+              onClick={() => onOpcao({ tipoCarnes: 'especial', pratoEspecial: pratoTemp })}
+              style={{
+                flex: 1, padding: '8px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                border: tipoCarnes === 'especial' ? `2px solid ${HEADER_BG}` : '1.5px solid #CFC4BB',
+                background: tipoCarnes === 'especial' ? '#FFF7ED' : '#fff',
+                color: tipoCarnes === 'especial' ? HEADER_BG : '#9D8878',
+                cursor: 'pointer',
+              }}
+            >
+              🍲 Prato especial
+            </button>
+          </div>
+          {tipoCarnes === 'especial' && (
+            <input
+              type="text"
+              value={pratoTemp}
+              onChange={e => setPratoTemp(e.target.value)}
+              onBlur={() => { if (pratoTemp.trim()) onOpcao({ tipoCarnes: 'especial', pratoEspecial: pratoTemp.trim() }) }}
+              onKeyDown={e => { if (e.key === 'Enter' && pratoTemp.trim()) onOpcao({ tipoCarnes: 'especial', pratoEspecial: pratoTemp.trim() }) }}
+              placeholder="Ex: Strogonoff de frango em cubos"
+              style={{
+                width: '100%', background: '#fff', border: `1.5px solid ${HEADER_BG}`,
+                borderRadius: 8, padding: '8px 10px', fontSize: 13,
+                outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08',
+                boxSizing: 'border-box',
+              }}
+            />
+          )}
+          {tipoCarnes === 'globais' && (
+            <p style={{ fontSize: 11, color: '#9D8878', margin: 0 }}>
+              Cliente escolhe entre as carnes globais cadastradas acima
+            </p>
+          )}
         </div>
       </div>
     </div>

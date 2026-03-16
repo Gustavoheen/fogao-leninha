@@ -174,7 +174,8 @@ export default function PedidoEquipe() {
   function iniciarMarmitex(opcaoId, tamanho) {
     const opcao = opcoes.find(o => o.id === opcaoId)
     const preco = tamanho === 'P' ? Number(cardapioHoje?.precoP || 0) : Number(cardapioHoje?.precoG || 0)
-    setMarmitexAtual({ uid: uid(), opcao, tamanho, semItens: [], nome: '', preco })
+    const proteina = opcao?.tipoCarnes === 'especial' ? (opcao.pratoEspecial || '') : ''
+    setMarmitexAtual({ uid: uid(), opcao, tamanho, semItens: [], nome: '', preco, proteina })
     setStep('montando')
   }
 
@@ -188,6 +189,9 @@ export default function PedidoEquipe() {
   }
 
   function adicionarMarmitex() {
+    const tipoCarnes = marmitexAtual?.opcao?.tipoCarnes || 'globais'
+    const precisaProteina = tipoCarnes === 'globais' && (cardapioHoje?.carnes || []).some(c => c)
+    if (precisaProteina && !marmitexAtual.proteina) return
     setCarrinho(prev => [...prev, marmitexAtual])
     setMarmitexAtual(null)
     setStep('revisao')
@@ -206,6 +210,7 @@ export default function PedidoEquipe() {
         semItens: m.semItens,
         nome: m.nome,
         preco: m.preco,
+        proteina: m.proteina || '',
       }))
       const pg = mensalista ? 'Mensalista' : pagamento
       const statusPg = mensalista ? 'mensalista' : 'pendente'
@@ -452,6 +457,45 @@ export default function PedidoEquipe() {
               }}
             />
           </div>
+
+          {/* Proteína */}
+          {marmitexAtual.opcao?.tipoCarnes === 'especial' && marmitexAtual.opcao?.pratoEspecial && (
+            <div style={{ background: '#FFF7ED', border: '2px solid #FED7AA', borderRadius: 16, padding: '16px 18px' }}>
+              <p style={{ color: '#9D8878', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>🍲 Prato especial</p>
+              <p style={{ fontSize: 20, fontWeight: 900, color: '#1A0E08', margin: 0 }}>{marmitexAtual.opcao.pratoEspecial}</p>
+              <p style={{ fontSize: 13, color: '#9D8878', marginTop: 4 }}>Proteína já inclusa</p>
+            </div>
+          )}
+          {(marmitexAtual.opcao?.tipoCarnes === 'globais' || !marmitexAtual.opcao?.tipoCarnes) && cardapioHoje?.carnes?.some(c => c) && (
+            <div>
+              <p style={{ fontSize: 16, fontWeight: 800, color: '#1A0E08', margin: '0 0 12px' }}>
+                Escolha a carne <span style={{ color: '#EF4444' }}>*</span>
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {(cardapioHoje?.carnes || []).filter(c => c).map((c, i) => {
+                  const sel = marmitexAtual.proteina === c
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setMarmitexAtual(prev => ({ ...prev, proteina: c }))}
+                      style={{
+                        padding: '14px 20px', borderRadius: 14, fontSize: 17, fontWeight: 800,
+                        border: `2px solid ${sel ? '#C8221A' : '#E6DDD5'}`,
+                        background: sel ? '#C8221A' : '#fff',
+                        color: sel ? '#fff' : '#1A0E08',
+                        cursor: 'pointer', minHeight: 52,
+                      }}
+                    >
+                      {c}
+                    </button>
+                  )
+                })}
+              </div>
+              {!marmitexAtual.proteina && (
+                <p style={{ fontSize: 14, color: '#EF4444', marginTop: 8, fontWeight: 600 }}>Selecione a carne</p>
+              )}
+            </div>
+          )}
 
           {/* Acompanhamentos */}
           {acomp.length > 0 && (

@@ -932,7 +932,8 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
     if (!opcaoSel) return
     const todosAcomp = opcaoSel.acompanhamentos || []
     const retirados = todosAcomp.filter(a => !acompSel.includes(a))
-    onAdicionar(opcaoSel, carneSel, tamanho, retirados, extras, qtd)
+    const proteinaFinal = tipoCarnesAtual === 'especial' ? (opcaoSel.pratoEspecial || '') : carneSel
+    onAdicionar(opcaoSel, proteinaFinal, tamanho, retirados, extras, qtd)
     const msg = `✓ ${qtd}x ${opcaoSel.nome} (${tamanho}) adicionada${qtd > 1 ? 's' : ''}!`
     setFeedback(msg)
     setTimeout(() => setFeedback(''), 2000)
@@ -943,8 +944,9 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
     setQtd(1)
   }
 
-  const temCarnes = carnesGlobais.length > 0
-  const prontoParaTamanho = opcaoSel && (!temCarnes || carneSel !== '')
+  const tipoCarnesAtual = opcaoSel?.tipoCarnes || 'globais'
+  const temCarnesLivres = tipoCarnesAtual === 'globais' && carnesGlobais.length > 0
+  const prontoParaTamanho = opcaoSel && (!temCarnesLivres || carneSel !== '')
 
   return (
     <div>
@@ -1037,8 +1039,22 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
         </div>
       )}
 
-      {/* Passo 3 – escolher carne */}
-      {opcaoSel && temCarnes && (
+      {/* Passo 3 – proteína */}
+      {opcaoSel && tipoCarnesAtual === 'especial' && opcaoSel.pratoEspecial && (
+        <div style={{
+          background: '#FFF7ED', border: '1.5px solid #FED7AA',
+          borderRadius: 12, padding: '14px 14px', marginBottom: 10,
+        }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#9D8878', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            🍲 Prato especial
+          </p>
+          <p style={{ fontSize: 16, fontWeight: 800, color: '#1A0E08', margin: 0 }}>
+            {opcaoSel.pratoEspecial}
+          </p>
+          <p style={{ fontSize: 12, color: '#9D8878', marginTop: 4 }}>Proteína já inclusa no prato</p>
+        </div>
+      )}
+      {opcaoSel && temCarnesLivres && (
         <div style={{
           background: '#fff', border: '1.5px solid #FECACA',
           borderRadius: 12, padding: '14px 14px', marginBottom: 10,
