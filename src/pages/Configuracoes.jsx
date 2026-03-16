@@ -183,13 +183,22 @@ export default function Configuracoes() {
             <h2 style={{ color: '#fff', fontSize: 16, fontWeight: 800, margin: 0 }}>WhatsApp do restaurante</h2>
           </div>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Campo label="Número do WhatsApp" hint="Com DDI e DDD, só números. Ex: 5532912345678">
-              <input
-                type="tel"
-                value={form.restauranteWhatsapp}
-                onChange={e => set('restauranteWhatsapp', e.target.value.replace(/\D/g, ''))}
-                placeholder="5532912345678" style={INPUT_ST}
-              />
+            <Campo label="Número do WhatsApp" hint="Digite DDD + número. O +55 já está incluído automaticamente.">
+              <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #E6DDD5', borderRadius: 10, background: '#FAFAF8', overflow: 'hidden' }}>
+                <span style={{ padding: '12px 14px', fontSize: 15, fontWeight: 700, color: '#16A34A', background: '#F0FDF4', borderRight: '1.5px solid #E6DDD5', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  +55
+                </span>
+                <input
+                  type="tel"
+                  value={form.restauranteWhatsapp.startsWith('55') ? form.restauranteWhatsapp.slice(2) : form.restauranteWhatsapp}
+                  onChange={e => {
+                    const digits = e.target.value.replace(/\D/g, '')
+                    set('restauranteWhatsapp', '55' + digits)
+                  }}
+                  placeholder="32912345678"
+                  style={{ ...INPUT_ST, border: 'none', borderRadius: 0, background: 'transparent', flex: 1 }}
+                />
+              </div>
             </Campo>
             <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 10, padding: 12 }}>
               <p style={{ fontSize: 13, color: '#166534', fontWeight: 600, margin: 0 }}>
