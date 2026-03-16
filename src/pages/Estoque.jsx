@@ -27,8 +27,8 @@ const INPUT_BASE = {
   background: '#fff',
   border: '1.5px solid #CFC4BB',
   borderRadius: 8,
-  padding: '8px 12px',
-  fontSize: 13,
+  padding: '14px 16px',
+  fontSize: 16,
   width: '100%',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
@@ -106,7 +106,7 @@ export default function Estoque() {
             background: '#C8221A', color: '#fff',
             boxShadow: '0 2px 10px rgba(200,34,26,0.35)',
             borderRadius: 8, border: 'none',
-            padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
           }}>
           <Plus size={15} /> Novo Item
         </button>
@@ -144,25 +144,25 @@ export default function Estoque() {
 
           {/* Identificação */}
           <div style={{ background: '#FFF7ED', borderRadius: 10, padding: 14, marginBottom: 12 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
               Identificação
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Nome</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Nome</label>
                 <input type="text" value={form.nome}
                   onChange={e => setForm(prev => ({ ...prev, nome: e.target.value }))}
                   style={INPUT_BASE} placeholder="Ex: Frango, Arroz..." />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Categoria</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Categoria</label>
                 <select value={form.categoria} onChange={e => setForm(prev => ({ ...prev, categoria: e.target.value }))}
                   style={INPUT_BASE}>
                   {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Unidade</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Unidade</label>
                 <select value={form.unidade} onChange={e => setForm(prev => ({ ...prev, unidade: e.target.value }))}
                   style={INPUT_BASE}>
                   {UNIDADES.map(u => <option key={u}>{u}</option>)}
@@ -173,24 +173,24 @@ export default function Estoque() {
 
           {/* Quantidades e preço */}
           <div style={{ background: '#F0F9FF', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2563EB', marginTop: 0, marginBottom: 12 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#2563EB', marginTop: 0, marginBottom: 12 }}>
               Quantidades e Preço
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Quantidade atual</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Quantidade atual</label>
                 <input type="number" min="0" step="0.01" value={form.quantidade}
                   onChange={e => setForm(prev => ({ ...prev, quantidade: e.target.value }))}
                   style={INPUT_BASE} placeholder="0" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Qtd. Mínima (alerta)</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Qtd. Mínima (alerta)</label>
                 <input type="number" min="0" step="0.01" value={form.qtdMinima}
                   onChange={e => setForm(prev => ({ ...prev, qtdMinima: e.target.value }))}
                   style={INPUT_BASE} placeholder="0" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Preço de custo (R$)</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Preço de custo (R$)</label>
                 <input type="number" min="0" step="0.01" value={form.preco}
                   onChange={e => setForm(prev => ({ ...prev, preco: e.target.value }))}
                   style={INPUT_BASE} placeholder="0,00" />
@@ -206,7 +206,7 @@ export default function Estoque() {
                 color: '#fff',
                 boxShadow: !form.nome.trim() ? 'none' : '0 2px 8px rgba(22,163,74,0.3)',
                 borderRadius: 8, border: 'none',
-                padding: '9px 20px', fontSize: 13, fontWeight: 600,
+                padding: '11px 20px', fontSize: 14, fontWeight: 700,
                 cursor: !form.nome.trim() ? 'not-allowed' : 'pointer',
               }}>
               <Check size={14} /> {editandoId ? 'Salvar' : 'Adicionar'}
@@ -216,7 +216,7 @@ export default function Estoque() {
               background: '#fff', color: '#6B5A4E',
               border: '1.5px solid #CFC4BB',
               borderRadius: 8, padding: '9px 18px',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}>
               <X size={14} /> Cancelar
             </button>
@@ -278,10 +278,10 @@ export default function Estoque() {
                         {item.quantidade} {item.unidade}
                       </span>
                       {Number(item.qtdMinima) > 0 && (
-                        <span style={{ fontSize: 12, color: '#9D8878' }}>mín: {item.qtdMinima} {item.unidade}</span>
+                        <span style={{ fontSize: 13, color: '#9D8878' }}>mín: {item.qtdMinima} {item.unidade}</span>
                       )}
                       {Number(item.preco) > 0 && (
-                        <span style={{ fontSize: 12, color: '#6B5A4E' }}>
+                        <span style={{ fontSize: 13, color: '#6B5A4E' }}>
                           R$ {(Number(item.quantidade) * Number(item.preco)).toFixed(2).replace('.', ',')} em estoque
                         </span>
                       )}

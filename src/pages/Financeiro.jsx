@@ -25,8 +25,8 @@ const INPUT_BASE = {
   background: '#fff',
   border: '1.5px solid #CFC4BB',
   borderRadius: 8,
-  padding: '8px 12px',
-  fontSize: 13,
+  padding: '14px 16px',
+  fontSize: 16,
   width: '100%',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
@@ -109,7 +109,7 @@ export default function Financeiro() {
               background: '#C8221A', color: '#fff',
               boxShadow: '0 2px 10px rgba(200,34,26,0.35)',
               borderRadius: 8, border: 'none',
-              padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
             }}>
             <Plus size={15} /> Nova Despesa
           </button>
@@ -121,7 +121,7 @@ export default function Financeiro() {
         {[['despesas', 'Despesas'], ['fluxo', 'Fluxo do Dia']].map(([key, label]) => (
           <button key={key} onClick={() => setAba(key)}
             style={{
-              padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600,
               cursor: 'pointer', transition: 'all 0.15s',
               background: aba === key ? '#C8221A' : '#fff',
               color: aba === key ? '#fff' : '#6B5A4E',
@@ -147,32 +147,32 @@ export default function Financeiro() {
 
               {/* Informações da despesa */}
               <div style={{ background: '#FFF7ED', borderRadius: 10, padding: 14, marginBottom: 12 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
                   Detalhes
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Categoria</label>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Categoria</label>
                     <select value={form.categoria} onChange={e => setForm(prev => ({ ...prev, categoria: e.target.value }))}
                       style={INPUT_BASE}>
                       {CATEGORIAS_DESPESA.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Data</label>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Data</label>
                     <input type="date" value={form.data}
                       onChange={e => setForm(prev => ({ ...prev, data: e.target.value }))}
                       style={INPUT_BASE} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Descrição</label>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Descrição</label>
                     <input type="text" value={form.descricao}
                       onChange={e => setForm(prev => ({ ...prev, descricao: e.target.value }))}
                       style={INPUT_BASE}
                       placeholder="Ex: Compra de frango..." />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Valor (R$)</label>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Valor (R$)</label>
                     <input type="number" min="0" step="0.01" value={form.valor}
                       onChange={e => setForm(prev => ({ ...prev, valor: e.target.value }))}
                       style={INPUT_BASE}
@@ -206,7 +206,7 @@ export default function Financeiro() {
                     color: '#fff',
                     boxShadow: !form.descricao.trim() || !form.valor ? 'none' : '0 2px 8px rgba(22,163,74,0.3)',
                     borderRadius: 8, border: 'none',
-                    padding: '9px 20px', fontSize: 13, fontWeight: 600,
+                    padding: '11px 20px', fontSize: 14, fontWeight: 700,
                     cursor: !form.descricao.trim() || !form.valor ? 'not-allowed' : 'pointer',
                   }}>
                   <Check size={14} /> {editandoId ? 'Salvar' : 'Adicionar'}
@@ -216,7 +216,7 @@ export default function Financeiro() {
                   background: '#fff', color: '#6B5A4E',
                   border: '1.5px solid #CFC4BB',
                   borderRadius: 8, padding: '9px 18px',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 }}>
                   <X size={14} /> Cancelar
                 </button>
@@ -253,19 +253,19 @@ export default function Financeiro() {
           {despesasFiltradas.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
               <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 12, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Total filtrado</p>
+                <p style={{ fontSize: 13, color: '#9D8878', margin: '0 0 4px' }}>Total filtrado</p>
                 <p style={{ fontSize: 18, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
                   R$ {despesasFiltradas.reduce((acc, d) => acc + Number(d.valor), 0).toFixed(2).replace('.', ',')}
                 </p>
               </div>
               <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 12, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                <p style={{ fontSize: 12, color: '#16A34A', margin: '0 0 4px' }}>Pagos</p>
+                <p style={{ fontSize: 13, color: '#16A34A', margin: '0 0 4px' }}>Pagos</p>
                 <p style={{ fontSize: 18, fontWeight: 700, color: '#15803D', margin: 0 }}>
                   R$ {despesasFiltradas.filter(d => d.pago).reduce((acc, d) => acc + Number(d.valor), 0).toFixed(2).replace('.', ',')}
                 </p>
               </div>
               <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                <p style={{ fontSize: 12, color: '#CA8A04', margin: '0 0 4px' }}>Pendentes</p>
+                <p style={{ fontSize: 13, color: '#CA8A04', margin: '0 0 4px' }}>Pendentes</p>
                 <p style={{ fontSize: 18, fontWeight: 700, color: '#92400E', margin: 0 }}>
                   R$ {despesasFiltradas.filter(d => !d.pago).reduce((acc, d) => acc + Number(d.valor), 0).toFixed(2).replace('.', ',')}
                 </p>
@@ -299,7 +299,7 @@ export default function Financeiro() {
                         </span>
                         <span style={{ fontSize: 13, fontWeight: 600, color: '#1A0E08' }}>{d.descricao}</span>
                       </div>
-                      <p style={{ fontSize: 12, color: '#9D8878', margin: '3px 0 0' }}>
+                      <p style={{ fontSize: 13, color: '#9D8878', margin: '3px 0 0' }}>
                         {new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR')}
                       </p>
                     </div>
@@ -345,14 +345,14 @@ export default function Financeiro() {
             <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 12, padding: 20 }}>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#15803D', marginTop: 0, marginBottom: 6 }}>Receitas</p>
               <p style={{ fontSize: 28, fontWeight: 700, color: '#14532D', margin: 0 }}>R$ {receitasHoje.toFixed(2).replace('.', ',')}</p>
-              <p style={{ fontSize: 12, color: '#16A34A', marginTop: 4 }}>
+              <p style={{ fontSize: 13, color: '#16A34A', marginTop: 4 }}>
                 {pedidosHoje.filter(p => p.statusPagamento === 'pago' || (!p.statusPagamento && p.pagamento !== 'Pendente' && p.pagamento !== 'Mensalista')).length} pedido(s) pago(s)
               </p>
             </div>
             <div style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 12, padding: 20 }}>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#991B1B', marginTop: 0, marginBottom: 6 }}>Despesas</p>
               <p style={{ fontSize: 28, fontWeight: 700, color: '#7F1D1D', margin: 0 }}>R$ {despesasHoje.toFixed(2).replace('.', ',')}</p>
-              <p style={{ fontSize: 12, color: '#DC2626', marginTop: 4 }}>{despesas.filter(d => d.data === hoje && d.pago).length} lançamento(s)</p>
+              <p style={{ fontSize: 13, color: '#DC2626', marginTop: 4 }}>{despesas.filter(d => d.data === hoje && d.pago).length} lançamento(s)</p>
             </div>
             <div style={{
               background: liquidoHoje >= 0 ? '#EFF6FF' : '#FFFBEB',
@@ -399,10 +399,10 @@ export default function Financeiro() {
                 )}
               </div>
               <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-                <span style={{ fontSize: 12, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: 13, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 5 }}>
                   <span style={{ width: 10, height: 10, background: '#16A34A', borderRadius: '50%', display: 'inline-block' }}></span> Receitas
                 </span>
-                <span style={{ fontSize: 12, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: 13, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 5 }}>
                   <span style={{ width: 10, height: 10, background: '#DC2626', borderRadius: '50%', display: 'inline-block' }}></span> Despesas
                 </span>
               </div>

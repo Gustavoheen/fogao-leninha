@@ -9,12 +9,13 @@ const INPUT_BASE = {
   background: '#fff',
   border: '1.5px solid #CFC4BB',
   borderRadius: 8,
-  padding: '8px 12px',
-  fontSize: 13,
+  padding: '14px 16px',
+  fontSize: 16,
   width: '100%',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
   color: '#1A0E08',
+  boxSizing: 'border-box',
 }
 
 export default function Clientes() {
@@ -93,7 +94,7 @@ export default function Clientes() {
             background: '#C8221A', color: '#fff',
             boxShadow: '0 2px 10px rgba(200,34,26,0.35)',
             borderRadius: 8, border: 'none',
-            padding: '9px 18px', fontSize: 13, fontWeight: 600,
+            padding: '11px 20px', fontSize: 14, fontWeight: 700,
             cursor: 'pointer',
           }}>
           <UserPlus size={15} /> Novo Cliente
@@ -132,7 +133,7 @@ export default function Clientes() {
               key={key}
               onClick={() => setFiltroTipo(key)}
               style={{
-                padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600,
                 cursor: 'pointer', transition: 'all 0.15s',
                 background: filtroTipo === key ? '#C8221A' : '#fff',
                 color: filtroTipo === key ? '#fff' : '#6B5A4E',
@@ -157,17 +158,17 @@ export default function Clientes() {
 
           {/* Dados básicos */}
           <div style={{ background: '#FFF7ED', borderRadius: 10, padding: 14, marginBottom: 12 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <UserPlus size={12} /> Dados Pessoais
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Nome *</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Nome *</label>
                 <input type="text" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })}
                   style={INPUT_BASE} placeholder="Nome completo" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Telefone</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Telefone</label>
                 <input type="text" value={form.telefone} onChange={e => setForm({ ...form, telefone: e.target.value })}
                   style={INPUT_BASE} placeholder="(32) 99999-9999" />
               </div>
@@ -176,27 +177,27 @@ export default function Clientes() {
 
           {/* Endereço */}
           <div style={{ background: '#F0F9FF', borderRadius: 10, padding: 14, marginBottom: 12 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2563EB', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#2563EB', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <MapPin size={12} /> Endereço
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Rua</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Rua</label>
                 <input type="text" value={form.rua} onChange={e => setForm({ ...form, rua: e.target.value })}
                   style={INPUT_BASE} placeholder="Nome da rua" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Bairro</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Bairro</label>
                 <input type="text" value={form.bairro} onChange={e => setForm({ ...form, bairro: e.target.value })}
                   style={INPUT_BASE} placeholder="Bairro" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Número</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Número</label>
                 <input type="text" value={form.numero} onChange={e => setForm({ ...form, numero: e.target.value })}
                   style={INPUT_BASE} placeholder="Ex: 123" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Referência</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Referência</label>
                 <input type="text" value={form.referencia} onChange={e => setForm({ ...form, referencia: e.target.value })}
                   style={INPUT_BASE} placeholder="Ex: Próximo ao mercado" />
               </div>
@@ -205,12 +206,12 @@ export default function Clientes() {
 
           {/* Tipo + obs */}
           <div style={{ background: '#F0FDF4', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#16A34A', marginTop: 0, marginBottom: 12 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#16A34A', marginTop: 0, marginBottom: 12 }}>
               Configurações
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Tipo de Cliente</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Tipo de Cliente</label>
                 <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}
                   style={{ ...INPUT_BASE }}>
                   <option value="normal">Normal</option>
@@ -218,7 +219,7 @@ export default function Clientes() {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Observações</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Observações</label>
                 <input type="text" value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })}
                   style={INPUT_BASE} placeholder="Preferências, alergias..." />
               </div>
@@ -231,7 +232,7 @@ export default function Clientes() {
               background: '#16A34A', color: '#fff',
               boxShadow: '0 2px 8px rgba(22,163,74,0.3)',
               borderRadius: 8, border: 'none',
-              padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
             }}>
               <Check size={14} /> Salvar
             </button>
@@ -240,7 +241,7 @@ export default function Clientes() {
               background: '#fff', color: '#6B5A4E',
               border: '1.5px solid #CFC4BB',
               borderRadius: 8, padding: '9px 18px',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}>
               <X size={14} /> Cancelar
             </button>
@@ -284,7 +285,7 @@ export default function Clientes() {
                   </div>
                   <div style={{ display: 'flex', gap: 16, marginTop: 4, flexWrap: 'wrap' }}>
                     {cliente.telefone && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6B5A4E' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#6B5A4E' }}>
                         <Phone size={11} /> {cliente.telefone}
                       </span>
                     )}
@@ -292,7 +293,7 @@ export default function Clientes() {
                   {endFormatado && (
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, marginTop: 4 }}>
                       <MapPin size={11} style={{ color: '#9D8878', marginTop: 2, flexShrink: 0 }} />
-                      <div style={{ fontSize: 12, color: '#6B5A4E', lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 13, color: '#6B5A4E', lineHeight: 1.5 }}>
                         {cliente.rua && <span>{cliente.rua}</span>}
                         {cliente.numero && <span>, nº {cliente.numero}</span>}
                         {cliente.bairro && <span> — {cliente.bairro}</span>}
@@ -301,10 +302,10 @@ export default function Clientes() {
                     </div>
                   )}
                   {cliente.observacoes && (
-                    <p style={{ fontSize: 12, color: '#CA8A04', marginTop: 4 }}>{cliente.observacoes}</p>
+                    <p style={{ fontSize: 13, color: '#CA8A04', marginTop: 4 }}>{cliente.observacoes}</p>
                   )}
                   {debito > 0 && (
-                    <p style={{ fontSize: 12, color: '#92400E', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <p style={{ fontSize: 13, color: '#92400E', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <AlertCircle size={11} /> Débito: R$ {debito.toFixed(2).replace('.', ',')}
                     </p>
                   )}

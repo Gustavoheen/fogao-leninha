@@ -13,8 +13,8 @@ const INPUT_BASE = {
   background: '#fff',
   border: '1.5px solid #CFC4BB',
   borderRadius: 8,
-  padding: '8px 12px',
-  fontSize: 13,
+  padding: '14px 16px',
+  fontSize: 16,
   width: '100%',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
@@ -64,7 +64,7 @@ export default function Cardapio() {
           Configure as opções, acompanhamentos, carnes e bebidas
         </p>
         {cardapioHoje?.atualizadoEm && (
-          <p style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <p style={{ fontSize: 13, color: '#16A34A', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16A34A', display: 'inline-block' }} />
             Configurado: {new Date(cardapioHoje.atualizadoEm).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })} às {new Date(cardapioHoje.atualizadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </p>
@@ -83,12 +83,12 @@ export default function Cardapio() {
 
         {/* Seção de preços */}
         <div style={{ background: '#FFF7ED', borderRadius: 10, padding: 14, marginBottom: 14 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
+          <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
             Preços
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Preço Pequena (R$)</label>
+              <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Preço Pequena (R$)</label>
               <input
                 type="number" min="0" step="0.01"
                 value={cardapioHoje.precoP}
@@ -98,7 +98,7 @@ export default function Cardapio() {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Preço Grande (R$)</label>
+              <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Preço Grande (R$)</label>
               <input
                 type="number" min="0" step="0.01"
                 value={cardapioHoje.precoG}
@@ -112,7 +112,7 @@ export default function Cardapio() {
 
         {/* Carnes */}
         <div style={{ background: '#FEF2F2', borderRadius: 10, padding: 14 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#991B1B', marginTop: 0, marginBottom: 12 }}>
+          <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#991B1B', marginTop: 0, marginBottom: 12 }}>
             Opções de carne (até 3)
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -192,7 +192,7 @@ export default function Cardapio() {
         )}
 
         {refrigerantes.length === 0
-          ? <p style={{ fontSize: 12, color: '#9D8878', fontStyle: 'italic' }}>Nenhum refrigerante cadastrado</p>
+          ? <p style={{ fontSize: 13, color: '#9D8878', fontStyle: 'italic' }}>Nenhum refrigerante cadastrado</p>
           : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {refrigerantes.map((item, idx) => (
                 <ItemLine key={item.id} item={item} onToggle={toggleDisponibilidade} onRemover={removerItemCardapio} cor="blue" idx={idx} />
@@ -241,7 +241,7 @@ export default function Cardapio() {
         )}
 
         {combos.length === 0
-          ? <p style={{ fontSize: 12, color: '#9D8878', fontStyle: 'italic' }}>Nenhum combo cadastrado</p>
+          ? <p style={{ fontSize: 13, color: '#9D8878', fontStyle: 'italic' }}>Nenhum combo cadastrado</p>
           : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {combos.map((item, idx) => (
                 <ItemLine key={item.id} item={item} onToggle={toggleDisponibilidade} onRemover={removerItemCardapio} cor="purple" idx={idx} />
@@ -260,21 +260,21 @@ export default function Cardapio() {
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>WhatsApp do restaurante (com DDI, ex: 5532999999999)</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>WhatsApp do restaurante (com DDI, ex: 5532999999999)</label>
             <input type="text" value={configLocal.whatsapp}
               onChange={e => setConfigLocal(p => ({ ...p, whatsapp: e.target.value }))}
               style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
               placeholder="5532999999999" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Chave PIX</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Chave PIX</label>
             <input type="text" value={configLocal.pixChave}
               onChange={e => setConfigLocal(p => ({ ...p, pixChave: e.target.value }))}
               style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
               placeholder="CPF, email, telefone ou chave aleatória" />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Nome do titular PIX</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Nome do titular PIX</label>
             <input type="text" value={configLocal.pixNome}
               onChange={e => setConfigLocal(p => ({ ...p, pixNome: e.target.value }))}
               style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
@@ -356,7 +356,7 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle }) {
 
       {/* Acompanhamentos */}
       <div style={{ padding: 16 }}>
-        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B5A4E', marginTop: 0, marginBottom: 10 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#6B5A4E', marginTop: 0, marginBottom: 10 }}>
           Acompanhamentos
         </p>
 
@@ -400,7 +400,7 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle }) {
         </div>
 
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F3F0ED' }}>
-          <p style={{ fontSize: 12, color: '#9D8878', margin: 0 }}>
+          <p style={{ fontSize: 13, color: '#9D8878', margin: 0 }}>
             🥩 Carnes: <span style={{ fontWeight: 600, color: '#6B5A4E' }}>globais (configuradas acima)</span>
           </p>
         </div>
@@ -432,7 +432,7 @@ function ItemLine({ item, onToggle, onRemover, cor, idx }) {
             {item.subtipo}
           </span>
         )}
-        {item.descricao && <span style={{ fontSize: 12, color: '#9D8878' }}>{item.descricao}</span>}
+        {item.descricao && <span style={{ fontSize: 13, color: '#9D8878' }}>{item.descricao}</span>}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: '#16A34A' }}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</span>

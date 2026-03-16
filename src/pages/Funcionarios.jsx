@@ -15,8 +15,8 @@ const INPUT_BASE = {
   background: '#fff',
   border: '1.5px solid #CFC4BB',
   borderRadius: 8,
-  padding: '8px 12px',
-  fontSize: 13,
+  padding: '14px 16px',
+  fontSize: 16,
   width: '100%',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
@@ -101,7 +101,7 @@ export default function Funcionarios() {
             background: '#C8221A', color: '#fff',
             boxShadow: '0 2px 10px rgba(200,34,26,0.35)',
             borderRadius: 8, border: 'none',
-            padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
           }}>
           <Plus size={15} /> Novo Funcionário
         </button>
@@ -111,16 +111,16 @@ export default function Funcionarios() {
       {funcionarios.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 22 }}>
           <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-            <p style={{ fontSize: 12, color: '#92400E', margin: '0 0 4px' }}>Folha de Pagamento</p>
+            <p style={{ fontSize: 13, color: '#92400E', margin: '0 0 4px' }}>Folha de Pagamento</p>
             <p style={{ fontSize: 24, fontWeight: 700, color: '#78350F', margin: 0 }}>R$ {totalFolha.toFixed(2).replace('.', ',')}</p>
-            <p style={{ fontSize: 12, color: '#CA8A04', marginTop: 4 }}>{ativos.length} funcionário(s) ativo(s)</p>
+            <p style={{ fontSize: 13, color: '#CA8A04', marginTop: 4 }}>{ativos.length} funcionário(s) ativo(s)</p>
           </div>
           <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-            <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Ativos</p>
+            <p style={{ fontSize: 13, color: '#9D8878', margin: '0 0 4px' }}>Ativos</p>
             <p style={{ fontSize: 24, fontWeight: 700, color: '#16A34A', margin: 0 }}>{ativos.length}</p>
           </div>
           <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-            <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 4px' }}>Inativos</p>
+            <p style={{ fontSize: 13, color: '#9D8878', margin: '0 0 4px' }}>Inativos</p>
             <p style={{ fontSize: 24, fontWeight: 700, color: '#6B7280', margin: 0 }}>{inativos.length}</p>
           </div>
         </div>
@@ -139,24 +139,24 @@ export default function Funcionarios() {
 
           {/* Dados pessoais */}
           <div style={{ background: '#FFF7ED', borderRadius: 10, padding: 14, marginBottom: 12 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#C8221A', marginTop: 0, marginBottom: 12 }}>
               Dados Pessoais
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Nome</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Nome</label>
                 <input type="text" value={form.nome}
                   onChange={e => setForm(prev => ({ ...prev, nome: e.target.value }))}
                   style={INPUT_BASE} placeholder="Nome completo" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Cargo</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Cargo</label>
                 <input type="text" value={form.cargo}
                   onChange={e => setForm(prev => ({ ...prev, cargo: e.target.value }))}
                   style={INPUT_BASE} placeholder="Ex: Motoboy, Cozinheiro..." />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Data de Admissão</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Data de Admissão</label>
                 <input type="date" value={form.dataAdmissao}
                   onChange={e => setForm(prev => ({ ...prev, dataAdmissao: e.target.value }))}
                   style={INPUT_BASE} />
@@ -166,12 +166,12 @@ export default function Funcionarios() {
 
           {/* Salário e status */}
           <div style={{ background: '#F0FDF4', borderRadius: 10, padding: 14, marginBottom: 12 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#16A34A', marginTop: 0, marginBottom: 12 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#16A34A', marginTop: 0, marginBottom: 12 }}>
               Salário e Status
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, alignItems: 'end' }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Salário (R$)</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Salário (R$)</label>
                 <input type="number" min="0" step="0.01" value={form.salario}
                   onChange={e => setForm(prev => ({ ...prev, salario: e.target.value }))}
                   style={INPUT_BASE} placeholder="0,00" />
@@ -192,7 +192,7 @@ export default function Funcionarios() {
 
           {/* Observações */}
           <div style={{ background: '#F8F7F5', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Observações</label>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Observações</label>
             <input type="text" value={form.observacoes}
               onChange={e => setForm(prev => ({ ...prev, observacoes: e.target.value }))}
               style={INPUT_BASE} placeholder="Informações adicionais..." />
@@ -206,7 +206,7 @@ export default function Funcionarios() {
                 color: '#fff',
                 boxShadow: !form.nome.trim() ? 'none' : '0 2px 8px rgba(22,163,74,0.3)',
                 borderRadius: 8, border: 'none',
-                padding: '9px 20px', fontSize: 13, fontWeight: 600,
+                padding: '11px 20px', fontSize: 14, fontWeight: 700,
                 cursor: !form.nome.trim() ? 'not-allowed' : 'pointer',
               }}>
               <Check size={14} /> {editandoId ? 'Salvar' : 'Adicionar'}
@@ -216,7 +216,7 @@ export default function Funcionarios() {
               background: '#fff', color: '#6B5A4E',
               border: '1.5px solid #CFC4BB',
               borderRadius: 8, padding: '9px 18px',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}>
               <X size={14} /> Cancelar
             </button>
@@ -264,7 +264,7 @@ export default function Funcionarios() {
         <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A0E08', marginTop: 0, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Bike size={17} style={{ color: '#2563EB' }} /> Motoboys para Entrega
         </h2>
-        <p style={{ fontSize: 12, color: '#9D8878', marginBottom: 16 }}>
+        <p style={{ fontSize: 13, color: '#9D8878', marginBottom: 16 }}>
           Lista usada na atribuição de entregas nos pedidos.
           {motoboysFuncionarios.length > 0 && ' Funcionários com cargo de motoboy/entregador são adicionados automaticamente.'}
         </p>
@@ -324,7 +324,7 @@ export default function Funcionarios() {
         )}
 
         {motoboys.length === 0 && motoboysFuncionarios.length === 0 && (
-          <p style={{ fontSize: 12, color: '#9D8878' }}>Nenhum motoboy cadastrado. Adicione acima ou cadastre funcionários com cargo "Motoboy".</p>
+          <p style={{ fontSize: 13, color: '#9D8878' }}>Nenhum motoboy cadastrado. Adicione acima ou cadastre funcionários com cargo "Motoboy".</p>
         )}
       </div>
     </div>
@@ -361,11 +361,11 @@ function FuncionarioCard({ funcionario: f, onEditar, onRemover, onToggle }) {
             </p>
           )}
           {f.dataAdmissao && (
-            <p style={{ fontSize: 12, color: '#9D8878', margin: '2px 0' }}>
+            <p style={{ fontSize: 13, color: '#9D8878', margin: '2px 0' }}>
               Desde {new Date(f.dataAdmissao + 'T12:00:00').toLocaleDateString('pt-BR')}
             </p>
           )}
-          {f.observacoes && <p style={{ fontSize: 12, color: '#9D8878', fontStyle: 'italic', margin: '2px 0' }}>{f.observacoes}</p>}
+          {f.observacoes && <p style={{ fontSize: 13, color: '#9D8878', fontStyle: 'italic', margin: '2px 0' }}>{f.observacoes}</p>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 16 }}>
           <button

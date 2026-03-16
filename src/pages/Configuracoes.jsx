@@ -5,8 +5,8 @@ import { Save, Check, Copy, ExternalLink, Settings, Smartphone, Lock, ToggleLeft
 function Campo({ label, hint, children }) {
   return (
     <div>
-      <label className="block text-sm font-semibold text-stone-300 mb-1">{label}</label>
-      {hint && <p className="text-xs text-stone-500 mb-2">{hint}</p>}
+      <label className="block text-base font-bold text-stone-700 mb-1.5">{label}</label>
+      {hint && <p className="text-sm text-stone-500 mb-2">{hint}</p>}
       {children}
     </div>
   )
@@ -20,7 +20,8 @@ function Input({ value, onChange, placeholder, type = 'text', ...props }) {
       onChange={onChange}
       placeholder={placeholder}
       {...props}
-      className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-3 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 transition-colors text-sm"
+      className="w-full bg-white border-2 border-stone-200 rounded-xl px-4 py-4 text-stone-900 placeholder-stone-400 focus:outline-none focus:border-orange-500 transition-colors text-base font-medium"
+      style={{ fontSize: 16 }}
     />
   )
 }
@@ -28,11 +29,11 @@ function Input({ value, onChange, placeholder, type = 'text', ...props }) {
 function Secao({ titulo, icone, children }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-stone-100 flex items-center gap-2">
-        <span className="text-stone-600">{icone}</span>
-        <h2 className="font-bold text-stone-800">{titulo}</h2>
+      <div className="px-6 py-5 border-b border-stone-100 flex items-center gap-3 bg-stone-50">
+        <span className="text-orange-500">{icone}</span>
+        <h2 className="text-lg font-black text-stone-800">{titulo}</h2>
       </div>
-      <div className="p-6 space-y-4">
+      <div className="p-6 space-y-5">
         {children}
       </div>
     </div>
@@ -81,24 +82,24 @@ export default function Configuracoes() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-stone-900">Configurações</h1>
-          <p className="text-stone-500 text-sm mt-0.5">Ajustes do restaurante e do sistema</p>
+          <h1 className="text-3xl font-black text-stone-900">Configurações</h1>
+          <p className="text-stone-500 text-base mt-1">Ajustes do restaurante e do sistema</p>
         </div>
         <button
           onClick={salvar}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all ${
             salvo
               ? 'bg-green-500 text-white'
               : 'bg-orange-500 hover:bg-orange-600 text-white'
           }`}
         >
-          {salvo ? <Check size={16} /> : <Save size={16} />}
+          {salvo ? <Check size={18} /> : <Save size={18} />}
           {salvo ? 'Salvo!' : 'Salvar'}
         </button>
       </div>
 
       {/* Pix */}
-      <Secao titulo="Pagamento via Pix" icone={<Smartphone size={18} />}>
+      <Secao titulo="Pagamento via Pix" icone={<Smartphone size={20} />}>
         <Campo label="Chave Pix" hint="CPF, CNPJ, e-mail, telefone ou chave aleatória">
           <Input
             value={form.pixChave}
@@ -106,7 +107,7 @@ export default function Configuracoes() {
             placeholder="Ex: 55321234-5678 ou chave@email.com"
           />
         </Campo>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Campo label="Nome do favorecido">
             <Input
               value={form.pixNome}
@@ -123,16 +124,16 @@ export default function Configuracoes() {
           </Campo>
         </div>
         {form.pixChave && (
-          <div className="bg-stone-50 border border-stone-200 rounded-xl p-4">
-            <p className="text-xs text-stone-500 mb-1">Prévia — como o cliente verá</p>
-            <p className="font-mono text-stone-800 text-sm">{form.pixChave}</p>
-            {form.pixNome && <p className="text-xs text-stone-500 mt-0.5">{form.pixNome}</p>}
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+            <p className="text-sm text-orange-600 font-semibold mb-1">Prévia — como o cliente verá</p>
+            <p className="font-mono text-stone-800 text-base font-bold">{form.pixChave}</p>
+            {form.pixNome && <p className="text-sm text-stone-500 mt-1">{form.pixNome}</p>}
           </div>
         )}
       </Secao>
 
       {/* WhatsApp */}
-      <Secao titulo="WhatsApp do restaurante" icone={<Smartphone size={18} />}>
+      <Secao titulo="WhatsApp do restaurante" icone={<Smartphone size={20} />}>
         <Campo
           label="Número do WhatsApp"
           hint="Com DDI e DDD, só números. Ex: 5532912345678"
@@ -144,30 +145,30 @@ export default function Configuracoes() {
             type="tel"
           />
         </Campo>
-        <p className="text-xs text-stone-500">
+        <p className="text-sm text-stone-500">
           Usado para que clientes que pagaram via Pix enviem o comprovante diretamente para este número.
         </p>
       </Secao>
 
       {/* Loja */}
-      <Secao titulo="Status da loja" icone={<Settings size={18} />}>
-        <div className="flex items-center justify-between">
+      <Secao titulo="Status da loja" icone={<Settings size={20} />}>
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="font-semibold text-stone-800">Loja aberta para pedidos online</p>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <p className="text-base font-bold text-stone-800">Loja aberta para pedidos online</p>
+            <p className="text-sm text-stone-500 mt-1">
               Quando fechada, a página pública exibe mensagem de encerramento
             </p>
           </div>
           <button
             onClick={() => set('lojaAberta', !form.lojaAberta)}
-            className={`transition-colors ${form.lojaAberta ? 'text-green-500' : 'text-stone-400'}`}
+            className={`transition-colors shrink-0 ${form.lojaAberta ? 'text-green-500' : 'text-stone-400'}`}
           >
             {form.lojaAberta
-              ? <ToggleRight size={40} />
-              : <ToggleLeft size={40} />}
+              ? <ToggleRight size={52} />
+              : <ToggleLeft size={52} />}
           </button>
         </div>
-        <div className={`rounded-xl px-4 py-3 text-sm font-semibold ${
+        <div className={`rounded-xl px-5 py-4 text-base font-bold ${
           form.lojaAberta
             ? 'bg-green-50 text-green-700 border border-green-200'
             : 'bg-red-50 text-red-700 border border-red-200'
@@ -177,7 +178,7 @@ export default function Configuracoes() {
       </Secao>
 
       {/* PIN da equipe */}
-      <Secao titulo="Área da equipe" icone={<Lock size={18} />}>
+      <Secao titulo="Área da equipe" icone={<Lock size={20} />}>
         <Campo
           label="PIN de acesso da equipe"
           hint="Código que a equipe digita para acessar a página /equipe"
@@ -189,36 +190,36 @@ export default function Configuracoes() {
             type="password"
           />
         </Campo>
-        <p className="text-xs text-stone-500">Mínimo 4 dígitos. Padrão: 1234</p>
+        <p className="text-sm text-stone-500">Mínimo 4 dígitos. Padrão: 1234</p>
       </Secao>
 
       {/* Links */}
-      <Secao titulo="Links do sistema" icone={<ExternalLink size={18} />}>
+      <Secao titulo="Links do sistema" icone={<ExternalLink size={20} />}>
         {[
           { label: 'Página pública de pedidos', url: urlPublica, key: 'pub' },
           { label: 'Área da equipe', url: urlEquipe, key: 'eq' },
         ].map(({ label, url, key }) => (
-          <div key={key} className="flex items-center justify-between gap-3 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
+          <div key={key} className="flex items-center justify-between gap-3 bg-stone-50 border border-stone-200 rounded-xl px-4 py-4">
             <div className="min-w-0">
-              <p className="text-xs text-stone-500">{label}</p>
-              <p className="text-stone-700 text-sm font-mono truncate">{url}</p>
+              <p className="text-sm font-semibold text-stone-500">{label}</p>
+              <p className="text-stone-700 text-base font-mono truncate mt-0.5">{url}</p>
             </div>
             <div className="flex gap-2 shrink-0">
               <button
                 onClick={() => copiar(url, key)}
-                className="p-2 rounded-lg hover:bg-stone-200 transition-colors text-stone-500"
+                className="p-2.5 rounded-lg hover:bg-stone-200 transition-colors text-stone-500"
                 title="Copiar"
               >
-                {copiado === key ? <Check size={15} className="text-green-500" /> : <Copy size={15} />}
+                {copiado === key ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
               </button>
               <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-lg hover:bg-stone-200 transition-colors text-stone-500"
+                className="p-2.5 rounded-lg hover:bg-stone-200 transition-colors text-stone-500"
                 title="Abrir"
               >
-                <ExternalLink size={15} />
+                <ExternalLink size={18} />
               </a>
             </div>
           </div>
@@ -228,11 +229,11 @@ export default function Configuracoes() {
       {/* Botão salvar no final */}
       <button
         onClick={salvar}
-        className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
+        className={`w-full flex items-center justify-center gap-2 py-5 rounded-xl font-black text-lg transition-all ${
           salvo ? 'bg-green-500 text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'
         }`}
       >
-        {salvo ? <Check size={18} /> : <Save size={18} />}
+        {salvo ? <Check size={22} /> : <Save size={22} />}
         {salvo ? 'Configurações salvas!' : 'Salvar configurações'}
       </button>
     </div>

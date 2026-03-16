@@ -159,9 +159,9 @@ const INPUT_BASE = {
 }
 
 const SECTION_LABEL = {
-  fontSize: 11,
+  fontSize: 14,
   fontWeight: 700,
-  letterSpacing: '0.08em',
+  letterSpacing: '0.04em',
   textTransform: 'uppercase',
   display: 'flex',
   alignItems: 'center',
@@ -340,7 +340,7 @@ export default function Pedidos() {
             title={autoImprimir ? 'Impressão automática ativada' : 'Impressão manual'}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600,
               border: autoImprimir ? '1.5px solid #16A34A' : '1.5px solid #CFC4BB',
               background: autoImprimir ? '#F0FDF4' : '#F7F3EF',
               color: autoImprimir ? '#15803D' : '#6B5A4E',
@@ -374,7 +374,7 @@ export default function Pedidos() {
             key={key}
             onClick={() => setFiltroStatus(key)}
             style={{
-              padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600,
               border: filtroStatus === key ? 'none' : '1.5px solid #E6DDD5',
               background: filtroStatus === key ? '#C8221A' : '#fff',
               color: filtroStatus === key ? '#fff' : '#6B5A4E',
@@ -390,13 +390,29 @@ export default function Pedidos() {
       {/* Formulário de Novo Pedido */}
       {mostrarForm && (
         <div style={{
-          background: '#fff', border: '1.5px solid #E6DDD5',
-          borderRadius: 12, padding: 24, marginBottom: 20,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-        }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#1A0E08', marginBottom: 20 }}>
-            Novo Pedido
-          </h2>
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end',
+        }} className="md:relative md:inset-auto md:z-auto md:bg-transparent md:block">
+        <div style={{
+          background: '#fff', width: '100%', maxHeight: '92dvh',
+          borderRadius: '20px 20px 0 0', overflowY: 'auto',
+          paddingBottom: 'env(safe-area-inset-bottom, 16px)',
+        }} className="md:rounded-xl md:max-h-none md:border md:border-stone-200 md:mb-5 md:shadow-lg">
+          {/* Drag handle mobile */}
+          <div className="flex justify-center pt-3 pb-1 md:hidden">
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: '#D1C4BB' }} />
+          </div>
+
+          <div style={{ padding: '16px 20px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
+              Novo Pedido
+            </h2>
+            <button onClick={() => { setForm(FORM_VAZIO); setMostrarForm(false); setSugestoes([]) }}
+              style={{ background: '#F7F3EF', border: '1.5px solid #E6DDD5', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', color: '#6B5A4E', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+              <X size={15} /> Fechar
+            </button>
+          </div>
 
           {/* ── Seção: Tipo de entrega ── */}
           <div style={{
@@ -439,7 +455,7 @@ export default function Pedidos() {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div style={{ position: 'relative' }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Nome</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Nome</label>
                 <input
                   type="text"
                   value={form.clienteNome}
@@ -470,7 +486,7 @@ export default function Pedidos() {
                           )}
                         </div>
                         {(c.rua || c.bairro) && (
-                          <span style={{ color: '#9D8878', fontSize: 11 }}>{formatarEndereco(c)}</span>
+                          <span style={{ color: '#9D8878', fontSize: 13 }}>{formatarEndereco(c)}</span>
                         )}
                       </button>
                     ))}
@@ -478,7 +494,7 @@ export default function Pedidos() {
                 )}
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Telefone</label>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Telefone</label>
                 <input
                   type="text"
                   value={form.clienteTelefone}
@@ -488,30 +504,30 @@ export default function Pedidos() {
                 />
               </div>
               {form.tipoEntrega !== 'retirada' && <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 8 }}>
                   <MapPin size={11} /> Endereço de Entrega
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label style={{ display: 'block', fontSize: 10, color: '#9D8878', marginBottom: 3 }}>Rua</label>
+                    <label style={{ display: 'block', fontSize: 13, color: '#9D8878', marginBottom: 4 }}>Rua</label>
                     <input type="text" value={form.clienteRua}
                       onChange={e => setForm(prev => ({ ...prev, clienteRua: e.target.value }))}
                       style={INPUT_BASE} placeholder="Nome da rua" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 10, color: '#9D8878', marginBottom: 3 }}>Bairro</label>
+                    <label style={{ display: 'block', fontSize: 13, color: '#9D8878', marginBottom: 4 }}>Bairro</label>
                     <input type="text" value={form.clienteBairro}
                       onChange={e => setForm(prev => ({ ...prev, clienteBairro: e.target.value }))}
                       style={INPUT_BASE} placeholder="Bairro" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 10, color: '#9D8878', marginBottom: 3 }}>Número</label>
+                    <label style={{ display: 'block', fontSize: 13, color: '#9D8878', marginBottom: 4 }}>Número</label>
                     <input type="text" value={form.clienteNumero}
                       onChange={e => setForm(prev => ({ ...prev, clienteNumero: e.target.value }))}
                       style={INPUT_BASE} placeholder="Ex: 123" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 10, color: '#9D8878', marginBottom: 3 }}>Referência</label>
+                    <label style={{ display: 'block', fontSize: 13, color: '#9D8878', marginBottom: 4 }}>Referência</label>
                     <input type="text" value={form.clienteReferencia}
                       onChange={e => setForm(prev => ({ ...prev, clienteReferencia: e.target.value }))}
                       style={INPUT_BASE} placeholder="Próximo ao..." />
@@ -562,16 +578,16 @@ export default function Pedidos() {
                   </div>
                 </div>
                 {item.retirados && item.retirados.length > 0 && (
-                  <p style={{ fontSize: 11, color: '#DC2626', marginBottom: 4 }}>Sem: {item.retirados.join(', ')}</p>
+                  <p style={{ fontSize: 13, color: '#DC2626', marginBottom: 4 }}>Sem: {item.retirados.join(', ')}</p>
                 )}
                 {item.extras && (
-                  <p style={{ fontSize: 11, color: '#16A34A', marginBottom: 4 }}>+ {item.extras}</p>
+                  <p style={{ fontSize: 13, color: '#16A34A', marginBottom: 4 }}>+ {item.extras}</p>
                 )}
                 <div>
-                  <label style={{ display: 'block', fontSize: 10, color: '#9D8878', marginBottom: 3 }}>Observação</label>
+                  <label style={{ display: 'block', fontSize: 13, color: '#9D8878', marginBottom: 4 }}>Observação</label>
                   <input type="text" value={item.adicionais}
                     onChange={e => atualizarItemMarmitex(item.uid, 'adicionais', e.target.value)}
-                    style={{ ...INPUT_BASE, fontSize: 12 }}
+                    style={{ ...INPUT_BASE }}
                     placeholder="Observação adicional..." />
                 </div>
               </div>
@@ -595,9 +611,9 @@ export default function Pedidos() {
                       borderRadius: 8, padding: 12, textAlign: 'left', cursor: 'pointer',
                       transition: 'border-color 0.15s',
                     }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: '#1A0E08' }}>{item.nome}</p>
-                    {item.descricao && <p style={{ fontSize: 11, color: '#9D8878', marginTop: 2 }}>{item.descricao}</p>}
-                    <p style={{ fontSize: 12, fontWeight: 700, color: '#16A34A', marginTop: 6 }}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#1A0E08' }}>{item.nome}</p>
+                    {item.descricao && <p style={{ fontSize: 13, color: '#9D8878', marginTop: 2 }}>{item.descricao}</p>}
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#16A34A', marginTop: 6 }}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</p>
                   </button>
                 ))}
               </div>
@@ -618,17 +634,17 @@ export default function Pedidos() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: 10, color: '#9D8878', marginBottom: 3 }}>Adicionar</label>
+                      <label style={{ display: 'block', fontSize: 13, color: '#9D8878', marginBottom: 4 }}>Adicionar</label>
                       <input type="text" value={item.adicionais}
                         onChange={e => atualizarItemCombo(item.uid, 'adicionais', e.target.value)}
-                        style={{ ...INPUT_BASE, fontSize: 12 }}
+                        style={{ ...INPUT_BASE }}
                         placeholder="Ex: bacon..." />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: 10, color: '#9D8878', marginBottom: 3 }}>Retirar</label>
+                      <label style={{ display: 'block', fontSize: 13, color: '#9D8878', marginBottom: 4 }}>Retirar</label>
                       <input type="text" value={item.remover}
                         onChange={e => atualizarItemCombo(item.uid, 'remover', e.target.value)}
-                        style={{ ...INPUT_BASE, fontSize: 12 }}
+                        style={{ ...INPUT_BASE }}
                         placeholder="Ex: cebola..." />
                     </div>
                   </div>
@@ -655,13 +671,13 @@ export default function Pedidos() {
                       background: '#fff', border: '1.5px solid #BFDBFE',
                       borderRadius: 8, padding: 10, textAlign: 'left', cursor: 'pointer',
                     }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: '#1A0E08', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#1A0E08', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.nome}
                     </p>
                     <span style={{ fontSize: 10, background: '#DBEAFE', color: '#1D4ED8', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
                       {item.subtipo}
                     </span>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: '#16A34A', marginTop: 4 }}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#16A34A', marginTop: 4 }}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</p>
                   </button>
                 ))}
               </div>
@@ -676,7 +692,7 @@ export default function Pedidos() {
                   }}>
                     <span style={{ fontSize: 13, color: '#1A0E08' }}>
                       {item.nome}{' '}
-                      <span style={{ fontSize: 11, color: '#2563EB' }}>({item.subtipo})</span>
+                      <span style={{ fontSize: 13, color: '#2563EB' }}>({item.subtipo})</span>
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <button onClick={() => alterarQtdRefrigerante(item.uid, -1)}
@@ -688,7 +704,7 @@ export default function Pedidos() {
                         style={{ width: 26, height: 26, background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
                         +
                       </button>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#16A34A', minWidth: 56, textAlign: 'right' }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#16A34A', minWidth: 56, textAlign: 'right' }}>
                         R$ {(item.preco * item.qtd).toFixed(2).replace('.', ',')}
                       </span>
                       <button onClick={() => removerRefrigerante(item.uid)}
@@ -750,7 +766,7 @@ export default function Pedidos() {
               {FORMAS_PAGAMENTO_OPCOES.map(f => (
                 <button key={f.value} onClick={() => setForm(prev => ({ ...prev, pagamento: f.value }))}
                   style={{
-                    padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                    padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600,
                     border: form.pagamento === f.value ? '2px solid currentColor' : '1.5px solid #E6DDD5',
                     background: form.pagamento === f.value ? undefined : '#fff',
                     cursor: 'pointer', transition: 'all 0.15s',
@@ -766,7 +782,7 @@ export default function Pedidos() {
               ))}
             </div>
             {(form.pagamento === 'Pendente' || form.pagamento === 'Mensalista') && (
-              <p style={{ fontSize: 11, color: '#D97706', marginTop: 8, fontWeight: 600 }}>
+              <p style={{ fontSize: 13, color: '#D97706', marginTop: 8, fontWeight: 600 }}>
                 Pagamento registrado como pendente
               </p>
             )}
@@ -787,7 +803,7 @@ export default function Pedidos() {
 
           {/* Observações */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>
               Observações gerais
             </label>
             <input type="text" value={form.observacoes}
@@ -837,25 +853,18 @@ export default function Pedidos() {
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={salvar} disabled={!temItens}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 background: temItens ? '#16A34A' : '#CFC4BB',
-                color: '#fff', padding: '10px 20px', borderRadius: 8,
-                fontSize: 13, fontWeight: 600, border: 'none', cursor: temItens ? 'pointer' : 'not-allowed',
+                color: '#fff', padding: '14px 20px', borderRadius: 12,
+                fontSize: 15, fontWeight: 700, border: 'none', cursor: temItens ? 'pointer' : 'not-allowed',
                 boxShadow: temItens ? '0 2px 8px rgba(22,163,74,0.35)' : 'none',
                 transition: 'all 0.15s',
               }}>
-              <Check size={15} /> Confirmar Pedido
-            </button>
-            <button onClick={() => { setForm(FORM_VAZIO); setMostrarForm(false); setSugestoes([]) }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: '#fff', color: '#6B5A4E',
-                padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                border: '1.5px solid #CFC4BB', cursor: 'pointer', transition: 'all 0.15s',
-              }}>
-              <X size={15} /> Cancelar
+              <Check size={17} /> Confirmar Pedido
             </button>
           </div>
+          </div>
+        </div>
         </div>
       )}
 
@@ -934,9 +943,9 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
     <div>
       {feedback && (
         <div style={{
-          marginBottom: 8, padding: '8px 12px',
+          marginBottom: 12, padding: '12px 16px',
           background: '#DCFCE7', color: '#15803D',
-          fontSize: 13, fontWeight: 600, borderRadius: 8,
+          fontSize: 15, fontWeight: 700, borderRadius: 10,
           border: '1.5px solid #BBF7D0',
         }}>
           {feedback}
@@ -944,40 +953,41 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
       )}
 
       {/* Passo 1 – escolher opção */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
         {opcoesAlmoco.map((opcao, idx) => (
           <button key={opcao.id}
             onClick={() => selecionarOpcao(opcao)}
             style={{
-              borderRadius: 10, padding: 12, textAlign: 'left',
-              border: opcaoSel?.id === opcao.id ? `2px solid ${COR_BADGE[idx] || '#EA580C'}` : '1.5px solid #FED7AA',
-              background: opcaoSel?.id === opcao.id ? '#fff' : '#fff',
+              borderRadius: 12, padding: '14px 12px', textAlign: 'left',
+              border: opcaoSel?.id === opcao.id ? `2.5px solid ${COR_BADGE[idx] || '#EA580C'}` : '1.5px solid #FED7AA',
+              background: opcaoSel?.id === opcao.id ? '#FFF7ED' : '#fff',
               cursor: 'pointer', transition: 'all 0.15s',
-              boxShadow: opcaoSel?.id === opcao.id ? '0 2px 8px rgba(234,88,12,0.15)' : 'none',
+              boxShadow: opcaoSel?.id === opcao.id ? `0 4px 12px rgba(234,88,12,0.18)` : '0 1px 3px rgba(0,0,0,0.06)',
+              minHeight: 80,
             }}
           >
             <span style={{
-              fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-              background: COR_BADGE[idx] || '#EA580C', color: '#fff', display: 'inline-block', marginBottom: 6,
+              fontSize: 13, fontWeight: 800, padding: '3px 10px', borderRadius: 20,
+              background: COR_BADGE[idx] || '#EA580C', color: '#fff', display: 'inline-block', marginBottom: 8,
             }}>
               {opcao.nome}
             </span>
             <div style={{ marginTop: 2 }}>
               {(opcao.acompanhamentos || []).length > 0
                 ? opcao.acompanhamentos.map((a, i) => (
-                    <p key={i} style={{ fontSize: 11, color: '#6B5A4E', lineHeight: 1.5 }}>· {a}</p>
+                    <p key={i} style={{ fontSize: 12, color: '#6B5A4E', lineHeight: 1.6 }}>· {a}</p>
                   ))
-                : <p style={{ fontSize: 11, color: '#9D8878', fontStyle: 'italic' }}>Sem acompanhamentos</p>
+                : <p style={{ fontSize: 12, color: '#9D8878', fontStyle: 'italic' }}>Sem acompanhamentos</p>
               }
             </div>
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
               {precoP > 0 && (
-                <span style={{ fontSize: 11, background: '#FFF7ED', color: '#C2410C', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                <span style={{ fontSize: 12, background: '#FFF7ED', color: '#C2410C', padding: '3px 8px', borderRadius: 6, fontWeight: 700, border: '1px solid #FED7AA' }}>
                   P R$ {precoP.toFixed(2).replace('.', ',')}
                 </span>
               )}
               {precoG > 0 && (
-                <span style={{ fontSize: 11, background: '#F0FDF4', color: '#15803D', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                <span style={{ fontSize: 12, background: '#F0FDF4', color: '#15803D', padding: '3px 8px', borderRadius: 6, fontWeight: 700, border: '1px solid #BBF7D0' }}>
                   G R$ {precoG.toFixed(2).replace('.', ',')}
                 </span>
               )}
@@ -990,23 +1000,24 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
       {opcaoSel && (opcaoSel.acompanhamentos || []).length > 0 && (
         <div style={{
           background: '#fff', border: '1.5px solid #FED7AA',
-          borderRadius: 8, padding: 12, marginBottom: 8,
+          borderRadius: 12, padding: '14px 14px', marginBottom: 10,
         }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 8 }}>
-            Acompanhamentos (clique para retirar)
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#6B5A4E', marginBottom: 10 }}>
+            Acompanhamentos — clique para retirar
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
             {(opcaoSel.acompanhamentos || []).map((a, i) => {
               const selecionado = acompSel.includes(a)
               return (
                 <button key={i} onClick={() => toggleAcomp(a)}
                   style={{
-                    padding: '5px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    padding: '8px 14px', borderRadius: 20, fontSize: 14, fontWeight: 600,
                     border: selecionado ? '1.5px solid #16A34A' : '1.5px solid #CBD5E1',
                     background: selecionado ? '#DCFCE7' : '#F1F5F9',
                     color: selecionado ? '#15803D' : '#94A3B8',
                     textDecoration: selecionado ? 'none' : 'line-through',
                     cursor: 'pointer', transition: 'all 0.1s',
+                    minHeight: 40,
                   }}>
                   {a}
                 </button>
@@ -1014,7 +1025,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
             })}
           </div>
           <input type="text" value={extras} onChange={e => setExtras(e.target.value)}
-            style={{ ...INPUT_BASE, fontSize: 12 }}
+            style={{ ...INPUT_BASE }}
             placeholder="Adicionar extra (ex: batata frita extra)" />
         </div>
       )}
@@ -1023,83 +1034,93 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
       {opcaoSel && temCarnes && (
         <div style={{
           background: '#fff', border: '1.5px solid #FECACA',
-          borderRadius: 8, padding: 12, marginBottom: 8,
+          borderRadius: 12, padding: '14px 14px', marginBottom: 10,
         }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 8 }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#6B5A4E', marginBottom: 10 }}>
             Escolha a carne <span style={{ color: '#EF4444' }}>*</span>
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {carnesGlobais.map((c, i) => (
               <button key={i} onClick={() => setCarneSel(c)}
                 style={{
-                  padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  padding: '10px 18px', borderRadius: 10, fontSize: 15, fontWeight: 700,
                   border: carneSel === c ? 'none' : '1.5px solid #E6DDD5',
                   background: carneSel === c ? '#C8221A' : '#fff',
                   color: carneSel === c ? '#fff' : '#6B5A4E',
                   cursor: 'pointer', transition: 'all 0.15s',
-                  boxShadow: carneSel === c ? '0 2px 6px rgba(200,34,26,0.25)' : 'none',
+                  boxShadow: carneSel === c ? '0 3px 8px rgba(200,34,26,0.25)' : 'none',
+                  minHeight: 44,
                 }}>
                 {c}
               </button>
             ))}
           </div>
           {!carneSel && (
-            <p style={{ fontSize: 11, color: '#EF4444', marginTop: 6 }}>Selecione a carne para continuar</p>
+            <p style={{ fontSize: 13, color: '#EF4444', marginTop: 8 }}>Selecione a carne para continuar</p>
           )}
         </div>
       )}
 
       {/* Passo 4 – quantidade + tamanho */}
       {opcaoSel && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
+            display: 'flex', alignItems: 'center', gap: 10,
             background: '#fff', border: '1.5px solid #FED7AA',
-            borderRadius: 8, padding: '8px 12px',
+            borderRadius: 12, padding: '10px 16px',
           }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#6B5A4E', marginRight: 'auto' }}>Quantidade:</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#6B5A4E', marginRight: 'auto' }}>Quantidade:</span>
             <button onClick={() => setQtd(q => Math.max(1, q - 1))}
-              style={{ width: 28, height: 28, background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 16 }}>
-              -
+              style={{ width: 44, height: 44, background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 10, fontWeight: 800, cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              −
             </button>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#1A0E08', minWidth: 24, textAlign: 'center' }}>{qtd}</span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: '#1A0E08', minWidth: 32, textAlign: 'center' }}>{qtd}</span>
             <button onClick={() => setQtd(q => q + 1)}
-              style={{ width: 28, height: 28, background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 16 }}>
+              style={{ width: 44, height: 44, background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 10, fontWeight: 800, cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               +
             </button>
-            <span style={{ fontSize: 11, color: '#9D8878', marginLeft: 4 }}>
-              {qtd > 1 ? `(${qtd} itens iguais)` : ''}
-            </span>
+            {qtd > 1 && (
+              <span style={{ fontSize: 13, color: '#9D8878', marginLeft: 4 }}>
+                {qtd} iguais
+              </span>
+            )}
           </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 10 }}>
             {precoP > 0 && (
               <button onClick={() => prontoParaTamanho && confirmar('P')} disabled={!prontoParaTamanho}
                 style={{
-                  flex: 1, fontWeight: 700, padding: '10px 0', borderRadius: 8, fontSize: 13,
-                  border: 'none', cursor: prontoParaTamanho ? 'pointer' : 'not-allowed',
+                  flex: 1, fontWeight: 800, padding: '16px 0', borderRadius: 12, fontSize: 15,
+                  cursor: prontoParaTamanho ? 'pointer' : 'not-allowed',
                   background: prontoParaTamanho ? '#FFF7ED' : '#F1F5F9',
                   color: prontoParaTamanho ? '#C2410C' : '#9D8878',
-                  border: prontoParaTamanho ? '1.5px solid #FED7AA' : '1.5px solid #E2E8F0',
-                  transition: 'all 0.15s',
+                  border: prontoParaTamanho ? '2px solid #FED7AA' : '1.5px solid #E2E8F0',
+                  transition: 'all 0.15s', lineHeight: 1.3,
                 }}>
-                + {qtd > 1 ? `${qtd}x ` : ''}Marmitex P — R$ {(precoP * qtd).toFixed(2).replace('.', ',')}
+                + {qtd > 1 ? `${qtd}×` : ''} P{'\n'}
+                <span style={{ fontSize: 17, fontWeight: 900 }}>
+                  R$ {(precoP * qtd).toFixed(2).replace('.', ',')}
+                </span>
               </button>
             )}
             <button onClick={() => prontoParaTamanho && confirmar('G')} disabled={!prontoParaTamanho}
               style={{
-                flex: 1, fontWeight: 700, padding: '10px 0', borderRadius: 8, fontSize: 13,
-                border: 'none', cursor: prontoParaTamanho ? 'pointer' : 'not-allowed',
+                flex: 1, fontWeight: 800, padding: '16px 0', borderRadius: 12, fontSize: 15,
+                cursor: prontoParaTamanho ? 'pointer' : 'not-allowed',
                 background: prontoParaTamanho ? '#EA580C' : '#E2E8F0',
                 color: prontoParaTamanho ? '#fff' : '#9D8878',
-                boxShadow: prontoParaTamanho ? '0 2px 6px rgba(234,88,12,0.30)' : 'none',
-                transition: 'all 0.15s',
+                border: 'none',
+                boxShadow: prontoParaTamanho ? '0 4px 12px rgba(234,88,12,0.35)' : 'none',
+                transition: 'all 0.15s', lineHeight: 1.3,
               }}>
-              + {qtd > 1 ? `${qtd}x ` : ''}Marmitex G — R$ {(precoG * qtd).toFixed(2).replace('.', ',')}
+              + {qtd > 1 ? `${qtd}×` : ''} G{'\n'}
+              <span style={{ fontSize: 17, fontWeight: 900 }}>
+                R$ {(precoG * qtd).toFixed(2).replace('.', ',')}
+              </span>
             </button>
             <button onClick={() => { setOpcaoSel(null); setCarneSel(''); setQtd(1) }}
-              style={{ padding: '0 8px', background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878' }}>
-              <X size={16} />
+              style={{ padding: '0 10px', background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878' }}>
+              <X size={20} />
             </button>
           </div>
         </div>
