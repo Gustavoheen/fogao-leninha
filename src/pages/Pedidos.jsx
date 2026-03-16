@@ -137,6 +137,7 @@ const FORM_VAZIO = {
   itensMarmitex: [],
   itensRefrigerante: [],
   itensCombo: [],
+  saladaIngredientes: null, // null = sem salada, [] = salada sem ingredientes, [...] = com ingredientes selecionados
   pagamento: 'Dinheiro',
   observacoes: '',
   horarioEntrega: '',
@@ -290,13 +291,17 @@ export default function Pedidos() {
     setForm(prev => ({ ...prev, itensCombo: prev.itensCombo.filter(i => i.uid !== itemUid) }))
   }
 
+  const saladaConfig = cardapioHoje?.salada || {}
+  const precoSalada = Number(saladaConfig.preco || 0)
+
   const totalMarmitex = form.itensMarmitex.reduce((acc, i) => acc + i.preco * i.qtd, 0)
   const totalRefrigerante = form.itensRefrigerante.reduce((acc, i) => acc + i.preco * i.qtd, 0)
   const totalCombo = form.itensCombo.reduce((acc, i) => acc + i.preco * i.qtd, 0)
   const totalEmbalagens = (form.embalagensAdicionais || 0) * 1
-  const total = totalMarmitex + totalRefrigerante + totalCombo + totalEmbalagens
+  const totalSalada = form.saladaIngredientes !== null ? precoSalada : 0
+  const total = totalMarmitex + totalRefrigerante + totalCombo + totalEmbalagens + totalSalada
 
-  const temItens = form.itensMarmitex.length > 0 || form.itensRefrigerante.length > 0 || form.itensCombo.length > 0 || form.embalagensAdicionais > 0
+  const temItens = form.itensMarmitex.length > 0 || form.itensRefrigerante.length > 0 || form.itensCombo.length > 0 || form.embalagensAdicionais > 0 || form.saladaIngredientes !== null
 
   function salvar() {
     if (!temItens) return
@@ -305,6 +310,9 @@ export default function Pedidos() {
       ...form.itensCombo.map(i => ({ ...i, tipo: 'combo' })),
       ...form.itensRefrigerante.map(i => ({ ...i, tipo: 'refrigerante' })),
     ]
+    if (form.saladaIngredientes !== null) {
+      todosItens.push({ uid: uid(), tipo: 'salada', nome: 'Salada', ingredientes: form.saladaIngredientes, preco: precoSalada, qtd: 1 })
+    }
     if (form.embalagensAdicionais > 0) {
       todosItens.push({
         uid: uid(), tipo: 'embalagem', nome: 'Embalagem adicional',
@@ -681,6 +689,52 @@ export default function Pedidos() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── Seção: Salada ── */}
+          {saladaConfig.disponivel && (
+            <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 10, padding: 16, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <p style={{ ...SECTION_LABEL, color: '#16A34A', margin: 0 }}>
+                  🥗 Salada personalizada {precoSalada > 0 && <span style={{ fontSize: 12, fontWeight: 600, color: '#16A34A' }}>— R$ {precoSalada.toFixed(2).replace('.', ',')}</span>}
+                </p>
+                <button
+                  onClick={() => setForm(prev => ({ ...prev, saladaIngredientes: prev.saladaIngredientes !== null ? null : [...(saladaConfig.ingredientes || [])] }))}
+                  style={{ fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                    background: form.saladaIngredientes !== null ? '#16A34A' : '#fff',
+                    color: form.saladaIngredientes !== null ? '#fff' : '#16A34A',
+                    border: '1.5px solid #16A34A' }}
+                >
+                  {form.saladaIngredientes !== null ? '✓ Adicionada' : '+ Adicionar salada'}
+                </button>
+              </div>
+              {form.saladaIngredientes !== null && (
+                <div>
+                  <p style={{ fontSize: 11, color: '#166534', fontWeight: 600, marginBottom: 6 }}>Clique nos ingredientes para remover:</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {(saladaConfig.ingredientes || []).map(ingr => {
+                      const selecionado = form.saladaIngredientes.includes(ingr)
+                      return (
+                        <button key={ingr}
+                          onClick={() => setForm(prev => ({
+                            ...prev,
+                            saladaIngredientes: selecionado
+                              ? prev.saladaIngredientes.filter(i => i !== ingr)
+                              : [...prev.saladaIngredientes, ingr]
+                          }))}
+                          style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 600,
+                            background: selecionado ? '#DCFCE7' : '#F3F4F6',
+                            color: selecionado ? '#166534' : '#9D8878',
+                            textDecoration: selecionado ? 'none' : 'line-through' }}
+                        >
+                          {ingr}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

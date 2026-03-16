@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext'
 import { supabase } from '../lib/supabase'
 import {
   Plus, Trash2, ToggleLeft, ToggleRight, X, Check, Save,
-  UtensilsCrossed, GlassWater, Package, Flame, Beef
+  UtensilsCrossed, GlassWater, Package, Flame, Beef, Salad
 } from 'lucide-react'
 
 const SUBTIPOS_REFRIGERANTE = ['Lata', 'Mini', '2 Litros']
@@ -27,7 +27,7 @@ const INPUT_BASE = {
 export default function Cardapio() {
   const {
     cardapioHoje,
-    salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco, salvarOpcao,
+    salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco, salvarOpcao, salvarSalada,
     cardapio, adicionarItemCardapio, toggleDisponibilidade, removerItemCardapio,
   } = useApp()
 
@@ -266,6 +266,9 @@ export default function Cardapio() {
         }
       </section>
 
+      {/* Salada personalizada */}
+      <SaladaSection cardapioHoje={cardapioHoje} salvarSalada={salvarSalada} />
+
       {/* Botão Salvar cardápio do dia */}
       <button
         onClick={salvarTudo}
@@ -300,6 +303,104 @@ export default function Cardapio() {
         }
       </button>
     </div>
+  )
+}
+
+// Seção de Salada Personalizada
+function SaladaSection({ cardapioHoje, salvarSalada }) {
+  const salada = cardapioHoje?.salada || { disponivel: false, preco: '', ingredientes: [] }
+  const [novoIngr, setNovoIngr] = useState('')
+
+  function update(dados) {
+    salvarSalada(dados)
+  }
+
+  function adicionarIngrediente() {
+    const val = novoIngr.trim()
+    if (!val) return
+    update({ ingredientes: [...salada.ingredientes, val] })
+    setNovoIngr('')
+  }
+
+  function removerIngrediente(item) {
+    update({ ingredientes: salada.ingredientes.filter(i => i !== item) })
+  }
+
+  return (
+    <section style={{
+      background: '#fff', border: '1.5px solid #E6DDD5',
+      borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden',
+    }}>
+      <div style={{ background: '#16A34A', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Salad size={17} color="#fff" />
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: 0 }}>Salada Personalizada</h2>
+        </div>
+        <button onClick={() => update({ disponivel: !salada.disponivel })}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.85)' }}>
+          {salada.disponivel ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+        </button>
+      </div>
+
+      <div style={{ padding: 16, opacity: salada.disponivel ? 1 : 0.5 }}>
+        {/* Preço */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Preço da salada (R$)</label>
+          <input
+            type="number" min="0" step="0.01"
+            value={salada.preco}
+            onChange={e => update({ preco: e.target.value })}
+            disabled={!salada.disponivel}
+            style={{ ...INPUT_BASE, maxWidth: 180 }}
+            placeholder="Ex: 8,00"
+          />
+        </div>
+
+        {/* Ingredientes */}
+        <p style={{ fontSize: 13, fontWeight: 700, color: '#166534', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Ingredientes disponíveis
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10, minHeight: 28 }}>
+          {salada.ingredientes.length === 0 && (
+            <p style={{ fontSize: 12, color: '#CFC4BB', fontStyle: 'italic' }}>Nenhum ingrediente ainda</p>
+          )}
+          {salada.ingredientes.map(ingr => (
+            <span key={ingr} style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: '#DCFCE7', color: '#166534',
+              fontSize: 12, padding: '4px 10px', borderRadius: 20, fontWeight: 600,
+            }}>
+              {ingr}
+              <button onClick={() => removerIngrediente(ingr)} disabled={!salada.disponivel}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16A34A', display: 'flex', alignItems: 'center' }}>
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            type="text"
+            value={novoIngr}
+            onChange={e => setNovoIngr(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && adicionarIngrediente()}
+            disabled={!salada.disponivel}
+            style={{ flex: 1, background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '7px 10px', fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08' }}
+            placeholder="Ex: Alface, Tomate, Cenoura..."
+          />
+          <button onClick={adicionarIngrediente} disabled={!salada.disponivel}
+            style={{ background: '#16A34A', color: '#fff', border: 'none', borderRadius: 8, padding: '0 12px', cursor: 'pointer' }}>
+            <Plus size={13} />
+          </button>
+        </div>
+
+        {!salada.disponivel && (
+          <p style={{ fontSize: 12, color: '#9D8878', marginTop: 10, fontStyle: 'italic' }}>
+            Ative o toggle para liberar a salada nos pedidos.
+          </p>
+        )}
+      </div>
+    </section>
   )
 }
 

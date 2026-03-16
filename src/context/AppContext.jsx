@@ -11,6 +11,7 @@ const CARDAPIO_HOJE_PADRAO = {
     { id: 1, nome: 'Opção 1', acompanhamentos: [], disponivel: true, tipoCarnes: 'globais', pratoEspecial: '' },
     { id: 2, nome: 'Opção 2', acompanhamentos: [], disponivel: true, tipoCarnes: 'globais', pratoEspecial: '' },
   ],
+  salada: { disponivel: false, preco: '', ingredientes: [] },
 }
 
 const CONFIG_PADRAO = {
@@ -340,6 +341,16 @@ export function AppProvider({ children }) {
     })
   }
 
+  function salvarSalada(dados) {
+    const ts = new Date().toISOString()
+    setCardapioHoje(prev => {
+      const salada = { ...(prev.salada || {}), ...dados }
+      supabase.from('cardapio_hoje').update({ salada, atualizadoEm: ts }).eq('id', 1)
+        .then(({ error }) => { if (error) erroSave('cardapio_hoje', error) })
+      return { ...prev, salada, atualizadoEm: ts }
+    })
+  }
+
   // ── Cardápio geral ──────────────────────────────────────────
   function adicionarItemCardapio(dados) {
     const novo = { id: Date.now(), ...dados, disponivel: true, criadoEm: new Date().toISOString() }
@@ -602,7 +613,7 @@ export function AppProvider({ children }) {
       clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente,
       pedidos, adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atribuirMotoboy, quitarPedido, removerPedido, marcarComandaImpressa,
       cardapio, adicionarItemCardapio, editarItemCardapio, toggleDisponibilidade, removerItemCardapio,
-      cardapioHoje, salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco, salvarOpcao,
+      cardapioHoje, salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco, salvarOpcao, salvarSalada,
       despesas, adicionarDespesa, editarDespesa, removerDespesa, pagarDespesa,
       estoque, adicionarEstoque, editarEstoque, removerEstoque, atualizarQuantidade,
       fornecedores, adicionarFornecedor, editarFornecedor, removerFornecedor, pagarFornecedor,
