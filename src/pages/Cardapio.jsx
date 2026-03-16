@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { supabase } from '../lib/supabase'
 import {
-  Plus, Trash2, ToggleLeft, ToggleRight, X, Check,
+  Plus, Trash2, ToggleLeft, ToggleRight, X, Check, Save,
   UtensilsCrossed, GlassWater, Package, Flame, Beef
 } from 'lucide-react'
 
@@ -36,6 +37,23 @@ export default function Cardapio() {
   const [addRefrig, setAddRefrig] = useState(false)
   const [formCombo, setFormCombo] = useState(FORM_COMBO_VAZIO)
   const [addCombo, setAddCombo] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  const [salvo, setSalvo] = useState(false)
+
+  async function salvarTudo() {
+    setSalvando(true)
+    const ts = new Date().toISOString()
+    const { error } = await supabase
+      .from('cardapio_hoje')
+      .upsert({ id: 1, ...cardapioHoje, atualizadoEm: ts })
+    setSalvando(false)
+    if (!error) {
+      setSalvo(true)
+      setTimeout(() => setSalvo(false), 3000)
+    } else {
+      alert('Erro ao salvar: ' + error.message)
+    }
+  }
 
   function salvarRefrig() {
     if (!formRefrig.nome.trim() || !formRefrig.preco) return
@@ -247,7 +265,39 @@ export default function Cardapio() {
         }
       </section>
 
-      {/* Configurações movidas para a aba Configurações */}
+      {/* Botão Salvar cardápio do dia */}
+      <button
+        onClick={salvarTudo}
+        disabled={salvando}
+        style={{
+          width: '100%',
+          padding: '20px 0',
+          borderRadius: 14,
+          border: 'none',
+          background: salvo ? '#16A34A' : salvando ? '#CFC4BB' : '#EA580C',
+          color: '#fff',
+          fontSize: 18,
+          fontWeight: 900,
+          cursor: salvando ? 'default' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+          boxShadow: salvo
+            ? '0 4px 16px rgba(22,163,74,0.35)'
+            : salvando ? 'none'
+            : '0 4px 16px rgba(234,88,12,0.35)',
+          transition: 'all 0.2s',
+          letterSpacing: '0.02em',
+        }}
+      >
+        {salvo
+          ? <><Check size={22} /> Cardápio salvo com sucesso!</>
+          : salvando
+          ? 'Salvando...'
+          : <><Save size={22} /> Salvar cardápio do dia</>
+        }
+      </button>
     </div>
   )
 }
