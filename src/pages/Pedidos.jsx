@@ -325,6 +325,8 @@ export default function Pedidos() {
         qtd: form.embalagensAdicionais, preco: 1,
       })
     }
+    const troco = form.pagamento === 'Dinheiro' && form.trocoPara ? Number(form.trocoPara) : null
+    const obsSufixo = troco ? `\n[Troco para: R$ ${troco.toFixed(2).replace('.', ',')} — Troco: R$ ${(troco - total).toFixed(2).replace('.', ',')}]` : ''
     adicionarPedido({
       clienteNome: form.clienteNome || 'Cliente não identificado',
       clienteTelefone: form.clienteTelefone,
@@ -336,8 +338,8 @@ export default function Pedidos() {
       motoboy: form.tipoEntrega === 'retirada' ? 'Retirar no local' : '',
       itens: todosItens,
       pagamento: form.pagamento,
-      trocoPara: form.pagamento === 'Dinheiro' && form.trocoPara ? Number(form.trocoPara) : null,
-      observacoes: form.observacoes,
+      trocoPara: troco,
+      observacoes: form.observacoes + obsSufixo,
       horarioEntrega: form.horarioEntrega,
       embalagensAdicionais: form.embalagensAdicionais,
       total,

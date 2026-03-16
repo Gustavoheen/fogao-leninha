@@ -233,20 +233,10 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setPedidos(prev => [novo, ...prev])
-    supabase.from('pedidos').insert(novo).then(({ error }) => {
+    // Remove campos que ainda podem não estar no schema cache do Supabase
+    const { trocoPara: _t, saladaIngredientes: _s, ...payloadSb } = novo
+    supabase.from('pedidos').insert(payloadSb).then(({ error }) => {
       if (error) {
-        // Schema cache ainda não recarregado: tenta sem campos novos
-        if (error.message?.includes('schema cache')) {
-          const { trocoPara: _t, saladaIngredientes: _s, ...fallback } = novo
-          supabase.from('pedidos').insert(fallback).then(({ error: e2 }) => {
-            if (e2) {
-              erroSave('pedidos', e2)
-              setPedidos(prev => prev.filter(p => p.id !== novo.id))
-              alert('Erro ao salvar pedido:\n' + (e2.message || JSON.stringify(e2)))
-            }
-          })
-          return
-        }
         erroSave('pedidos', error)
         setPedidos(prev => prev.filter(p => p.id !== novo.id))
         alert('Erro ao salvar pedido:\n' + (error.message || JSON.stringify(error)))
