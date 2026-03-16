@@ -218,7 +218,7 @@ export function AppProvider({ children }) {
     const cliente = autoRegistrarCliente(dados.clienteNome, enderecoObj, dados.clienteTelefone)
 
     let statusPagamento = 'pago'
-    if (dados.pagamento === 'Mensalista') statusPagamento = 'mensalista'
+    if (['Mensalista', 'Quinzenal', 'Semanal'].includes(dados.pagamento)) statusPagamento = 'mensalista'
     else if (dados.pagamento === 'Pendente') statusPagamento = 'pendente'
 
     const novo = {

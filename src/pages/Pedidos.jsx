@@ -115,6 +115,8 @@ const FORMAS_PAGAMENTO_OPCOES = [
   { value: 'Cartão de Débito',  label: 'Cartão Débito',     cor: 'bg-purple-100 text-purple-800' },
   { value: 'Cartão de Crédito', label: 'Cartão Crédito',    cor: 'bg-indigo-100 text-indigo-800' },
   { value: 'Mensalista',        label: 'Mensalista',        cor: 'bg-orange-100 text-orange-800' },
+  { value: 'Quinzenal',         label: 'Quinzenal',         cor: 'bg-violet-100 text-violet-800' },
+  { value: 'Semanal',           label: 'Semanal',           cor: 'bg-sky-100 text-sky-800' },
   { value: 'Pendente',          label: 'Pendente',          cor: 'bg-red-100 text-red-700' },
 ]
 
@@ -214,7 +216,7 @@ export default function Pedidos() {
       clienteBairro: c.bairro || prev.clienteBairro,
       clienteNumero: c.numero || prev.clienteNumero,
       clienteReferencia: c.referencia || prev.clienteReferencia,
-      pagamento: isFiado ? 'Mensalista' : prev.pagamento,
+      pagamento: c.tipo === 'mensalista' ? 'Mensalista' : c.tipo === 'quinzenal' ? 'Quinzenal' : c.tipo === 'semanal' ? 'Semanal' : prev.pagamento,
     }))
     setSugestoes([])
   }
