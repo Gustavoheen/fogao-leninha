@@ -27,14 +27,10 @@ export default function Cardapio() {
     cardapioHoje,
     salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco,
     cardapio, adicionarItemCardapio, toggleDisponibilidade, removerItemCardapio,
-    config, salvarConfig,
   } = useApp()
 
   const refrigerantes = cardapio.filter(i => i.categoria === 'Refrigerante')
   const combos = cardapio.filter(i => i.categoria === 'Combo')
-
-  const [configLocal, setConfigLocal] = useState({ whatsapp: config?.whatsapp || '', pixChave: config?.pixChave || '', pixNome: config?.pixNome || 'Fogão a Lenha da Leninha' })
-  const [configSalvo, setConfigSalvo] = useState(false)
 
   const [formRefrig, setFormRefrig] = useState(FORM_REFRIG_VAZIO)
   const [addRefrig, setAddRefrig] = useState(false)
@@ -250,47 +246,7 @@ export default function Cardapio() {
         }
       </section>
 
-      {/* Config Pedido Online */}
-      <section style={{
-        background: '#fff', border: '1.5px solid #E6DDD5',
-        borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', padding: 20,
-      }}>
-        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, color: '#1D4ED8', marginTop: 0, marginBottom: 16 }}>
-          ⚙️ Configurações do Pedido Online
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>WhatsApp do restaurante (com DDI, ex: 5532999999999)</label>
-            <input type="text" value={configLocal.whatsapp}
-              onChange={e => setConfigLocal(p => ({ ...p, whatsapp: e.target.value }))}
-              style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
-              placeholder="5532999999999" />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Chave PIX</label>
-            <input type="text" value={configLocal.pixChave}
-              onChange={e => setConfigLocal(p => ({ ...p, pixChave: e.target.value }))}
-              style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
-              placeholder="CPF, email, telefone ou chave aleatória" />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Nome do titular PIX</label>
-            <input type="text" value={configLocal.pixNome}
-              onChange={e => setConfigLocal(p => ({ ...p, pixNome: e.target.value }))}
-              style={{ background: '#fff', border: '1.5px solid #CFC4BB', borderRadius: 8, padding: '8px 12px', fontSize: 13, width: '100%', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', boxSizing: 'border-box' }}
-              placeholder="Nome completo ou do restaurante" />
-          </div>
-        </div>
-        <button onClick={() => { salvarConfig(configLocal); setConfigSalvo(true); setTimeout(() => setConfigSalvo(false), 2000) }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: configSalvo ? '#16A34A' : '#1D4ED8', color: '#fff',
-            padding: '8px 18px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-            border: 'none', cursor: 'pointer', transition: 'background 0.2s',
-          }}>
-          {configSalvo ? '✓ Salvo!' : 'Salvar Configurações'}
-        </button>
-      </section>
+      {/* Configurações movidas para a aba Configurações */}
     </div>
   )
 }

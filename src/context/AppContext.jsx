@@ -35,10 +35,12 @@ export function AppProvider({ children }) {
   const [funcionarios, setFuncionarios] = useState(() => supabaseConfigured ? [] : lsGet('funcionarios', []))
   const [motoboys, setMotoboys] = useState(() => supabaseConfigured ? [] : lsGet('motoboys', []))
   const [config, setConfig] = useState(() => lsGet('fogao_config', {
-    whatsapp: '',
     pixChave: '',
     pixNome: 'Fogão a Lenha da Leninha',
     pixBanco: '',
+    restauranteWhatsapp: '',
+    lojaAberta: true,
+    equipePIN: '1234',
   }))
 
   // ── Persistir no localStorage como cache ───────────────────
@@ -502,10 +504,14 @@ export function AppProvider({ children }) {
     supabase.from('motoboys').delete().eq('nome', nome)
   }
 
-  function salvarConfig(dados) {
+  async function salvarConfig(dados) {
     const ts = new Date().toISOString()
     setConfig(prev => ({ ...prev, ...dados }))
-    supabase.from('configuracoes').upsert({ id: 1, ...dados, atualizadoEm: ts })
+    const { error } = await supabase.from('configuracoes').upsert({ id: 1, ...dados, atualizadoEm: ts })
+    if (error) {
+      console.error('Erro ao salvar configurações:', error)
+      alert('Erro ao salvar configurações: ' + error.message)
+    }
   }
 
   return (

@@ -1,16 +1,14 @@
 /**
  * PedidoEquipe — Interface rápida de coleta de pedidos para a equipe via celular.
- * Protegida por PIN. Fluxo ultra-simplificado para agilizar o atendimento.
  * Rota: /equipe
  */
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { ChevronLeft, Check, Plus, X, Zap } from 'lucide-react'
+import { ChevronLeft, Check, Plus, X, Zap, User, ShoppingBag, CreditCard } from 'lucide-react'
 
 function fmtR$(v) {
   return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
-
 function uid() { return Math.random().toString(36).slice(2, 9) }
 
 // ── Tela de PIN ────────────────────────────────────────────────────────────────
@@ -19,7 +17,7 @@ function TelaPIN({ onEntrar }) {
   const [erro, setErro] = useState(false)
   const inputRef = useRef(null)
 
-  useEffect(() => { inputRef.current?.focus() }, [])
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100) }, [])
 
   function verificar() {
     const pinSalvo = sessionStorage.getItem('fogao_equipe_pin') || '1234'
@@ -33,12 +31,12 @@ function TelaPIN({ onEntrar }) {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center px-6">
-      <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center mb-6">
-        <Zap size={32} className="text-white" />
+    <div style={{ minHeight: '100dvh', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
+      <div style={{ width: 72, height: 72, background: '#EA580C', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+        <Zap size={36} color="#fff" />
       </div>
-      <h1 className="text-white font-black text-2xl mb-1">Área da Equipe</h1>
-      <p className="text-stone-400 text-sm mb-8">Digite o PIN para acessar</p>
+      <h1 style={{ fontSize: 28, fontWeight: 900, color: '#1A0E08', margin: '0 0 6px' }}>Área da Equipe</h1>
+      <p style={{ fontSize: 16, color: '#9D8878', margin: '0 0 36px' }}>Digite o PIN para acessar</p>
 
       <input
         ref={inputRef}
@@ -49,18 +47,51 @@ function TelaPIN({ onEntrar }) {
         onChange={e => setPin(e.target.value.slice(0, 6))}
         onKeyDown={e => e.key === 'Enter' && verificar()}
         placeholder="••••"
-        className={`w-40 text-center text-3xl font-black tracking-[0.5em] bg-stone-800 border-2 rounded-2xl px-4 py-4 text-white focus:outline-none transition-colors ${
-          erro ? 'border-red-500 text-red-400' : 'border-stone-700 focus:border-orange-500'
-        }`}
+        style={{
+          width: 180, textAlign: 'center', fontSize: 32, fontWeight: 900,
+          letterSpacing: '0.4em', background: erro ? '#FEF2F2' : '#FFF7ED',
+          border: `3px solid ${erro ? '#EF4444' : '#FED7AA'}`,
+          borderRadius: 16, padding: '16px 12px', color: erro ? '#EF4444' : '#1A0E08',
+          outline: 'none', boxSizing: 'border-box',
+        }}
       />
-      {erro && <p className="text-red-400 text-sm mt-3">PIN incorreto</p>}
+      {erro && <p style={{ color: '#EF4444', fontSize: 15, fontWeight: 600, marginTop: 12 }}>PIN incorreto</p>}
 
       <button
         onClick={verificar}
-        className="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 py-3 rounded-xl transition-colors"
+        style={{
+          marginTop: 24, background: '#EA580C', color: '#fff', fontWeight: 900,
+          fontSize: 18, border: 'none', borderRadius: 16, padding: '18px 48px',
+          cursor: 'pointer', boxShadow: '0 4px 16px rgba(234,88,12,0.35)',
+        }}
       >
         Entrar
       </button>
+    </div>
+  )
+}
+
+// ── Badge de step ──────────────────────────────────────────────────────────────
+function StepBar({ step }) {
+  const steps = [
+    { key: 'cliente', icon: <User size={16} />, label: 'Cliente' },
+    { key: 'montando', icon: <ShoppingBag size={16} />, label: 'Pedido' },
+    { key: 'revisao', icon: <CreditCard size={16} />, label: 'Confirmar' },
+  ]
+  const idx = steps.findIndex(s => s.key === step)
+  return (
+    <div style={{ display: 'flex', background: '#FFF7ED', borderBottom: '2px solid #FED7AA' }}>
+      {steps.map((s, i) => (
+        <div key={s.key} style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '10px 4px',
+          borderBottom: i <= idx ? '3px solid #EA580C' : '3px solid transparent',
+          color: i <= idx ? '#EA580C' : '#CFC4BB',
+        }}>
+          {s.icon}
+          <span style={{ fontSize: 11, fontWeight: 700, marginTop: 3 }}>{s.label}</span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -72,16 +103,17 @@ export default function PedidoEquipe() {
   )
   const [cardapioHoje, setCardapioHoje] = useState(null)
   const [clientes, setClientes] = useState([])
-  const [config, setConfig] = useState({ pixChave: '', equipePIN: '1234' })
   const [loading, setLoading] = useState(true)
 
-  // Estado do pedido em construção
   const [nomeCliente, setNomeCliente] = useState('')
   const [sugestoes, setSugestoes] = useState([])
   const [mensalista, setMensalista] = useState(null)
-  const [carrinho, setCarrinho] = useState([]) // [{uid, opcao, tamanho, semItens, nome, preco}]
-  const [step, setStep] = useState('cliente') // cliente | montando | revisao | confirmado
-  const [marmitexAtual, setMarmitexAtual] = useState(null) // marmitex sendo configurada
+  const [clienteCadastrado, setClienteCadastrado] = useState(false)
+  const [endereco, setEndereco] = useState({ rua: '', numero: '', bairro: '', referencia: '' })
+  const [tipoEntrega, setTipoEntrega] = useState('retirada')
+  const [carrinho, setCarrinho] = useState([])
+  const [step, setStep] = useState('cliente')
+  const [marmitexAtual, setMarmitexAtual] = useState(null)
   const [numeroPedido, setNumeroPedido] = useState(null)
   const [enviando, setEnviando] = useState(false)
   const [pagamento, setPagamento] = useState('Dinheiro')
@@ -99,25 +131,21 @@ export default function PedidoEquipe() {
         ])
         if (ch) setCardapioHoje(ch)
         if (cl) setClientes(cl)
-        if (cf) {
-          setConfig(prev => ({ ...prev, ...cf }))
-          // Sincroniza PIN com sessionStorage
-          if (cf.equipePIN) sessionStorage.setItem('fogao_equipe_pin', cf.equipePIN)
-        }
+        if (cf?.equipePIN) sessionStorage.setItem('fogao_equipe_pin', cf.equipePIN)
       } catch { /* offline */ }
       finally { setLoading(false) }
     }
     carregar()
   }, [autenticado])
 
-  // Autocomplete de clientes
   useEffect(() => {
-    if (!nomeCliente.trim() || nomeCliente.length < 2) { setSugestoes([]); setMensalista(null); return }
+    if (!nomeCliente.trim() || nomeCliente.length < 2) { setSugestoes([]); setMensalista(null); setClienteCadastrado(false); return }
     const q = nomeCliente.toLowerCase().trim()
     const matches = clientes.filter(c => c.nome.toLowerCase().includes(q)).slice(0, 5)
     setSugestoes(matches)
     const exato = clientes.find(c => c.nome.toLowerCase().trim() === q)
     setMensalista(exato?.tipo === 'mensalista' ? exato : null)
+    setClienteCadastrado(!!exato)
   }, [nomeCliente, clientes])
 
   function entrar() {
@@ -150,11 +178,6 @@ export default function PedidoEquipe() {
     setStep('revisao')
   }
 
-  function novaMarmitex() {
-    setStep('montando')
-    setMarmitexAtual(null)
-  }
-
   async function confirmar() {
     if (enviando) return
     setEnviando(true)
@@ -180,6 +203,13 @@ export default function PedidoEquipe() {
         pagamento: pg,
         status: 'aberto',
         statusPagamento: statusPg,
+        tipoEntrega,
+        ...(tipoEntrega === 'entrega' ? {
+          clienteRua: endereco.rua,
+          clienteNumero: endereco.numero,
+          clienteBairro: endereco.bairro,
+          clienteReferencia: endereco.referencia,
+        } : {}),
         origem: 'equipe',
         criadoEm: new Date().toISOString(),
       })
@@ -205,6 +235,9 @@ export default function PedidoEquipe() {
     setNomeCliente('')
     setCarrinho([])
     setMensalista(null)
+    setClienteCadastrado(false)
+    setEndereco({ rua: '', numero: '', bairro: '', referencia: '' })
+    setTipoEntrega('retirada')
     setPagamento('Dinheiro')
     setNumeroPedido(null)
     setStep('cliente')
@@ -212,35 +245,44 @@ export default function PedidoEquipe() {
   }
 
   if (!autenticado) return <TelaPIN onEntrar={entrar} />
+
   if (loading) return (
-    <div className="min-h-screen bg-stone-950 flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    <div style={{ minHeight: '100dvh', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+      <div style={{ width: 48, height: 48, border: '4px solid #FED7AA', borderTopColor: '#EA580C', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <p style={{ color: '#9D8878', fontSize: 16, fontWeight: 600 }}>Carregando cardápio...</p>
     </div>
   )
 
-  // ── STEP: confirmado ─────────────────────────────────────────────────────────
+  // ── CONFIRMADO ───────────────────────────────────────────────────────────────
   if (step === 'confirmado') {
     return (
-      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center px-4 text-center">
-        <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
-          <Check size={32} className="text-white" />
+      <div style={{ minHeight: '100dvh', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
+        <div style={{ width: 72, height: 72, background: '#16A34A', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <Check size={36} color="#fff" />
         </div>
-        <p className="text-stone-400 mb-1">Pedido salvo!</p>
-        <div className="bg-orange-500 text-white text-5xl font-black rounded-2xl px-8 py-4 mb-2">
+        <p style={{ fontSize: 16, color: '#9D8878', fontWeight: 600, margin: '0 0 8px' }}>Pedido salvo!</p>
+        <div style={{ background: '#EA580C', color: '#fff', fontSize: 64, fontWeight: 900, borderRadius: 20, padding: '12px 36px', margin: '0 0 16px', lineHeight: 1 }}>
           #{String(numeroPedido).padStart(2, '0')}
         </div>
-        <p className="text-stone-300 font-semibold mb-0.5">{nomeCliente}</p>
-        <p className="text-orange-400 font-bold text-lg mb-6">{fmtR$(total)}</p>
+        <p style={{ fontSize: 22, fontWeight: 800, color: '#1A0E08', margin: '0 0 4px' }}>{nomeCliente}</p>
+        <p style={{ fontSize: 26, fontWeight: 900, color: '#EA580C', margin: '0 0 20px' }}>{fmtR$(total)}</p>
 
-        {carrinho.map((m, i) => (
-          <p key={i} className="text-stone-400 text-sm">
-            {m.opcao.nome} ({m.tamanho}){m.nome && ` · ${m.nome}`}
-          </p>
-        ))}
+        <div style={{ background: '#FFF7ED', borderRadius: 16, padding: '16px 24px', marginBottom: 32, width: '100%', maxWidth: 320 }}>
+          {carrinho.map((m, i) => (
+            <p key={i} style={{ fontSize: 15, color: '#6B5A4E', fontWeight: 600, margin: '4px 0' }}>
+              {m.opcao.nome} ({m.tamanho}){m.nome && ` · ${m.nome}`}
+            </p>
+          ))}
+        </div>
 
         <button
           onClick={novoPedido}
-          className="mt-8 bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-2xl transition-colors"
+          style={{
+            background: '#EA580C', color: '#fff', fontWeight: 900, fontSize: 20,
+            border: 'none', borderRadius: 16, padding: '20px 48px',
+            cursor: 'pointer', boxShadow: '0 4px 16px rgba(234,88,12,0.35)',
+            width: '100%', maxWidth: 320,
+          }}
         >
           Próximo pedido
         </button>
@@ -248,69 +290,100 @@ export default function PedidoEquipe() {
     )
   }
 
-  // ── STEP: montando marmitex ──────────────────────────────────────────────────
+  // ── MONTANDO: escolher opção ─────────────────────────────────────────────────
   if (step === 'montando' && !marmitexAtual) {
     return (
-      <div className="min-h-screen bg-stone-950 flex flex-col">
+      <div style={{ minHeight: '100dvh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
-        <div className="bg-stone-900 border-b border-stone-800 px-5 py-4 flex items-center gap-4">
-          <button onClick={() => setStep(carrinho.length > 0 ? 'revisao' : 'cliente')}
-            className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-white active:bg-stone-800 rounded-xl transition-colors">
-            <ChevronLeft size={24} />
+        <div style={{ background: '#EA580C', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button
+            onClick={() => setStep(carrinho.length > 0 ? 'revisao' : 'cliente')}
+            style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          >
+            <ChevronLeft size={24} color="#fff" />
           </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-white font-bold text-lg leading-tight">Nova marmitex</h2>
-            <p className="text-orange-400 text-sm font-medium truncate">{nomeCliente}</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 600, margin: 0 }}>Nova marmitex para</p>
+            <h2 style={{ color: '#fff', fontWeight: 900, fontSize: 20, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nomeCliente}</h2>
           </div>
           {carrinho.length > 0 && (
-            <span className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">
-              {carrinho.length} no pedido
-            </span>
+            <div style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 12, padding: '6px 12px' }}>
+              <span style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>{carrinho.length} no pedido</span>
+            </div>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        <StepBar step="montando" />
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Carnes do dia */}
           {cardapioHoje?.carnes?.some(c => c) && (
-            <div className="bg-stone-800/80 border border-stone-700 rounded-2xl p-5">
-              <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">🔥 Carnes do dia</p>
+            <div style={{ background: '#FFF7ED', border: '2px solid #FED7AA', borderRadius: 16, padding: '14px 18px' }}>
+              <p style={{ color: '#EA580C', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>🔥 Carnes do dia</p>
               {cardapioHoje.carnes.filter(c => c).map((c, i) => (
-                <p key={i} className="text-stone-100 font-medium text-base leading-relaxed">• {c}</p>
+                <p key={i} style={{ fontSize: 17, color: '#1A0E08', fontWeight: 600, margin: '4px 0', lineHeight: 1.4 }}>• {c}</p>
               ))}
             </div>
           )}
 
-          <p className="text-stone-500 text-xs uppercase tracking-widest font-semibold">Escolha a opção e o tamanho</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+            Escolha a opção e o tamanho
+          </p>
+
+          {opcoes.length === 0 && (
+            <div style={{ background: '#FFF7ED', border: '2px solid #FED7AA', borderRadius: 16, padding: 24, textAlign: 'center' }}>
+              <p style={{ fontSize: 16, color: '#9D8878', fontWeight: 600 }}>Nenhuma opção disponível no cardápio de hoje.</p>
+              <p style={{ fontSize: 14, color: '#CFC4BB', marginTop: 8 }}>Configure o cardápio no painel admin.</p>
+            </div>
+          )}
 
           {opcoes.map(op => (
-            <div key={op.id} className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-lg">
-              <div className="px-5 pt-5 pb-4">
-                <h3 className="text-white font-bold text-xl leading-tight">{op.nome}</h3>
+            <div key={op.id} style={{ background: '#fff', border: '2px solid #E6DDD5', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              {/* Nome da opção */}
+              <div style={{ padding: '18px 20px 14px', borderBottom: '1.5px solid #F3F0ED' }}>
+                <h3 style={{ fontSize: 22, fontWeight: 900, color: '#1A0E08', margin: '0 0 6px' }}>{op.nome}</h3>
                 {op.acompanhamentos?.length > 0 && (
-                  <p className="text-stone-400 text-sm mt-2 leading-relaxed">{op.acompanhamentos.join(' · ')}</p>
+                  <p style={{ fontSize: 14, color: '#9D8878', margin: 0, lineHeight: 1.5 }}>
+                    {op.acompanhamentos.join(' · ')}
+                  </p>
                 )}
               </div>
-              <div className="grid grid-cols-2 divide-x divide-stone-700 border-t border-stone-700">
-                <button
-                  onClick={() => iniciarMarmitex(op.id, 'P')}
-                  className="py-6 flex flex-col items-center gap-2 hover:bg-stone-800 active:bg-stone-700 transition-colors"
-                >
-                  <span className="text-white font-bold text-lg">Pequena</span>
-                  <span className="text-orange-400 font-bold text-lg">{fmtR$(cardapioHoje?.precoP)}</span>
-                  <span className="bg-orange-500 rounded-xl w-10 h-10 flex items-center justify-center mt-1">
-                    <Plus size={20} className="text-white" />
-                  </span>
-                </button>
-                <button
-                  onClick={() => iniciarMarmitex(op.id, 'G')}
-                  className="py-6 flex flex-col items-center gap-2 hover:bg-stone-800 active:bg-stone-700 transition-colors"
-                >
-                  <span className="text-white font-bold text-lg">Grande</span>
-                  <span className="text-orange-400 font-bold text-lg">{fmtR$(cardapioHoje?.precoG)}</span>
-                  <span className="bg-orange-500 rounded-xl w-10 h-10 flex items-center justify-center mt-1">
-                    <Plus size={20} className="text-white" />
-                  </span>
-                </button>
+              {/* Botões P / G */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                {cardapioHoje?.precoP > 0 && (
+                  <button
+                    onClick={() => iniciarMarmitex(op.id, 'P')}
+                    style={{
+                      padding: '22px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                      background: '#fff', border: 'none', borderRight: '1.5px solid #F3F0ED', cursor: 'pointer',
+                    }}
+                    onTouchStart={e => e.currentTarget.style.background = '#FFF7ED'}
+                    onTouchEnd={e => e.currentTarget.style.background = '#fff'}
+                  >
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pequena</span>
+                    <span style={{ fontSize: 26, fontWeight: 900, color: '#EA580C' }}>{fmtR$(cardapioHoje?.precoP)}</span>
+                    <div style={{ width: 44, height: 44, background: '#EA580C', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Plus size={22} color="#fff" />
+                    </div>
+                  </button>
+                )}
+                {cardapioHoje?.precoG > 0 && (
+                  <button
+                    onClick={() => iniciarMarmitex(op.id, 'G')}
+                    style={{
+                      padding: '22px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                      background: '#fff', border: 'none', cursor: 'pointer',
+                    }}
+                    onTouchStart={e => e.currentTarget.style.background = '#FFF7ED'}
+                    onTouchEnd={e => e.currentTarget.style.background = '#fff'}
+                  >
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Grande</span>
+                    <span style={{ fontSize: 26, fontWeight: 900, color: '#EA580C' }}>{fmtR$(cardapioHoje?.precoG)}</span>
+                    <div style={{ width: 44, height: 44, background: '#1A0E08', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Plus size={22} color="#fff" />
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -319,68 +392,85 @@ export default function PedidoEquipe() {
     )
   }
 
-  // ── STEP: configurar acompanhamentos ─────────────────────────────────────────
+  // ── MONTANDO: acompanhamentos ─────────────────────────────────────────────────
   if (step === 'montando' && marmitexAtual) {
     const acomp = marmitexAtual.opcao?.acompanhamentos || []
     return (
-      <div className="min-h-screen bg-stone-950 flex flex-col">
+      <div style={{ minHeight: '100dvh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
-        <div className="bg-stone-900 border-b border-stone-800 px-5 py-4 flex items-center gap-4">
-          <button onClick={() => setMarmitexAtual(null)}
-            className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-white active:bg-stone-800 rounded-xl transition-colors">
-            <ChevronLeft size={24} />
+        <div style={{ background: '#EA580C', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button
+            onClick={() => setMarmitexAtual(null)}
+            style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          >
+            <ChevronLeft size={24} color="#fff" />
           </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-white font-bold text-lg leading-tight">
-              {marmitexAtual.opcao?.nome}
-              <span className="text-orange-400"> · {marmitexAtual.tamanho}</span>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 600, margin: 0 }}>Configurando</p>
+            <h2 style={{ color: '#fff', fontWeight: 900, fontSize: 20, margin: 0 }}>
+              {marmitexAtual.opcao?.nome} · {marmitexAtual.tamanho}
             </h2>
-            <p className="text-green-400 font-bold text-base">{fmtR$(marmitexAtual.preco)}</p>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 12, padding: '6px 12px' }}>
+            <span style={{ color: '#fff', fontWeight: 900, fontSize: 16 }}>{fmtR$(marmitexAtual.preco)}</span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-          {/* Nome da marmitex */}
+        <StepBar step="montando" />
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Para quem */}
           <div>
-            <label className="text-stone-300 text-base font-semibold block mb-2">
-              Para quem é essa marmitex? <span className="text-stone-500 font-normal">(opcional)</span>
+            <label style={{ fontSize: 16, fontWeight: 800, color: '#1A0E08', display: 'block', marginBottom: 8 }}>
+              Para quem é essa marmitex?
+              <span style={{ fontSize: 14, fontWeight: 500, color: '#9D8878', marginLeft: 6 }}>(opcional)</span>
             </label>
             <input
               type="text"
               placeholder="Ex: João, criança, sogra..."
               value={marmitexAtual.nome}
               onChange={e => setMarmitexAtual(prev => ({ ...prev, nome: e.target.value }))}
-              className="w-full bg-stone-800 border border-stone-700 rounded-2xl px-5 py-4 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-lg transition-colors"
+              style={{
+                width: '100%', background: '#FFF7ED', border: '2px solid #FED7AA',
+                borderRadius: 14, padding: '16px 18px', fontSize: 18, fontWeight: 600,
+                color: '#1A0E08', outline: 'none', boxSizing: 'border-box',
+              }}
             />
           </div>
 
           {/* Acompanhamentos */}
           {acomp.length > 0 && (
             <div>
-              <p className="text-stone-300 text-base font-semibold mb-1">Acompanhamentos</p>
-              <p className="text-stone-500 text-sm mb-4">Toque para remover o que o cliente NÃO quer</p>
-              <div className="flex flex-wrap gap-3">
+              <p style={{ fontSize: 16, fontWeight: 800, color: '#1A0E08', margin: '0 0 4px' }}>Acompanhamentos</p>
+              <p style={{ fontSize: 14, color: '#9D8878', fontWeight: 500, margin: '0 0 14px' }}>
+                Toque para remover o que o cliente <strong>NÃO</strong> quer
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                 {acomp.map(item => {
                   const removido = marmitexAtual.semItens.includes(item)
                   return (
                     <button
                       key={item}
                       onClick={() => toggleSemItem(item)}
-                      className={`px-5 py-3 rounded-2xl text-base font-semibold border-2 transition-all flex items-center gap-2 ${
-                        removido
-                          ? 'bg-red-950 border-red-600 text-red-400 opacity-70'
-                          : 'bg-stone-800 border-stone-600 text-white active:bg-stone-700'
-                      }`}
+                      style={{
+                        padding: '12px 18px', borderRadius: 40, fontSize: 16, fontWeight: 700,
+                        border: `2px solid ${removido ? '#EF4444' : '#E6DDD5'}`,
+                        background: removido ? '#FEF2F2' : '#F7F3EF',
+                        color: removido ? '#EF4444' : '#1A0E08',
+                        textDecoration: removido ? 'line-through' : 'none',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                        minHeight: 48,
+                      }}
                     >
-                      {removido ? <X size={15} /> : null}
-                      <span className={removido ? 'line-through' : ''}>{item}</span>
+                      {removido && <X size={14} />}
+                      {item}
                     </button>
                   )
                 })}
               </div>
               {marmitexAtual.semItens.length > 0 && (
-                <div className="mt-4 bg-red-950/60 border border-red-800 rounded-xl px-4 py-3">
-                  <p className="text-red-400 font-semibold text-sm">
+                <div style={{ marginTop: 14, background: '#FEF2F2', border: '2px solid #FECACA', borderRadius: 12, padding: '12px 16px' }}>
+                  <p style={{ color: '#EF4444', fontWeight: 700, fontSize: 15, margin: 0 }}>
                     ✗ Sem: {marmitexAtual.semItens.join(', ')}
                   </p>
                 </div>
@@ -389,62 +479,72 @@ export default function PedidoEquipe() {
           )}
         </div>
 
-        <div className="p-5 border-t border-stone-800">
+        <div style={{ padding: '16px 16px', borderTop: '2px solid #F3F0ED', background: '#fff', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
           <button
             onClick={adicionarMarmitex}
-            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-5 rounded-2xl text-lg transition-colors shadow-lg shadow-orange-500/20"
+            style={{
+              width: '100%', background: '#EA580C', color: '#fff', fontWeight: 900,
+              fontSize: 20, border: 'none', borderRadius: 16, padding: '20px 0',
+              cursor: 'pointer', boxShadow: '0 4px 16px rgba(234,88,12,0.35)',
+            }}
           >
-            Adicionar ao pedido
+            Adicionar ao pedido ✓
           </button>
         </div>
       </div>
     )
   }
 
-  // ── STEP: revisão do carrinho ────────────────────────────────────────────────
+  // ── REVISÃO ──────────────────────────────────────────────────────────────────
   if (step === 'revisao') {
     return (
-      <div className="min-h-screen bg-stone-950 flex flex-col">
+      <div style={{ minHeight: '100dvh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
-        <div className="bg-stone-900 border-b border-stone-800 px-5 py-4 flex items-center gap-4">
-          <button onClick={() => setStep('cliente')}
-            className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-white active:bg-stone-800 rounded-xl transition-colors">
-            <ChevronLeft size={24} />
+        <div style={{ background: '#EA580C', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button
+            onClick={() => setStep('cliente')}
+            style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          >
+            <ChevronLeft size={24} color="#fff" />
           </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-white font-bold text-lg leading-tight truncate">{nomeCliente}</h2>
-            {mensalista
-              ? <span className="text-green-400 text-sm font-semibold">✓ Mensalista</span>
-              : <span className="text-stone-400 text-sm">{carrinho.length} {carrinho.length === 1 ? 'marmitex' : 'marmitex'}</span>
-            }
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 600, margin: 0 }}>Revisar pedido</p>
+            <h2 style={{ color: '#fff', fontWeight: 900, fontSize: 20, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nomeCliente}</h2>
           </div>
-          <span className="text-orange-400 font-black text-xl">{fmtR$(total)}</span>
+          <div style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 12, padding: '8px 14px' }}>
+            <span style={{ color: '#fff', fontWeight: 900, fontSize: 20 }}>{fmtR$(total)}</span>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        <StepBar step="revisao" />
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Itens */}
-          <p className="text-stone-500 text-xs uppercase tracking-widest font-semibold">Itens do pedido</p>
+          <p style={{ fontSize: 13, fontWeight: 800, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+            Itens do pedido
+          </p>
+
           {carrinho.map((item, i) => (
-            <div key={item.uid} className="bg-stone-900 border border-stone-700 rounded-2xl p-4 flex items-start gap-4">
-              <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white font-black text-base shrink-0">
+            <div key={item.uid} style={{ background: '#FFF7ED', border: '2px solid #FED7AA', borderRadius: 18, padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              <div style={{ width: 44, height: 44, background: '#EA580C', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 18, flexShrink: 0 }}>
                 {i + 1}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-bold text-base leading-tight">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 18, fontWeight: 900, color: '#1A0E08', margin: '0 0 4px' }}>
                   {item.opcao.nome}
-                  <span className="text-orange-400"> · {item.tamanho}</span>
+                  <span style={{ color: '#EA580C', fontWeight: 700 }}> · {item.tamanho}</span>
                 </p>
-                {item.nome && <p className="text-stone-400 text-sm mt-1">para: {item.nome}</p>}
+                {item.nome && <p style={{ fontSize: 14, color: '#6B5A4E', margin: '2px 0', fontWeight: 600 }}>para: {item.nome}</p>}
                 {item.semItens.length > 0 && (
-                  <p className="text-red-400 text-sm mt-1">✗ sem: {item.semItens.join(', ')}</p>
+                  <p style={{ fontSize: 13, color: '#EF4444', margin: '2px 0', fontWeight: 600 }}>✗ sem: {item.semItens.join(', ')}</p>
                 )}
-                <p className="text-orange-400 font-bold text-lg mt-2">{fmtR$(item.preco)}</p>
+                <p style={{ fontSize: 20, fontWeight: 900, color: '#EA580C', margin: '8px 0 0' }}>{fmtR$(item.preco)}</p>
               </div>
               <button
                 onClick={() => setCarrinho(prev => prev.filter(m => m.uid !== item.uid))}
-                className="text-stone-600 hover:text-red-400 transition-colors p-2 shrink-0"
+                style={{ background: '#FECACA', border: 'none', borderRadius: 10, padding: 8, cursor: 'pointer', color: '#EF4444', flexShrink: 0 }}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
           ))}
@@ -452,8 +552,8 @@ export default function PedidoEquipe() {
           {/* Pagamento */}
           {!mensalista && (
             <div>
-              <p className="text-stone-300 text-base font-semibold mb-3">Forma de pagamento</p>
-              <div className="grid grid-cols-3 gap-3">
+              <p style={{ fontSize: 16, fontWeight: 800, color: '#1A0E08', margin: '0 0 12px' }}>Forma de pagamento</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                 {[
                   { label: 'Dinheiro', emoji: '💵' },
                   { label: 'Pix', emoji: '💠' },
@@ -462,14 +562,16 @@ export default function PedidoEquipe() {
                   <button
                     key={label}
                     onClick={() => setPagamento(label)}
-                    className={`py-5 rounded-2xl font-bold border-2 transition-colors flex flex-col items-center gap-1 ${
-                      pagamento === label
-                        ? 'border-orange-500 bg-orange-500/15 text-orange-400'
-                        : 'border-stone-700 bg-stone-800 text-stone-400 active:bg-stone-700'
-                    }`}
+                    style={{
+                      padding: '18px 8px', borderRadius: 16, fontWeight: 800,
+                      border: `2.5px solid ${pagamento === label ? '#EA580C' : '#E6DDD5'}`,
+                      background: pagamento === label ? '#FFF7ED' : '#fff',
+                      color: pagamento === label ? '#EA580C' : '#9D8878',
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    }}
                   >
-                    <span className="text-2xl">{emoji}</span>
-                    <span className="text-sm">{label}</span>
+                    <span style={{ fontSize: 28 }}>{emoji}</span>
+                    <span style={{ fontSize: 14 }}>{label}</span>
                   </button>
                 ))}
               </div>
@@ -477,24 +579,35 @@ export default function PedidoEquipe() {
           )}
 
           {mensalista && (
-            <div className="bg-green-950 border border-green-800 rounded-2xl p-5">
-              <p className="text-green-400 font-bold text-lg">📋 Conta mensalista</p>
-              <p className="text-green-600 text-sm mt-1">Cobrado no fechamento mensal</p>
+            <div style={{ background: '#F0FDF4', border: '2px solid #BBF7D0', borderRadius: 16, padding: '16px 20px' }}>
+              <p style={{ fontSize: 18, fontWeight: 900, color: '#16A34A', margin: '0 0 4px' }}>📋 Conta mensalista</p>
+              <p style={{ fontSize: 14, color: '#4ADE80', fontWeight: 600, margin: 0 }}>Cobrado no fechamento mensal</p>
             </div>
           )}
         </div>
 
-        <div className="p-5 border-t border-stone-800 space-y-3">
+        <div style={{ padding: '16px 16px', borderTop: '2px solid #F3F0ED', background: '#fff', display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
           <button
-            onClick={novaMarmitex}
-            className="w-full border-2 border-dashed border-stone-600 hover:border-orange-500 text-stone-400 hover:text-orange-400 py-4 rounded-2xl text-base font-semibold flex items-center justify-center gap-2 transition-colors"
+            onClick={() => { setMarmitexAtual(null); setStep('montando') }}
+            style={{
+              width: '100%', border: '2px dashed #FED7AA', background: '#fff',
+              color: '#EA580C', fontWeight: 800, fontSize: 16,
+              borderRadius: 16, padding: '16px 0', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
           >
             <Plus size={18} /> Adicionar outra marmitex
           </button>
           <button
             onClick={confirmar}
             disabled={enviando || carrinho.length === 0}
-            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:opacity-60 text-white font-black py-5 rounded-2xl text-lg transition-colors shadow-lg shadow-orange-500/20"
+            style={{
+              width: '100%', background: enviando || carrinho.length === 0 ? '#E6DDD5' : '#16A34A',
+              color: '#fff', fontWeight: 900, fontSize: 20,
+              border: 'none', borderRadius: 16, padding: '20px 0',
+              cursor: enviando || carrinho.length === 0 ? 'not-allowed' : 'pointer',
+              boxShadow: carrinho.length > 0 ? '0 4px 16px rgba(22,163,74,0.35)' : 'none',
+            }}
           >
             {enviando ? 'Salvando...' : `✓ Confirmar · ${fmtR$(total)}`}
           </button>
@@ -503,34 +616,39 @@ export default function PedidoEquipe() {
     )
   }
 
-  // ── STEP: identificar cliente ────────────────────────────────────────────────
+  // ── CLIENTE ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-stone-950 flex flex-col">
+    <div style={{ minHeight: '100dvh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div className="bg-stone-900 border-b border-stone-800 px-5 py-4 flex items-center gap-4">
-        <div className="w-11 h-11 bg-orange-500 rounded-2xl flex items-center justify-center shrink-0">
-          <Zap size={22} className="text-white" />
+      <div style={{ background: '#EA580C', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.25)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Zap size={26} color="#fff" />
         </div>
         <div>
-          <h1 className="text-white font-black text-lg leading-tight">Pedido rápido</h1>
-          <p className="text-stone-400 text-sm">Equipe Fogão a Lenha</p>
+          <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 22, margin: 0, lineHeight: 1.1 }}>Pedido rápido</h1>
+          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 600, margin: 0 }}>Equipe Fogão a Lenha</p>
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-6 space-y-5">
+      <StepBar step="cliente" />
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Carnes do dia */}
         {cardapioHoje?.carnes?.some(c => c) && (
-          <div className="bg-stone-800/80 border border-stone-700 rounded-2xl p-5">
-            <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">🔥 Carnes de hoje</p>
+          <div style={{ background: '#FFF7ED', border: '2px solid #FED7AA', borderRadius: 16, padding: '14px 18px' }}>
+            <p style={{ color: '#EA580C', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>🔥 Carnes de hoje</p>
             {cardapioHoje.carnes.filter(c => c).map((c, i) => (
-              <p key={i} className="text-stone-100 font-medium text-base leading-relaxed">• {c}</p>
+              <p key={i} style={{ fontSize: 17, color: '#1A0E08', fontWeight: 600, margin: '4px 0', lineHeight: 1.4 }}>• {c}</p>
             ))}
           </div>
         )}
 
+        {/* Input nome */}
         <div>
-          <label className="text-stone-300 text-base font-semibold block mb-3">Nome do cliente</label>
-          <div className="relative">
+          <label style={{ fontSize: 18, fontWeight: 800, color: '#1A0E08', display: 'block', marginBottom: 10 }}>
+            Nome do cliente
+          </label>
+          <div style={{ position: 'relative' }}>
             <input
               ref={nomeRef}
               type="text"
@@ -538,40 +656,122 @@ export default function PedidoEquipe() {
               value={nomeCliente}
               onChange={e => setNomeCliente(e.target.value)}
               autoFocus
-              className="w-full bg-stone-800 border border-stone-700 rounded-2xl px-5 py-5 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-xl font-semibold transition-colors"
+              style={{
+                width: '100%', background: '#FFF7ED', border: '2.5px solid #FED7AA',
+                borderRadius: 16, padding: '20px 18px', fontSize: 22, fontWeight: 700,
+                color: '#1A0E08', outline: 'none', boxSizing: 'border-box',
+                boxShadow: '0 2px 8px rgba(234,88,12,0.10)',
+              }}
+              onFocus={e => e.target.style.borderColor = '#EA580C'}
+              onBlur={e => e.target.style.borderColor = '#FED7AA'}
             />
             {mensalista && (
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm bg-green-800 text-green-300 px-3 py-1.5 rounded-full font-semibold">
-                Mensalista
+              <span style={{
+                position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+                background: '#DCFCE7', color: '#16A34A', fontSize: 13, fontWeight: 800,
+                padding: '6px 12px', borderRadius: 20, border: '1.5px solid #BBF7D0',
+              }}>
+                ✓ Mensalista
               </span>
             )}
           </div>
 
           {/* Sugestões */}
           {sugestoes.length > 0 && (
-            <div className="bg-stone-800 border border-stone-700 rounded-2xl mt-2 overflow-hidden shadow-xl">
+            <div style={{ background: '#fff', border: '2px solid #FED7AA', borderRadius: 16, marginTop: 8, overflow: 'hidden', boxShadow: '0 4px 16px rgba(234,88,12,0.15)' }}>
               {sugestoes.map(c => (
                 <button
                   key={c.id}
                   onClick={() => { setNomeCliente(c.nome); setSugestoes([]) }}
-                  className="w-full text-left px-5 py-4 hover:bg-stone-700 active:bg-stone-600 transition-colors border-b border-stone-700 last:border-0 flex items-center justify-between"
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '16px 18px',
+                    background: '#fff', border: 'none', borderBottom: '1px solid #FFF7ED',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    cursor: 'pointer',
+                  }}
                 >
-                  <span className="text-white font-semibold text-base">{c.nome}</span>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: '#1A0E08' }}>{c.nome}</span>
                   {c.tipo === 'mensalista' && (
-                    <span className="text-sm text-green-400 font-semibold bg-green-950 px-2 py-0.5 rounded-full">mensalista</span>
+                    <span style={{ fontSize: 13, color: '#16A34A', fontWeight: 700, background: '#DCFCE7', padding: '4px 10px', borderRadius: 20 }}>mensalista</span>
                   )}
                 </button>
               ))}
             </div>
           )}
         </div>
+
+        {/* Tipo de entrega — mostra sempre */}
+        <div>
+          <label style={{ fontSize: 18, fontWeight: 800, color: '#1A0E08', display: 'block', marginBottom: 10 }}>
+            Tipo de entrega
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {[{ value: 'retirada', emoji: '🏠', label: 'Retirar no local' }, { value: 'entrega', emoji: '🛵', label: 'Entrega' }].map(op => (
+              <button key={op.value} onClick={() => setTipoEntrega(op.value)}
+                style={{
+                  padding: '18px 10px', borderRadius: 16, fontWeight: 800, fontSize: 16,
+                  border: `2.5px solid ${tipoEntrega === op.value ? '#EA580C' : '#E6DDD5'}`,
+                  background: tipoEntrega === op.value ? '#FFF7ED' : '#fff',
+                  color: tipoEntrega === op.value ? '#EA580C' : '#9D8878',
+                  cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                }}>
+                <span style={{ fontSize: 26 }}>{op.emoji}</span>
+                {op.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Endereço — só para entrega e cliente não cadastrado */}
+        {tipoEntrega === 'entrega' && !clienteCadastrado && (
+          <div style={{ background: '#F0F9FF', border: '2px solid #BFDBFE', borderRadius: 16, padding: '16px 18px' }}>
+            <p style={{ fontSize: 16, fontWeight: 800, color: '#1D4ED8', margin: '0 0 14px' }}>📍 Endereço de entrega</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { key: 'rua', label: 'Rua', placeholder: 'Nome da rua' },
+                { key: 'numero', label: 'Número', placeholder: 'Ex: 123' },
+                { key: 'bairro', label: 'Bairro', placeholder: 'Nome do bairro' },
+                { key: 'referencia', label: 'Referência', placeholder: 'Ex: próximo ao mercado' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 14, fontWeight: 700, color: '#1D4ED8', display: 'block', marginBottom: 6 }}>{f.label}</label>
+                  <input
+                    type="text"
+                    placeholder={f.placeholder}
+                    value={endereco[f.key]}
+                    onChange={e => setEndereco(prev => ({ ...prev, [f.key]: e.target.value }))}
+                    style={{
+                      width: '100%', background: '#fff', border: '2px solid #BFDBFE',
+                      borderRadius: 12, padding: '14px 16px', fontSize: 16, fontWeight: 600,
+                      color: '#1A0E08', outline: 'none', boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tipoEntrega === 'entrega' && clienteCadastrado && (
+          <div style={{ background: '#F0FDF4', border: '2px solid #BBF7D0', borderRadius: 16, padding: '14px 18px' }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#16A34A', margin: 0 }}>
+              ✓ Cliente cadastrado — endereço já salvo no sistema
+            </p>
+          </div>
+        )}
       </div>
 
-      <div className="p-5 border-t border-stone-800">
+      <div style={{ padding: '16px 16px', borderTop: '2px solid #F3F0ED', background: '#fff', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
         <button
           onClick={() => { if (nomeCliente.trim()) setStep('montando') }}
           disabled={!nomeCliente.trim()}
-          className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:opacity-40 text-white font-black py-5 rounded-2xl text-xl transition-colors shadow-lg shadow-orange-500/20"
+          style={{
+            width: '100%', background: nomeCliente.trim() ? '#EA580C' : '#E6DDD5',
+            color: '#fff', fontWeight: 900, fontSize: 22,
+            border: 'none', borderRadius: 16, padding: '22px 0',
+            cursor: nomeCliente.trim() ? 'pointer' : 'not-allowed',
+            boxShadow: nomeCliente.trim() ? '0 4px 16px rgba(234,88,12,0.35)' : 'none',
+          }}
         >
           Montar pedido →
         </button>

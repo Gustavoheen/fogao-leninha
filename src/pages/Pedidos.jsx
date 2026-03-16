@@ -179,7 +179,10 @@ export default function Pedidos() {
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [form, setForm] = useState(FORM_VAZIO)
   const [sugestoes, setSugestoes] = useState([])
-  const [autoImprimir, setAutoImprimir] = useState(true)
+  const [autoImprimir, setAutoImprimir] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('fogao_autoImprimir') ?? 'true') }
+    catch { return true }
+  })
 
   function onNomeChange(valor) {
     setForm(prev => ({ ...prev, clienteNome: valor }))
@@ -336,7 +339,11 @@ export default function Pedidos() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {/* Toggle impressão — icon only on mobile */}
           <button
-            onClick={() => setAutoImprimir(v => !v)}
+            onClick={() => setAutoImprimir(v => {
+              const next = !v
+              localStorage.setItem('fogao_autoImprimir', JSON.stringify(next))
+              return next
+            })}
             title={autoImprimir ? 'Impressão automática ativada' : 'Impressão manual'}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
