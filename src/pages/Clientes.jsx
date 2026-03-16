@@ -37,9 +37,9 @@ export default function Clientes() {
     return buscaOk && tipoOk
   })
 
-  const totalMensalistas = clientes.filter(c => c.tipo === 'mensalista').length
+  const totalFiado = clientes.filter(c => ['mensalista','semanal','quinzenal'].includes(c.tipo)).length
   const totalDebitoPendente = clientes
-    .filter(c => c.tipo === 'mensalista')
+    .filter(c => ['mensalista','semanal','quinzenal'].includes(c.tipo))
     .reduce((acc, c) => acc + debitoPendente(c.id), 0)
 
   function salvar() {
@@ -84,7 +84,7 @@ export default function Clientes() {
             Clientes
           </h1>
           <p style={{ fontSize: 13, color: '#9D8878', margin: '2px 0 0' }}>
-            {clientes.length} cadastrado(s) · {totalMensalistas} mensalista(s)
+            {clientes.length} cadastrado(s) · {totalFiado} fiado(s)
           </p>
         </div>
         <button
@@ -110,7 +110,7 @@ export default function Clientes() {
         }}>
           <AlertCircle size={17} style={{ color: '#92400E', flexShrink: 0 }} />
           <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
-            Mensalistas com débito total de <strong>R$ {totalDebitoPendente.toFixed(2).replace('.', ',')}</strong>
+            Clientes com débito total de <strong>R$ {totalDebitoPendente.toFixed(2).replace('.', ',')}</strong>
           </p>
         </div>
       )}
@@ -128,7 +128,7 @@ export default function Clientes() {
           />
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          {[['todos', 'Todos'], ['normal', 'Normal'], ['mensalista', 'Mensalista']].map(([key, label]) => (
+          {[['todos', 'Todos'], ['normal', 'Normal'], ['mensalista', 'Mensalista'], ['semanal', 'Semanal'], ['quinzenal', 'Quinzenal']].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setFiltroTipo(key)}
@@ -215,7 +215,9 @@ export default function Clientes() {
                 <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}
                   style={{ ...INPUT_BASE }}>
                   <option value="normal">Normal</option>
-                  <option value="mensalista">Mensalista (paga depois)</option>
+                  <option value="mensalista">Mensalista (paga todo mês)</option>
+                  <option value="quinzenal">Quinzenal (paga a cada 15 dias)</option>
+                  <option value="semanal">Semanal (paga toda semana)</option>
                 </select>
               </div>
               <div>
@@ -280,6 +282,24 @@ export default function Clientes() {
                         padding: '2px 8px', borderRadius: 20, fontWeight: 600,
                       }}>
                         <Star size={9} /> Mensalista
+                      </span>
+                    )}
+                    {cliente.tipo === 'quinzenal' && (
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: 3,
+                        fontSize: 11, background: '#7C3AED', color: '#fff',
+                        padding: '2px 8px', borderRadius: 20, fontWeight: 600,
+                      }}>
+                        <Star size={9} /> Quinzenal
+                      </span>
+                    )}
+                    {cliente.tipo === 'semanal' && (
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: 3,
+                        fontSize: 11, background: '#0284C7', color: '#fff',
+                        padding: '2px 8px', borderRadius: 20, fontWeight: 600,
+                      }}>
+                        <Star size={9} /> Semanal
                       </span>
                     )}
                   </div>

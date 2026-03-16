@@ -200,7 +200,7 @@ export default function Pedidos() {
       clienteBairro: c.bairro || prev.clienteBairro,
       clienteNumero: c.numero || prev.clienteNumero,
       clienteReferencia: c.referencia || prev.clienteReferencia,
-      pagamento: c.tipo === 'mensalista' ? 'Mensalista' : prev.pagamento,
+      pagamento: ['mensalista', 'semanal', 'quinzenal'].includes(c.tipo) ? 'Mensalista' : prev.pagamento,
     }))
     setSugestoes([])
   }
@@ -489,6 +489,16 @@ export default function Pedidos() {
                           {c.tipo === 'mensalista' && (
                             <span style={{ fontSize: 10, background: '#FED7AA', color: '#9A3412', padding: '2px 7px', borderRadius: 20, fontWeight: 700 }}>
                               Mensalista
+                            </span>
+                          )}
+                          {c.tipo === 'quinzenal' && (
+                            <span style={{ fontSize: 10, background: '#EDE9FE', color: '#5B21B6', padding: '2px 7px', borderRadius: 20, fontWeight: 700 }}>
+                              Quinzenal
+                            </span>
+                          )}
+                          {c.tipo === 'semanal' && (
+                            <span style={{ fontSize: 10, background: '#E0F2FE', color: '#0369A1', padding: '2px 7px', borderRadius: 20, fontWeight: 700 }}>
+                              Semanal
                             </span>
                           )}
                         </div>
