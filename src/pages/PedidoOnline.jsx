@@ -276,22 +276,22 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
 // Card de item no carrinho
 function CarrinhoItem({ item, onRemover, numero }) {
   return (
-    <div className="bg-stone-800 rounded-xl p-4 flex items-start gap-3">
-      <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0">
+    <div className="bg-stone-800 border border-stone-700 rounded-2xl p-4 flex items-start gap-3">
+      <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-base shrink-0">
         {numero}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-sm">
-          {item.opcao.nome} <span className="text-orange-400">({item.tamanho})</span>
-          {item.nome && <span className="text-stone-400 ml-1">· {item.nome}</span>}
+        <p className="text-white font-bold text-base leading-tight">
+          {item.opcao.nome} <span className="text-orange-400 font-semibold">({item.tamanho})</span>
         </p>
+        {item.nome && <p className="text-stone-400 text-sm mt-0.5">para: {item.nome}</p>}
         {item.semItens.length > 0 && (
-          <p className="text-red-400 text-xs mt-0.5">sem: {item.semItens.join(', ')}</p>
+          <p className="text-red-400 text-sm mt-0.5">sem: {item.semItens.join(', ')}</p>
         )}
-        <p className="text-orange-400 font-bold text-sm mt-1">{fmtR$(item.preco)}</p>
+        <p className="text-orange-400 font-bold text-base mt-1.5">{fmtR$(item.preco)}</p>
       </div>
-      <button onClick={onRemover} className="text-stone-600 hover:text-red-400 transition-colors shrink-0">
-        <Trash2 size={16} />
+      <button onClick={onRemover} className="text-stone-600 hover:text-red-400 transition-colors shrink-0 p-1">
+        <Trash2 size={18} />
       </button>
     </div>
   )
@@ -647,73 +647,74 @@ export default function PedidoOnline() {
   // MOBILE — steps
   // ─────────────────────────────────────────────────────────────────────────
   const MobileCardapio = (
-    <div className="min-h-screen bg-stone-950 pb-28">
+    <div className="min-h-screen bg-stone-950 pb-32">
       {/* Header */}
-      <div className="bg-stone-900 border-b border-stone-800 px-4 py-5 flex items-center gap-4">
-        <img src="/logo-vertical.png" alt="Logo" className="h-12 w-auto" />
+      <div className="bg-stone-900 border-b border-stone-800 px-4 py-4 flex items-center gap-3">
+        <img src="/logo-vertical.png" alt="Logo" className="h-14 w-auto" />
         <div className="flex-1">
-          <h1 className="text-white font-black text-base leading-tight">Fogão a Lenha da Leninha</h1>
-          <p className="text-orange-400 text-xs">Monte seu pedido</p>
+          <h1 className="text-white font-black text-lg leading-tight">Fogão a Lenha da Leninha</h1>
+          <p className="text-orange-400 text-sm font-medium">Monte seu pedido</p>
         </div>
         <button
           onClick={() => navigate('/login')}
           title="Painel admin"
-          className="text-stone-700 hover:text-stone-500 transition-colors p-1"
+          className="text-stone-700 hover:text-stone-500 transition-colors p-2"
         >
-          <Settings size={16} />
+          <Settings size={18} />
         </button>
       </div>
 
-      <div className="px-4 py-5 space-y-5">
+      <div className="px-4 py-6 space-y-5">
         {lojaFechada && (
           <div className="bg-red-950 border border-red-800 rounded-2xl p-4 text-center">
-            <p className="text-red-400 font-semibold">🔒 Pedidos encerrados</p>
+            <p className="text-red-400 font-bold text-base">🔒 Pedidos encerrados no momento</p>
+            <p className="text-red-500 text-sm mt-1">Tente novamente mais tarde</p>
           </div>
         )}
 
         {/* Carnes */}
         {cardapioHoje?.carnes?.some(c => c) && (
-          <div className="bg-stone-800 rounded-2xl p-4">
-            <p className="text-orange-400 text-xs uppercase tracking-widest font-bold mb-2">🔥 Carnes do dia</p>
+          <div className="bg-stone-800/80 border border-stone-700 rounded-2xl p-5">
+            <p className="text-orange-400 text-xs uppercase tracking-widest font-bold mb-3">🔥 Carnes do dia</p>
             {cardapioHoje.carnes.filter(c => c).map((c, i) => (
-              <p key={i} className="text-stone-200 text-sm">• {c}</p>
+              <p key={i} className="text-stone-100 font-medium text-base leading-relaxed">• {c}</p>
             ))}
           </div>
         )}
 
         {/* Opções */}
         {opcoes.length === 0 ? (
-          <div className="text-center py-16">
-            <UtensilsCrossed size={48} className="mx-auto text-stone-700 mb-4" />
-            <p className="text-stone-400">Cardápio não disponível</p>
+          <div className="text-center py-20">
+            <UtensilsCrossed size={56} className="mx-auto text-stone-700 mb-4" />
+            <p className="text-stone-400 text-base">Cardápio não disponível no momento</p>
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-stone-400 text-xs uppercase tracking-wide">Escolha sua opção e tamanho</p>
+            <p className="text-stone-500 text-xs uppercase tracking-widest font-semibold">Escolha sua opção e tamanho</p>
             {opcoes.map(op => (
-              <div key={op.id} className="bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden">
-                <div className="p-4">
-                  <h3 className="text-white font-bold">{op.nome}</h3>
+              <div key={op.id} className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-lg">
+                <div className="px-5 pt-5 pb-4">
+                  <h3 className="text-white font-bold text-xl leading-tight">{op.nome}</h3>
                   {op.acompanhamentos?.length > 0 && (
-                    <p className="text-stone-500 text-xs mt-1">{op.acompanhamentos.join(', ')}</p>
+                    <p className="text-stone-400 text-sm mt-2 leading-relaxed">{op.acompanhamentos.join(' · ')}</p>
                   )}
                 </div>
-                <div className="grid grid-cols-2 divide-x divide-stone-800 border-t border-stone-800">
+                <div className="grid grid-cols-2 divide-x divide-stone-700 border-t border-stone-700">
                   <button
                     disabled={lojaFechada}
                     onClick={() => {
                       abrirModal(op.id)
-                      setConfigurando(prev => prev ? { ...prev, tamanho: 'P' } : null)
-                      // set tamanho P after abrirModal opens
                       setTimeout(() => setConfigurando(prev => prev ? { ...prev, tamanho: 'P', opcaoId: op.id } : null), 0)
                     }}
-                    className="py-4 flex flex-col items-center gap-1 hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-40"
+                    className="py-5 flex flex-col items-center gap-1.5 hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-40"
                   >
-                    <span className="text-white font-bold text-sm">Pequena</span>
+                    <span className="text-white font-bold text-base">Pequena</span>
                     {cardapioHoje?.precoP && (
-                      <span className="text-orange-400 text-xs font-semibold">{fmtR$(cardapioHoje.precoP)}</span>
+                      <span className="text-orange-400 font-bold text-base">{fmtR$(cardapioHoje.precoP)}</span>
                     )}
-                    <Plus size={16} className="text-orange-400 mt-1" />
+                    <span className="bg-orange-500 rounded-lg w-8 h-8 flex items-center justify-center mt-1">
+                      <Plus size={18} className="text-white" />
+                    </span>
                   </button>
                   <button
                     disabled={lojaFechada}
@@ -721,13 +722,15 @@ export default function PedidoOnline() {
                       abrirModal(op.id)
                       setTimeout(() => setConfigurando(prev => prev ? { ...prev, tamanho: 'G', opcaoId: op.id } : null), 0)
                     }}
-                    className="py-4 flex flex-col items-center gap-1 hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-40"
+                    className="py-5 flex flex-col items-center gap-1.5 hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-40"
                   >
-                    <span className="text-white font-bold text-sm">Grande</span>
+                    <span className="text-white font-bold text-base">Grande</span>
                     {cardapioHoje?.precoG && (
-                      <span className="text-orange-400 text-xs font-semibold">{fmtR$(cardapioHoje.precoG)}</span>
+                      <span className="text-orange-400 font-bold text-base">{fmtR$(cardapioHoje.precoG)}</span>
                     )}
-                    <Plus size={16} className="text-orange-400 mt-1" />
+                    <span className="bg-orange-500 rounded-lg w-8 h-8 flex items-center justify-center mt-1">
+                      <Plus size={18} className="text-white" />
+                    </span>
                   </button>
                 </div>
               </div>
@@ -738,16 +741,16 @@ export default function PedidoOnline() {
 
       {/* Botão fixo de carrinho */}
       {carrinho.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-stone-950/90 backdrop-blur-sm border-t border-stone-800">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-stone-950/95 backdrop-blur-sm border-t border-stone-800">
           <button
             onClick={() => setStep('carrinho')}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl flex items-center justify-between px-5 transition-colors"
+            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-5 rounded-2xl flex items-center justify-between px-5 transition-colors shadow-xl shadow-orange-500/20"
           >
-            <span className="bg-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-sm font-black">
+            <span className="bg-white/20 rounded-xl w-8 h-8 flex items-center justify-center text-base font-black">
               {carrinho.length}
             </span>
-            <span>Ver carrinho</span>
-            <span className="font-bold">{fmtR$(total)}</span>
+            <span className="text-base">Ver carrinho</span>
+            <span className="font-bold text-base">{fmtR$(total)}</span>
           </button>
         </div>
       )}
@@ -757,10 +760,13 @@ export default function PedidoOnline() {
   const MobileCarrinho = (
     <div className="min-h-screen bg-stone-950 flex flex-col">
       <div className="bg-stone-900 border-b border-stone-800 px-4 py-4 flex items-center gap-3">
-        <button onClick={() => setStep('cardapio')} className="text-stone-400 hover:text-white">
-          <ChevronLeft size={22} />
+        <button onClick={() => setStep('cardapio')} className="text-stone-400 hover:text-white p-1">
+          <ChevronLeft size={24} />
         </button>
-        <h2 className="text-white font-bold">Seu carrinho</h2>
+        <h2 className="text-white font-bold text-lg">Seu carrinho</h2>
+        <span className="ml-auto bg-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+          {carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}
+        </span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-3">
@@ -769,22 +775,22 @@ export default function PedidoOnline() {
         ))}
         <button
           onClick={() => setStep('cardapio')}
-          className="w-full border-2 border-dashed border-stone-700 text-stone-500 rounded-xl py-4 text-sm flex items-center justify-center gap-2"
+          className="w-full border-2 border-dashed border-stone-700 hover:border-orange-500 text-stone-500 hover:text-orange-400 rounded-2xl py-5 text-sm flex items-center justify-center gap-2 transition-colors"
         >
-          <Plus size={15} /> Adicionar outra marmitex
+          <Plus size={16} /> Adicionar outra marmitex
         </button>
       </div>
 
       <div className="p-4 border-t border-stone-800">
-        <div className="flex justify-between text-white font-bold text-lg mb-4">
+        <div className="flex justify-between text-white font-bold text-xl mb-4">
           <span>Total</span>
           <span className="text-orange-400">{fmtR$(total)}</span>
         </div>
         <button
           onClick={() => setStep('checkout')}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
+          className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-2 text-base shadow-lg shadow-orange-500/20 transition-colors"
         >
-          Finalizar pedido <ChevronRight size={18} />
+          Finalizar pedido <ChevronRight size={20} />
         </button>
       </div>
     </div>
@@ -793,72 +799,77 @@ export default function PedidoOnline() {
   const MobileCheckout = (
     <div className="min-h-screen bg-stone-950 flex flex-col">
       <div className="bg-stone-900 border-b border-stone-800 px-4 py-4 flex items-center gap-3">
-        <button onClick={() => setStep('carrinho')} className="text-stone-400 hover:text-white">
-          <ChevronLeft size={22} />
+        <button onClick={() => setStep('carrinho')} className="text-stone-400 hover:text-white p-1">
+          <ChevronLeft size={24} />
         </button>
-        <h2 className="text-white font-bold">Seus dados</h2>
+        <h2 className="text-white font-bold text-lg">Finalizar pedido</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5">
         {/* Resumo compacto */}
-        <div className="bg-stone-900 rounded-2xl p-4">
-          <p className="text-stone-400 text-xs uppercase tracking-wide mb-2">Resumo</p>
-          {carrinho.map((item, i) => (
-            <div key={item.uid} className="flex justify-between text-sm text-stone-300 mb-1">
-              <span>
-                {item.opcao.nome} {item.tamanho}
-                {item.nome && <span className="text-orange-400"> ({item.nome})</span>}
+        <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5">
+          <p className="text-stone-400 text-xs uppercase tracking-widest font-semibold mb-3">Resumo do pedido</p>
+          {carrinho.map((item) => (
+            <div key={item.uid} className="flex justify-between text-sm text-stone-300 mb-2 gap-2">
+              <span className="flex-1">
+                {item.opcao.nome} <span className="text-stone-500">({item.tamanho})</span>
+                {item.nome && <span className="text-orange-400"> · {item.nome}</span>}
+                {item.semItens?.length > 0 && (
+                  <span className="block text-xs text-red-400 mt-0.5">sem: {item.semItens.join(', ')}</span>
+                )}
               </span>
-              <span>{fmtR$(item.preco)}</span>
+              <span className="font-semibold text-white shrink-0">{fmtR$(item.preco)}</span>
             </div>
           ))}
-          <div className="border-t border-stone-700 mt-2 pt-2 flex justify-between font-bold text-white">
+          <div className="border-t border-stone-700 mt-3 pt-3 flex justify-between font-bold text-white text-base">
             <span>Total</span>
             <span className="text-orange-400">{fmtR$(total)}</span>
           </div>
         </div>
 
         {/* Dados */}
-        <div className="space-y-3">
+        <div className="space-y-4">
+          <p className="text-stone-400 text-xs uppercase tracking-widest font-semibold">Seus dados</p>
+
           <div>
-            <label className="text-stone-400 text-sm block mb-1">Seu nome *</label>
+            <label className="text-stone-300 text-sm font-medium block mb-1.5">Seu nome *</label>
             <input
               type="text"
               placeholder="Nome completo"
               value={form.clienteNome}
               onChange={e => setForm(f => ({ ...f, clienteNome: e.target.value }))}
-              className={`w-full bg-stone-800 border rounded-xl px-4 py-3.5 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-base ${erros.clienteNome ? 'border-red-500' : 'border-stone-700'}`}
+              className={`w-full bg-stone-800 border rounded-xl px-4 py-4 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-base transition-colors ${erros.clienteNome ? 'border-red-500' : 'border-stone-700'}`}
             />
-            {erros.clienteNome && <p className="text-red-400 text-xs mt-1">{erros.clienteNome}</p>}
+            {erros.clienteNome && <p className="text-red-400 text-sm mt-1.5">{erros.clienteNome}</p>}
             {mensalista && (
-              <p className="text-green-400 text-xs mt-1">✓ Cliente mensalista identificado</p>
+              <p className="text-green-400 text-sm mt-1.5 font-medium">✓ Cliente mensalista identificado</p>
             )}
           </div>
 
           <div>
-            <label className="text-stone-400 text-sm block mb-1">Telefone *</label>
+            <label className="text-stone-300 text-sm font-medium block mb-1.5">Telefone *</label>
             <input
               type="tel"
               placeholder="(00) 00000-0000"
               value={form.clienteTelefone}
               onChange={e => setForm(f => ({ ...f, clienteTelefone: fmtTel(e.target.value) }))}
-              className={`w-full bg-stone-800 border rounded-xl px-4 py-3.5 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-base ${erros.clienteTelefone ? 'border-red-500' : 'border-stone-700'}`}
+              className={`w-full bg-stone-800 border rounded-xl px-4 py-4 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-base transition-colors ${erros.clienteTelefone ? 'border-red-500' : 'border-stone-700'}`}
             />
-            {erros.clienteTelefone && <p className="text-red-400 text-xs mt-1">{erros.clienteTelefone}</p>}
+            {erros.clienteTelefone && <p className="text-red-400 text-sm mt-1.5">{erros.clienteTelefone}</p>}
           </div>
 
           {!mensalista && (
             <div>
-              <label className="text-stone-400 text-sm block mb-2">Pagamento</label>
+              <label className="text-stone-300 text-sm font-medium block mb-2">Forma de pagamento</label>
               <div className="grid grid-cols-2 gap-3">
                 {['Pix', 'Dinheiro'].map(p => (
                   <button
                     key={p}
                     onClick={() => setForm(f => ({ ...f, pagamento: p }))}
-                    className={`py-4 rounded-xl text-base font-semibold border-2 transition-colors ${
+                    className={`py-5 rounded-2xl text-base font-semibold border-2 transition-colors ${
                       form.pagamento === p
-                        ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                        : 'border-stone-700 text-stone-400'
+                        ? 'border-orange-500 bg-orange-500/15 text-orange-400'
+                        : 'border-stone-700 bg-stone-800 text-stone-400 hover:border-stone-600'
                     }`}
                   >
                     {p === 'Pix' ? '💠 Pix' : '💵 Dinheiro'}
@@ -869,20 +880,20 @@ export default function PedidoOnline() {
           )}
 
           {mensalista && (
-            <div className="bg-green-950 border border-green-800 rounded-xl p-4">
-              <p className="text-green-400 font-semibold">Conta mensalista</p>
-              <p className="text-green-600 text-sm mt-0.5">Cobrado no fechamento mensal</p>
+            <div className="bg-green-950 border border-green-800 rounded-2xl p-4">
+              <p className="text-green-400 font-bold text-base">Conta mensalista</p>
+              <p className="text-green-600 text-sm mt-1">O valor será cobrado no fechamento mensal</p>
             </div>
           )}
 
           <div>
-            <label className="text-stone-400 text-sm block mb-1">Observações</label>
+            <label className="text-stone-300 text-sm font-medium block mb-1.5">Observações <span className="text-stone-500 font-normal">(opcional)</span></label>
             <textarea
               placeholder="Alguma observação especial?"
               value={form.obs}
               onChange={e => setForm(f => ({ ...f, obs: e.target.value }))}
               rows={3}
-              className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-3 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 resize-none text-base"
+              className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-4 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 resize-none text-base transition-colors"
             />
           </div>
         </div>
@@ -892,7 +903,7 @@ export default function PedidoOnline() {
         <button
           onClick={confirmarPedido}
           disabled={enviando}
-          className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl text-base transition-colors"
+          className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:opacity-60 text-white font-bold py-5 rounded-2xl text-base transition-colors shadow-lg shadow-orange-500/20"
         >
           {enviando ? 'Confirmando...' : `Confirmar pedido · ${fmtR$(total)}`}
         </button>
