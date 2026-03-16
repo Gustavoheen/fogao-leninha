@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { ClipboardList, Plus, X, Check, ChevronDown, User, MapPin, UtensilsCrossed, GlassWater, Package, Clock, Bike, Printer, CreditCard } from 'lucide-react'
 import { formatarEndereco, ENDERECO_VAZIO } from '../utils/endereco'
@@ -183,6 +183,16 @@ export default function Pedidos() {
     try { return JSON.parse(localStorage.getItem('fogao_autoImprimir') ?? 'true') }
     catch { return true }
   })
+  const [precoP, setPrecoP] = useState(0)
+  const [precoG, setPrecoG] = useState(0)
+
+  // Sincroniza preços com cardapioHoje quando não há cliente fiado selecionado
+  useEffect(() => {
+    if (!form.clienteNome) {
+      setPrecoP(Number(cardapioHoje?.precoP || 0))
+      setPrecoG(Number(cardapioHoje?.precoG || 0))
+    }
+  }, [cardapioHoje, form.clienteNome])
 
   function onNomeChange(valor) {
     setForm(prev => ({ ...prev, clienteNome: valor }))
@@ -192,6 +202,10 @@ export default function Pedidos() {
   }
 
   function selecionarCliente(c) {
+    // Aplica preços personalizados se cliente fiado tiver preços definidos
+    const isFiado = ['mensalista', 'semanal', 'quinzenal'].includes(c.tipo)
+    setPrecoP(isFiado && c.precoMarmitexP ? Number(c.precoMarmitexP) : Number(cardapioHoje?.precoP || 0))
+    setPrecoG(isFiado && c.precoMarmitexG ? Number(c.precoMarmitexG) : Number(cardapioHoje?.precoG || 0))
     setForm(prev => ({
       ...prev,
       clienteNome: c.nome,
@@ -200,15 +214,13 @@ export default function Pedidos() {
       clienteBairro: c.bairro || prev.clienteBairro,
       clienteNumero: c.numero || prev.clienteNumero,
       clienteReferencia: c.referencia || prev.clienteReferencia,
-      pagamento: ['mensalista', 'semanal', 'quinzenal'].includes(c.tipo) ? 'Mensalista' : prev.pagamento,
+      pagamento: isFiado ? 'Mensalista' : prev.pagamento,
     }))
     setSugestoes([])
   }
 
   const opcoesAlmoco = (cardapioHoje?.opcoes || []).filter(o => o.disponivel)
   const carnesGlobais = (cardapioHoje?.carnes || []).filter(c => c.trim())
-  const precoP = Number(cardapioHoje?.precoP || 0)
-  const precoG = Number(cardapioHoje?.precoG || 0)
   const combos = cardapio.filter(i => i.disponivel && i.categoria === 'Combo')
   const refrigerantes = cardapio.filter(i => i.disponivel && i.categoria === 'Refrigerante')
 

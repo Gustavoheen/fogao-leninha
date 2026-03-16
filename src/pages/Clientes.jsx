@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext'
 import { UserPlus, Search, Pencil, Trash2, Phone, MapPin, X, Check, AlertCircle, Star } from 'lucide-react'
 import { formatarEndereco, ENDERECO_VAZIO } from '../utils/endereco'
 
-const VAZIO = { nome: '', telefone: '', ...ENDERECO_VAZIO, observacoes: '', tipo: 'normal' }
+const VAZIO = { nome: '', telefone: '', ...ENDERECO_VAZIO, observacoes: '', tipo: 'normal', precoMarmitexP: '', precoMarmitexG: '' }
+const TIPOS_FIADO = ['mensalista', 'semanal', 'quinzenal']
 
 const INPUT_BASE = {
   background: '#fff',
@@ -64,6 +65,8 @@ export default function Clientes() {
       referencia: cliente.referencia || '',
       observacoes: cliente.observacoes || '',
       tipo: cliente.tipo || 'normal',
+      precoMarmitexP: cliente.precoMarmitexP ?? '',
+      precoMarmitexG: cliente.precoMarmitexG ?? '',
     })
     setEditandoId(cliente.id)
     setMostrarForm(true)
@@ -226,6 +229,36 @@ export default function Clientes() {
                   style={INPUT_BASE} placeholder="Preferências, alergias..." />
               </div>
             </div>
+
+            {/* Preços personalizados — só para clientes fiado */}
+            {TIPOS_FIADO.includes(form.tipo) && (
+              <div style={{ marginTop: 12, borderTop: '1px solid #D1FAE5', paddingTop: 12 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#166534', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  💰 Preço personalizado da marmitex
+                  <span style={{ fontSize: 11, fontWeight: 400, color: '#6B5A4E' }}>(deixe em branco para usar o preço padrão)</span>
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Marmitex Pequena (R$)</label>
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={form.precoMarmitexP}
+                      onChange={e => setForm({ ...form, precoMarmitexP: e.target.value })}
+                      style={INPUT_BASE} placeholder="Ex: 14,00"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Marmitex Grande (R$)</label>
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={form.precoMarmitexG}
+                      onChange={e => setForm({ ...form, precoMarmitexG: e.target.value })}
+                      style={INPUT_BASE} placeholder="Ex: 17,00"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: 8 }}>
