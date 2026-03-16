@@ -21,6 +21,7 @@ const INPUT_BASE = {
   fontFamily: 'Inter, sans-serif',
   color: '#1A0E08',
   boxSizing: 'border-box',
+  textTransform: 'uppercase',
 }
 
 export default function Cardapio() {
