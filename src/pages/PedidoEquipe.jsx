@@ -124,18 +124,33 @@ export default function PedidoEquipe() {
     if (!autenticado) return
     async function carregar() {
       try {
-        const [{ data: ch }, { data: cl }, { data: cf }] = await Promise.all([
+        const [
+          { data: ch, error: erCh },
+          { data: cl, error: erCl },
+          { data: cf, error: erCf },
+        ] = await Promise.all([
           supabase.from('cardapio_hoje').select('*').eq('id', 1).single(),
           supabase.from('clientes').select('id,nome,tipo,telefone'),
           supabase.from('configuracoes').select('*').eq('id', 1).single(),
         ])
+        if (erCh && erCh.code !== 'PGRST116') console.error('cardapio_hoje:', erCh)
+        if (erCl) console.error('clientes:', erCl)
+        if (erCf && erCf.code !== 'PGRST116') console.error('configuracoes:', erCf)
         if (ch) setCardapioHoje(ch)
         if (cl) setClientes(cl)
         if (cf?.equipePIN) sessionStorage.setItem('fogao_equipe_pin', cf.equipePIN)
-      } catch { /* offline */ }
+      } catch (e) { console.error('Erro ao carregar dados:', e) }
       finally { setLoading(false) }
     }
     carregar()
+
+    const canal = supabase
+      .channel('equipe-cardapio')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cardapio_hoje' }, payload => {
+        if (payload.new) setCardapioHoje(payload.new)
+      })
+      .subscribe()
+    return () => supabase.removeChannel(canal)
   }, [autenticado])
 
   useEffect(() => {
