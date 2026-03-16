@@ -408,7 +408,8 @@ export default function PedidoOnline() {
         criadoEm: new Date().toISOString(),
       }
 
-      await supabase.from('pedidos').insert(pedido)
+      const { error: insertError } = await supabase.from('pedidos').insert(pedido)
+      if (insertError) throw insertError
 
       // Número sequencial do dia
       const hoje = new Date().toISOString().split('T')[0]
@@ -419,8 +420,9 @@ export default function PedidoOnline() {
       setPedidoConfirmado({ ...pedido, numeroPedido: count || Math.floor(Math.random() * 90 + 10) })
       setStep('confirmado')
       setCarrinho([])
-    } catch {
-      alert('Erro ao confirmar pedido. Tente novamente.')
+    } catch (err) {
+      console.error('Erro ao confirmar pedido:', err)
+      alert('Erro ao confirmar pedido: ' + (err?.message || 'verifique a conexão.'))
     } finally {
       setEnviando(false)
     }

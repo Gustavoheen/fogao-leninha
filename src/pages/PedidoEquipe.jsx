@@ -172,7 +172,7 @@ export default function PedidoEquipe() {
       const pg = mensalista ? 'Mensalista' : pagamento
       const statusPg = mensalista ? 'mensalista' : 'pendente'
 
-      await supabase.from('pedidos').insert({
+      const { error: insertError } = await supabase.from('pedidos').insert({
         id,
         clienteNome: nomeCliente.trim(),
         itens,
@@ -184,6 +184,8 @@ export default function PedidoEquipe() {
         criadoEm: new Date().toISOString(),
       })
 
+      if (insertError) throw insertError
+
       const hoje = new Date().toISOString().split('T')[0]
       const { count } = await supabase.from('pedidos')
         .select('*', { count: 'exact', head: true })
@@ -191,8 +193,9 @@ export default function PedidoEquipe() {
 
       setNumeroPedido(count || Math.floor(Math.random() * 90 + 10))
       setStep('confirmado')
-    } catch {
-      alert('Erro ao salvar pedido.')
+    } catch (err) {
+      console.error('Erro ao salvar pedido:', err)
+      alert('Erro ao salvar pedido: ' + (err?.message || 'verifique a conexão.'))
     } finally {
       setEnviando(false)
     }
