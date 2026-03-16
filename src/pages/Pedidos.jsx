@@ -332,22 +332,22 @@ export default function Pedidos() {
             {emAberto} em aberto
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Toggle impressão */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {/* Toggle impressão — icon only on mobile */}
           <button
             onClick={() => setAutoImprimir(v => !v)}
             title={autoImprimir ? 'Impressão automática ativada' : 'Impressão manual'}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
               border: autoImprimir ? '1.5px solid #16A34A' : '1.5px solid #CFC4BB',
               background: autoImprimir ? '#F0FDF4' : '#F7F3EF',
               color: autoImprimir ? '#15803D' : '#6B5A4E',
               cursor: 'pointer', transition: 'all 0.15s',
             }}
           >
-            <Printer size={13} />
-            {autoImprimir ? 'Impressão automática' : 'Impressão manual'}
+            <Printer size={14} />
+            <span className="hidden sm:inline">{autoImprimir ? 'Impressão automática' : 'Impressão manual'}</span>
           </button>
           {/* Botão Novo Pedido */}
           <button
@@ -436,7 +436,7 @@ export default function Pedidos() {
             <p style={{ ...SECTION_LABEL, color: '#16A34A' }}>
               <User size={13} /> Dados do Cliente
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div style={{ position: 'relative' }}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>Nome</label>
                 <input
@@ -490,7 +490,7 @@ export default function Pedidos() {
                 <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 8 }}>
                   <MapPin size={11} /> Endereço de Entrega
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label style={{ display: 'block', fontSize: 10, color: '#9D8878', marginBottom: 3 }}>Rua</label>
                     <input type="text" value={form.clienteRua}
@@ -586,7 +586,7 @@ export default function Pedidos() {
               <p style={{ ...SECTION_LABEL, color: '#7C3AED' }}>
                 <Package size={13} /> Combos
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                 {combos.map(item => (
                   <button key={item.id} onClick={() => adicionarCombo(item)}
                     style={{
@@ -647,7 +647,7 @@ export default function Pedidos() {
             {refrigerantes.length === 0 ? (
               <p style={{ fontSize: 12, color: '#9D8878' }}>Nenhum refrigerante cadastrado.</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                 {refrigerantes.map(item => (
                   <button key={item.id} onClick={() => adicionarRefrigerante(item)}
                     style={{
@@ -1151,60 +1151,56 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
       overflow: 'hidden',
     }}>
       {/* Linha principal */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <p style={{ fontWeight: 600, fontSize: 14, color: '#1A0E08' }}>{pedido.clienteNome}</p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 16px', gap: 10 }}>
+        {/* Left: name + meta */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <p style={{ fontWeight: 700, fontSize: 15, color: '#1A0E08', wordBreak: 'break-word' }}>{pedido.clienteNome}</p>
             {BADGE_PAGTO && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${BADGE_PAGTO.cor}`}
-                style={{ fontSize: 11 }}>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${BADGE_PAGTO.cor}`}>
                 {BADGE_PAGTO.label}
               </span>
             )}
+          </div>
+          {endFormatado && (
+            <p style={{ fontSize: 11, color: '#9D8878', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              <MapPin size={10} />{endFormatado}
+            </p>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+            <p style={{ fontSize: 11, color: '#9D8878' }}>{hora}</p>
             {pedido.horarioEntrega && (
               <span style={{ fontSize: 11, color: '#6B5A4E', display: 'flex', alignItems: 'center', gap: 3 }}>
                 <Clock size={10} /> {pedido.horarioEntrega}
               </span>
             )}
-            {pedido.comandaImpressaEm
-              ? (
-                <span style={{
-                  fontSize: 10, background: '#DCFCE7', color: '#15803D',
-                  padding: '2px 6px', borderRadius: 20, fontWeight: 600,
-                  display: 'inline-flex', alignItems: 'center', gap: 3,
-                }}>
-                  <Printer size={9} /> Impressa
-                </span>
-              )
-              : (
-                <span style={{
-                  fontSize: 10, background: '#FFF7ED', color: '#EA580C',
-                  padding: '2px 6px', borderRadius: 20, fontWeight: 600,
-                  display: 'inline-flex', alignItems: 'center', gap: 3,
-                }}>
-                  <Printer size={9} /> Não impressa
-                </span>
-              )
-            }
-          </div>
-          {endFormatado && (
-            <p style={{ fontSize: 11, color: '#9D8878', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-              <MapPin size={10} />{endFormatado}
-            </p>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-            <p style={{ fontSize: 11, color: '#9D8878' }}>{hora}</p>
             {pedido.motoboy && (
               <span style={{ fontSize: 11, color: '#6366F1', display: 'flex', alignItems: 'center', gap: 3 }}>
                 <Bike size={10} /> {pedido.motoboy}
               </span>
             )}
+            {pedido.comandaImpressaEm ? (
+              <span style={{ fontSize: 10, background: '#DCFCE7', color: '#15803D', padding: '2px 6px', borderRadius: 20, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <Printer size={9} /> Impressa
+              </span>
+            ) : (
+              <span style={{ fontSize: 10, background: '#FFF7ED', color: '#EA580C', padding: '2px 6px', borderRadius: 20, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <Printer size={9} /> Pendente
+              </span>
+            )}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontWeight: 700, color: '#16A34A', fontSize: 14 }}>
-            R$ {Number(pedido.total).toFixed(2).replace('.', ',')}
-          </span>
+        {/* Right: value + status + chevron */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontWeight: 700, color: '#16A34A', fontSize: 15 }}>
+              R$ {Number(pedido.total).toFixed(2).replace('.', ',')}
+            </span>
+            <button onClick={() => setAberto(!aberto)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', padding: 4 }}>
+              <ChevronDown size={18} style={{ transition: 'transform 0.2s', transform: aberto ? 'rotate(180deg)' : 'none' }} />
+            </button>
+          </div>
           <span style={{
             padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
             background: pedido.status === 'entregue' ? '#F1F5F9' : '#DBEAFE',
@@ -1212,10 +1208,6 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
           }}>
             {statusInfo.label}
           </span>
-          <button onClick={() => setAberto(!aberto)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', padding: 2 }}>
-            <ChevronDown size={16} style={{ transition: 'transform 0.2s', transform: aberto ? 'rotate(180deg)' : 'none' }} />
-          </button>
         </div>
       </div>
 
@@ -1224,7 +1216,7 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
         <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #F7F3EF' }}>
 
           {/* Status de pagamento — botões saturados */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
             {Object.entries(PAGAMENTO_STATUS).map(([key, info]) => {
               const ativo = pedido.statusPagamento === key
               const style = PAG_STATUS_STYLE[key]
@@ -1278,7 +1270,7 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
             <button onClick={() => imprimirComanda(pedido, autoImprimir, onImpresso)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                padding: '8px 16px', borderRadius: 20, fontSize: 11, fontWeight: 600,
                 background: '#FFF7ED', color: '#C2410C',
                 border: '1.5px solid #FED7AA', cursor: 'pointer',
               }}>
@@ -1291,7 +1283,7 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
                 <button onClick={() => setMostrarMotoboy(v => !v)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    padding: '8px 16px', borderRadius: 20, fontSize: 11, fontWeight: 600,
                     background: pedido.motoboy ? '#EEF2FF' : '#F8FAFC',
                     color: pedido.motoboy ? '#4338CA' : '#475569',
                     border: pedido.motoboy ? '1.5px solid #C7D2FE' : '1.5px solid #CBD5E1',
@@ -1304,7 +1296,7 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
                 <button onClick={() => onStatus(pedido.id, 'entregue')}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    padding: '8px 16px', borderRadius: 20, fontSize: 11, fontWeight: 600,
                     background: '#F0FDF4', color: '#16A34A',
                     border: '1.5px solid #BBF7D0', cursor: 'pointer',
                   }}>
