@@ -167,6 +167,26 @@ export default function Dashboard() {
   const fiadoLista = Object.values(fiadoPorCliente).sort((a, b) => b.total - a.total)
   const totalFiadoGeral = fiadoLista.reduce((acc, c) => acc + c.total, 0)
 
+  // Contagem de itens vendidos no período
+  const contagemItens = pedidosPeriodo.reduce((acc, p) => {
+    ;(p.itens || []).forEach(item => {
+      if (item.tipo === 'marmitex') {
+        const key = item.opcaoId === 1 ? 'op1' : item.opcaoId === 2 ? 'op2' : 'op1'
+        acc[key] = (acc[key] || 0) + (item.qtd || 1)
+        acc.marmitex = (acc.marmitex || 0) + (item.qtd || 1)
+        const nomeOp = item.nome || (item.opcaoId === 1 ? 'Opção 1' : 'Opção 2')
+        acc[`nome_${key}`] = nomeOp
+      } else if (item.tipo === 'refrigerante') {
+        acc.refrigerante = (acc.refrigerante || 0) + (item.qtd || 1)
+      } else if (item.tipo === 'salada') {
+        acc.salada = (acc.salada || 0) + (item.qtd || 1)
+      } else if (item.tipo === 'combo') {
+        acc.combo = (acc.combo || 0) + (item.qtd || 1)
+      }
+    })
+    return acc
+  }, {})
+
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
@@ -267,6 +287,82 @@ export default function Dashboard() {
           <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>{pedidosPendentes.length} pedido(s)</p>
         </div>
       </div>
+
+      {/* Contagem de itens vendidos */}
+      {contagemItens.marmitex > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <ShoppingBag size={13} /> Itens Vendidos
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+
+            {/* Opção 1 */}
+            {contagemItens.op1 > 0 && (
+              <div style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 12, padding: '14px 16px' }}>
+                <p style={{ fontSize: 11, color: '#EA580C', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
+                  🍱 {contagemItens.nome_op1 || 'Opção 1'}
+                </p>
+                <p style={{ fontSize: 28, fontWeight: 900, color: '#C2410C', margin: 0, lineHeight: 1 }}>{contagemItens.op1}</p>
+                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>marmitex</p>
+              </div>
+            )}
+
+            {/* Opção 2 */}
+            {contagemItens.op2 > 0 && (
+              <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: '14px 16px' }}>
+                <p style={{ fontSize: 11, color: '#B45309', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
+                  🍱 {contagemItens.nome_op2 || 'Opção 2'}
+                </p>
+                <p style={{ fontSize: 28, fontWeight: 900, color: '#92400E', margin: 0, lineHeight: 1 }}>{contagemItens.op2}</p>
+                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>marmitex</p>
+              </div>
+            )}
+
+            {/* Total marmitex */}
+            <div style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 12, padding: '14px 16px' }}>
+              <p style={{ fontSize: 11, color: '#C8221A', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
+                🍱 Total Marmitex
+              </p>
+              <p style={{ fontSize: 28, fontWeight: 900, color: '#991B1B', margin: 0, lineHeight: 1 }}>{contagemItens.marmitex || 0}</p>
+              <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>unidades</p>
+            </div>
+
+            {/* Refrigerantes */}
+            {contagemItens.refrigerante > 0 && (
+              <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 12, padding: '14px 16px' }}>
+                <p style={{ fontSize: 11, color: '#2563EB', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
+                  🥤 Refrigerantes
+                </p>
+                <p style={{ fontSize: 28, fontWeight: 900, color: '#1D4ED8', margin: 0, lineHeight: 1 }}>{contagemItens.refrigerante}</p>
+                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>unidades</p>
+              </div>
+            )}
+
+            {/* Saladas */}
+            {contagemItens.salada > 0 && (
+              <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 12, padding: '14px 16px' }}>
+                <p style={{ fontSize: 11, color: '#16A34A', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
+                  🥗 Saladas
+                </p>
+                <p style={{ fontSize: 28, fontWeight: 900, color: '#15803D', margin: 0, lineHeight: 1 }}>{contagemItens.salada}</p>
+                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>unidades</p>
+              </div>
+            )}
+
+            {/* Combos */}
+            {contagemItens.combo > 0 && (
+              <div style={{ background: '#F5F3FF', border: '1.5px solid #DDD6FE', borderRadius: 12, padding: '14px 16px' }}>
+                <p style={{ fontSize: 11, color: '#7C3AED', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
+                  📦 Combos
+                </p>
+                <p style={{ fontSize: 28, fontWeight: 900, color: '#6D28D9', margin: 0, lineHeight: 1 }}>{contagemItens.combo}</p>
+                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>unidades</p>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* Por forma de pagamento */}
       {Object.keys(porForma).length > 0 && (
