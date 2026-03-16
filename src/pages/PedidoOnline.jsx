@@ -331,6 +331,19 @@ export default function PedidoOnline() {
       finally { setLoading(false) }
     }
     carregar()
+
+    // Realtime: atualiza cardápio e config quando o admin editar
+    const canal = supabase
+      .channel('online-sync')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cardapio_hoje' }, payload => {
+        if (payload.new) setCardapioHoje(payload.new)
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'configuracoes' }, payload => {
+        if (payload.new) setConfig(prev => ({ ...prev, ...payload.new }))
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(canal)
   }, [])
 
   // Detectar mensalista

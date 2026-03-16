@@ -85,6 +85,7 @@ export default function Configuracoes() {
   const urlBase = window.location.origin
   const urlPublica = urlBase + '/'
   const urlEquipe = urlBase + '/equipe'
+  const urlAdmin = urlBase + '/login'
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -216,18 +217,21 @@ export default function Configuracoes() {
       {/* ── Links do sistema ── */}
       <Secao titulo="Links do sistema" icone={<Link size={22} />} cor="slate">
         {[
-          { label: 'Página pública de pedidos', url: urlPublica, key: 'pub', cor: 'blue' },
-          { label: 'Área da equipe', url: urlEquipe, key: 'eq', cor: 'violet' },
+          { label: 'Link do cliente — cardápio público', url: urlPublica, key: 'pub', cor: 'blue' },
+          { label: 'Link da equipe — coleta de pedidos', url: urlEquipe, key: 'eq', cor: 'violet' },
+          { label: 'Link do admin — painel de gestão', url: urlAdmin, key: 'adm', cor: 'orange' },
         ].map(({ label, url, key, cor }) => (
           <div key={key} className={`flex items-center justify-between gap-3 rounded-xl px-5 py-4 border-2 ${
-            cor === 'blue' ? 'bg-blue-50 border-blue-200' : 'bg-violet-50 border-violet-200'
+            cor === 'blue' ? 'bg-blue-50 border-blue-200'
+            : cor === 'violet' ? 'bg-violet-50 border-violet-200'
+            : 'bg-orange-50 border-orange-200'
           }`}>
             <div className="min-w-0">
               <p className={`text-xs font-black uppercase tracking-widest mb-1 ${
-                cor === 'blue' ? 'text-blue-500' : 'text-violet-500'
+                cor === 'blue' ? 'text-blue-500' : cor === 'violet' ? 'text-violet-500' : 'text-orange-500'
               }`}>{label}</p>
               <p className={`text-base font-mono font-bold truncate ${
-                cor === 'blue' ? 'text-blue-900' : 'text-violet-900'
+                cor === 'blue' ? 'text-blue-900' : cor === 'violet' ? 'text-violet-900' : 'text-orange-900'
               }`}>{url}</p>
             </div>
             <div className="flex gap-2 shrink-0">
@@ -236,7 +240,9 @@ export default function Configuracoes() {
                 className={`p-3 rounded-xl transition-colors font-bold ${
                   copiado === key
                     ? 'bg-green-500 text-white'
-                    : cor === 'blue' ? 'bg-blue-100 hover:bg-blue-200 text-blue-700' : 'bg-violet-100 hover:bg-violet-200 text-violet-700'
+                    : cor === 'blue' ? 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                    : cor === 'violet' ? 'bg-violet-100 hover:bg-violet-200 text-violet-700'
+                    : 'bg-orange-100 hover:bg-orange-200 text-orange-700'
                 }`}
                 title="Copiar"
               >
@@ -247,7 +253,9 @@ export default function Configuracoes() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`p-3 rounded-xl transition-colors ${
-                  cor === 'blue' ? 'bg-blue-100 hover:bg-blue-200 text-blue-700' : 'bg-violet-100 hover:bg-violet-200 text-violet-700'
+                  cor === 'blue' ? 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                  : cor === 'violet' ? 'bg-violet-100 hover:bg-violet-200 text-violet-700'
+                  : 'bg-orange-100 hover:bg-orange-200 text-orange-700'
                 }`}
                 title="Abrir"
               >
