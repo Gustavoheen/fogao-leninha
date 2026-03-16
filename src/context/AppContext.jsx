@@ -255,6 +255,15 @@ export function AppProvider({ children }) {
       .then(({ error }) => { if (error) erroSave('pedidos', error) })
   }
 
+  function atualizarFormaPagamento(id, pagamento) {
+    let statusPagamento = 'pago'
+    if (['Mensalista', 'Quinzenal', 'Semanal'].includes(pagamento)) statusPagamento = 'mensalista'
+    else if (pagamento === 'Pendente') statusPagamento = 'pendente'
+    setPedidos(prev => prev.map(p => p.id === id ? { ...p, pagamento, statusPagamento } : p))
+    supabase.from('pedidos').update({ pagamento, statusPagamento }).eq('id', id)
+      .then(({ error }) => { if (error) erroSave('pedidos', error) })
+  }
+
   function atribuirMotoboy(id, motoboy) {
     setPedidos(prev => prev.map(p => p.id === id ? { ...p, motoboy } : p))
     supabase.from('pedidos').update({ motoboy }).eq('id', id)
@@ -611,7 +620,7 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente,
-      pedidos, adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atribuirMotoboy, quitarPedido, removerPedido, marcarComandaImpressa,
+      pedidos, adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atualizarFormaPagamento, atribuirMotoboy, quitarPedido, removerPedido, marcarComandaImpressa,
       cardapio, adicionarItemCardapio, editarItemCardapio, toggleDisponibilidade, removerItemCardapio,
       cardapioHoje, salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco, salvarOpcao, salvarSalada,
       despesas, adicionarDespesa, editarDespesa, removerDespesa, pagarDespesa,

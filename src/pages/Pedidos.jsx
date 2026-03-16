@@ -176,7 +176,7 @@ const SECTION_LABEL = {
 export default function Pedidos() {
   const {
     clientes, pedidos, cardapio, cardapioHoje,
-    adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido,
+    adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atualizarFormaPagamento,
     atribuirMotoboy, quitarPedido, removerPedido, motoboys, marcarComandaImpressa,
   } = useApp()
   const [mostrarForm, setMostrarForm] = useState(false)
@@ -1003,6 +1003,7 @@ export default function Pedidos() {
               pedido={pedido}
               onStatus={atualizarStatusPedido}
               onPagamentoStatus={atualizarPagamentoPedido}
+              onFormaPagamento={atualizarFormaPagamento}
               onAtribuirMotoboy={atribuirMotoboy}
               onQuitar={quitarPedido}
               onRemover={removerPedido}
@@ -1267,10 +1268,11 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
 }
 
 // ── PedidoCard ────────────────────────────────────────────────────────────────
-function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, onQuitar, onRemover, motoboys, autoImprimir, onImpresso }) {
+function PedidoCard({ pedido, onStatus, onPagamentoStatus, onFormaPagamento, onAtribuirMotoboy, onQuitar, onRemover, motoboys, autoImprimir, onImpresso }) {
   const [aberto, setAberto] = useState(false)
   const [mostrarMotoboy, setMostrarMotoboy] = useState(false)
   const [motoboyInput, setMotoboyInput] = useState('')
+  const [mostrarAlterarPagto, setMostrarAlterarPagto] = useState(false)
 
   const statusInfo = STATUS_LABELS[pedido.status] || STATUS_LABELS.aberto
   const hora = new Date(pedido.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -1462,6 +1464,36 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
                 )
               })}
             </div>
+          </div>
+
+          {/* Forma de pagamento */}
+          <div style={{ padding: '14px 16px', borderBottom: '1.5px solid #F0EBE5' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: mostrarAlterarPagto ? 10 : 0 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
+                Forma de pagamento: <span style={{ color: '#1A0E08' }}>{pedido.pagamento || '—'}</span>
+              </p>
+              <button onClick={() => setMostrarAlterarPagto(v => !v)}
+                style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 8, border: '1.5px solid #E6DDD5', background: '#fff', color: '#6B5A4E', cursor: 'pointer' }}>
+                {mostrarAlterarPagto ? 'Cancelar' : 'Alterar'}
+              </button>
+            </div>
+            {mostrarAlterarPagto && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {FORMAS_PAGAMENTO_OPCOES.map(f => (
+                  <button key={f.value}
+                    onClick={() => { onFormaPagamento(pedido.id, f.value); setMostrarAlterarPagto(false) }}
+                    style={{
+                      padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.1s',
+                      border: pedido.pagamento === f.value ? '2px solid currentColor' : '1.5px solid #E6DDD5',
+                      background: pedido.pagamento === f.value ? undefined : '#fff',
+                    }}
+                    className={pedido.pagamento === f.value ? f.cor : ''}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Ações */}
