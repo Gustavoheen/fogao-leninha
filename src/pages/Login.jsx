@@ -1,17 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, Eye, EyeOff } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 export default function Login() {
   const navigate = useNavigate()
   const [senha, setSenha] = useState('')
   const [mostrar, setMostrar] = useState(false)
   const [erro, setErro] = useState(false)
+  const [senhaCorreta, setSenhaCorreta] = useState(null) // null = carregando
+
+  useEffect(() => {
+    supabase.from('configuracoes').select('senhaAdmin').eq('id', 1).single()
+      .then(({ data }) => {
+        setSenhaCorreta(data?.senhaAdmin || 'fogao2024')
+      })
+      .catch(() => setSenhaCorreta('fogao2024'))
+  }, [])
 
   function entrar(e) {
     e.preventDefault()
-    const senhaCorreta = localStorage.getItem('fogao_senha') || 'fogao2024'
-    if (senha === senhaCorreta) {
+    const correta = senhaCorreta ?? 'fogao2024'
+    if (senha === correta) {
       sessionStorage.setItem('fogao_logado', '1')
       navigate('/pedidos', { replace: true })
     } else {
@@ -51,7 +61,6 @@ export default function Login() {
         </div>
 
         <form onSubmit={entrar}>
-          {/* Campo senha */}
           <div style={{ marginBottom: 20 }}>
             <label style={{
               display: 'block', fontSize: 12, fontWeight: 600,
@@ -71,6 +80,7 @@ export default function Login() {
                 onChange={e => { setSenha(e.target.value); setErro(false) }}
                 placeholder="••••••••"
                 autoFocus
+                disabled={senhaCorreta === null}
                 style={{
                   width: '100%', padding: '11px 40px 11px 38px',
                   borderRadius: 10, fontSize: 14,
@@ -78,6 +88,8 @@ export default function Login() {
                   outline: 'none', color: '#1A0E08',
                   fontFamily: 'Inter, sans-serif',
                   transition: 'border-color 0.15s',
+                  boxSizing: 'border-box',
+                  opacity: senhaCorreta === null ? 0.5 : 1,
                 }}
               />
               <button
@@ -92,7 +104,7 @@ export default function Login() {
               </button>
             </div>
             {erro && (
-              <p style={{ fontSize: 12, color: '#EF4444', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <p style={{ fontSize: 12, color: '#EF4444', marginTop: 6 }}>
                 Senha incorreta. Tente novamente.
               </p>
             )}
@@ -100,15 +112,18 @@ export default function Login() {
 
           <button
             type="submit"
+            disabled={senhaCorreta === null}
             style={{
               width: '100%', padding: '12px', borderRadius: 10,
               fontSize: 14, fontWeight: 700,
-              background: '#C8221A', color: '#fff', border: 'none', cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(200,34,26,0.40)',
+              background: senhaCorreta === null ? '#CFC4BB' : '#C8221A',
+              color: '#fff', border: 'none',
+              cursor: senhaCorreta === null ? 'default' : 'pointer',
+              boxShadow: senhaCorreta === null ? 'none' : '0 4px 16px rgba(200,34,26,0.40)',
               transition: 'all 0.15s', letterSpacing: '0.02em',
             }}
           >
-            Entrar no Painel
+            {senhaCorreta === null ? 'Carregando...' : 'Entrar no Painel'}
           </button>
         </form>
 

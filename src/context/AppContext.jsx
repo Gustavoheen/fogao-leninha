@@ -20,6 +20,7 @@ const CONFIG_PADRAO = {
   restauranteWhatsapp: '',
   lojaAberta: true,
   equipePIN: '1234',
+  senhaAdmin: 'fogao2024',
 }
 
 // ── Helpers de localStorage ─────────────────────────────────

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
-import { Save, Check, Copy, ExternalLink, Settings, Smartphone, Lock, ToggleLeft, ToggleRight, QrCode, Link } from 'lucide-react'
+import { Save, Check, Copy, ExternalLink, Settings, Smartphone, Lock, ToggleLeft, ToggleRight, QrCode, Link, Eye, EyeOff } from 'lucide-react'
 
 function Campo({ label, hint, children }) {
   return (
@@ -58,7 +58,9 @@ export default function Configuracoes() {
     restauranteWhatsapp: '',
     lojaAberta: true,
     equipePIN: '1234',
+    senhaAdmin: 'fogao2024',
   })
+  const [mostrarSenha, setMostrarSenha] = useState(false)
   const [salvo, setSalvo] = useState(false)
   const [copiado, setCopiad] = useState(null)
 
@@ -210,6 +212,35 @@ export default function Configuracoes() {
         <div className="bg-violet-50 border border-violet-200 rounded-xl px-5 py-3">
           <p className="text-sm font-semibold text-violet-800">
             Mínimo 4 dígitos. Padrão: <span className="font-black">1234</span>
+          </p>
+        </div>
+      </Secao>
+
+      {/* ── Senha do admin ── */}
+      <Secao titulo="Senha do painel admin" icone={<Lock size={22} />} cor="slate">
+        <Campo
+          label="Senha de acesso ao painel"
+          hint="Senha usada para entrar no painel de gestão (/login)"
+        >
+          <div className="relative">
+            <Input
+              value={form.senhaAdmin}
+              onChange={e => set('senhaAdmin', e.target.value)}
+              placeholder="fogao2024"
+              type={mostrarSenha ? 'text' : 'password'}
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha(v => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+            >
+              {mostrarSenha ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+        </Campo>
+        <div className="bg-stone-50 border border-stone-200 rounded-xl px-5 py-3">
+          <p className="text-sm font-semibold text-stone-600">
+            Padrão: <span className="font-black">fogao2024</span> — altere para algo seguro.
           </p>
         </div>
       </Secao>
