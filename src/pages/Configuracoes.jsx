@@ -147,7 +147,7 @@ export default function Configuracoes() {
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Campo label="Chave Pix" hint="CPF, CNPJ, e-mail, telefone ou chave aleatória">
               <input value={form.pixChave} onChange={e => set('pixChave', e.target.value)}
-                placeholder="Ex: 55321234-5678 ou chave@email.com" style={INPUT_ST} />
+                placeholder="Ex: 55321234-5678 ou chave@email.com" style={INPUT_ST} data-nocase />
             </Campo>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <Campo label="Nome do favorecido">
