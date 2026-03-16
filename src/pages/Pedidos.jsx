@@ -139,6 +139,7 @@ const FORM_VAZIO = {
   itensCombo: [],
   saladaIngredientes: null, // null = sem salada, [] = salada sem ingredientes, [...] = com ingredientes selecionados
   pagamento: 'Dinheiro',
+  trocoPara: '',
   observacoes: '',
   horarioEntrega: '',
   embalagensAdicionais: 0,
@@ -335,6 +336,7 @@ export default function Pedidos() {
       motoboy: form.tipoEntrega === 'retirada' ? 'Retirar no local' : '',
       itens: todosItens,
       pagamento: form.pagamento,
+      trocoPara: form.pagamento === 'Dinheiro' && form.trocoPara ? Number(form.trocoPara) : null,
       observacoes: form.observacoes,
       horarioEntrega: form.horarioEntrega,
       embalagensAdicionais: form.embalagensAdicionais,
@@ -871,7 +873,36 @@ export default function Pedidos() {
                 </button>
               ))}
             </div>
-            {(form.pagamento === 'Pendente' || form.pagamento === 'Mensalista') && (
+            {form.pagamento === 'Dinheiro' && (
+              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#6B5A4E', whiteSpace: 'nowrap' }}>Troco para:</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#9D8878', fontWeight: 600 }}>R$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.trocoPara}
+                      onChange={e => setForm(prev => ({ ...prev, trocoPara: e.target.value }))}
+                      placeholder="0,00"
+                      style={{ width: 110, padding: '8px 10px 8px 30px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: '1.5px solid #CFC4BB', outline: 'none', color: '#1A0E08', fontFamily: 'Inter, sans-serif' }}
+                    />
+                  </div>
+                </div>
+                {form.trocoPara && Number(form.trocoPara) >= total && (
+                  <div style={{ background: '#16A34A', color: '#fff', borderRadius: 8, padding: '8px 14px', fontSize: 14, fontWeight: 800 }}>
+                    Troco: R$ {(Number(form.trocoPara) - total).toFixed(2).replace('.', ',')}
+                  </div>
+                )}
+                {form.trocoPara && Number(form.trocoPara) < total && (
+                  <div style={{ background: '#FEF2F2', color: '#DC2626', border: '1.5px solid #FECACA', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700 }}>
+                    Valor insuficiente — faltam R$ {(total - Number(form.trocoPara)).toFixed(2).replace('.', ',')}
+                  </div>
+                )}
+              </div>
+            )}
+            {['Pendente', 'Mensalista', 'Quinzenal', 'Semanal'].includes(form.pagamento) && (
               <p style={{ fontSize: 13, color: '#D97706', marginTop: 8, fontWeight: 600 }}>
                 Pagamento registrado como pendente
               </p>
@@ -1312,6 +1343,11 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
           {BADGE_PAGTO && (
             <span className={`text-xs font-bold px-3 py-1 rounded-full ${BADGE_PAGTO.cor}`} style={{ fontSize: 12 }}>
               {BADGE_PAGTO.label}
+            </span>
+          )}
+          {pedido.trocoPara > 0 && (
+            <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#DCFCE7', color: '#166534' }}>
+              💵 Troco: R$ {(pedido.trocoPara - pedido.total).toFixed(2).replace('.', ',')}
             </span>
           )}
 
