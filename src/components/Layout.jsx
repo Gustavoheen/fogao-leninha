@@ -3,8 +3,9 @@ import { useState } from 'react'
 import {
   Users, ClipboardList, BookOpen, TrendingUp,
   Package, Truck, UserCheck, BarChart3,
-  ChevronRight, LogOut, Settings, X, Check,
+  ChevronRight, LogOut, Settings, X, Check, Eye, EyeOff,
 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 const NAV = [
   { to: '/pedidos',       label: 'Pedidos',      icon: ClipboardList },
@@ -28,19 +29,24 @@ export default function Layout({ children }) {
   const [senhaConf, setSenhaConf] = useState('')
   const [erroSenha, setErroSenha] = useState('')
   const [okSenha, setOkSenha] = useState(false)
+  const [mostrarAtual, setMostrarAtual] = useState(false)
+  const [mostrarNova, setMostrarNova] = useState(false)
+  const [mostrarConf, setMostrarConf] = useState(false)
 
   function sair() {
     sessionStorage.removeItem('fogao_logado')
     navigate('/login', { replace: true })
   }
 
-  function trocarSenha(e) {
+  async function trocarSenha(e) {
     e.preventDefault()
-    const atual = localStorage.getItem('fogao_senha') || 'fogao2024'
+    const { data } = await supabase.from('configuracoes').select('senhaAdmin').eq('id', 1).single()
+    const atual = data?.senhaAdmin || 'fogao2024'
     if (senhaAtual !== atual) { setErroSenha('Senha atual incorreta'); return }
     if (senhaNova.length < 4) { setErroSenha('Mínimo 4 caracteres'); return }
     if (senhaNova !== senhaConf) { setErroSenha('As senhas não coincidem'); return }
-    localStorage.setItem('fogao_senha', senhaNova)
+    const { error } = await supabase.from('configuracoes').update({ senhaAdmin: senhaNova }).eq('id', 1)
+    if (error) { setErroSenha('Erro ao salvar. Tente novamente.'); return }
     setOkSenha(true); setErroSenha('')
     setSenhaAtual(''); setSenhaNova(''); setSenhaConf('')
     setTimeout(() => { setModalSenha(false); setOkSenha(false) }, 1500)
@@ -261,16 +267,25 @@ export default function Layout({ children }) {
             ) : (
               <form onSubmit={trocarSenha}>
                 {[
-                  ['Senha atual', senhaAtual, setSenhaAtual],
-                  ['Nova senha', senhaNova, setSenhaNova],
-                  ['Confirmar nova senha', senhaConf, setSenhaConf],
-                ].map(([label, val, set]) => (
+                  ['Senha atual',        senhaAtual, setSenhaAtual, mostrarAtual, setMostrarAtual],
+                  ['Nova senha',         senhaNova,  setSenhaNova,  mostrarNova,  setMostrarNova],
+                  ['Confirmar nova senha', senhaConf, setSenhaConf, mostrarConf,  setMostrarConf],
+                ].map(([label, val, setter, ver, setVer]) => (
                   <div key={label} style={{ marginBottom: 12 }}>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#6B5A4E', marginBottom: 4 }}>{label}</label>
-                    <input type="password" value={val}
-                      onChange={e => { set(e.target.value); setErroSenha('') }}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13, border: '1.5px solid #CFC4BB', outline: 'none', color: '#1A0E08', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={ver ? 'text' : 'password'}
+                        data-nocase
+                        value={val}
+                        onChange={e => { setter(e.target.value); setErroSenha('') }}
+                        style={{ width: '100%', padding: '9px 36px 9px 12px', borderRadius: 8, fontSize: 13, border: '1.5px solid #CFC4BB', outline: 'none', color: '#1A0E08', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
+                      />
+                      <button type="button" onClick={() => setVer(v => !v)}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}>
+                        {ver ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {erroSenha && <p style={{ fontSize: 12, color: '#EF4444', marginBottom: 12 }}>{erroSenha}</p>}
