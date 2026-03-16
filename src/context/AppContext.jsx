@@ -233,7 +233,10 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setPedidos(prev => [novo, ...prev])
-    supabase.from('pedidos').insert(novo).then(({ error }) => {
+    // trocoPara: excluído do insert até o schema cache do Supabase ser recarregado
+    // Vá em Supabase → Settings → API → Reload schema cache para persistir este campo
+    const { trocoPara: _t, ...payloadSupabase } = novo
+    supabase.from('pedidos').insert(payloadSupabase).then(({ error }) => {
       if (error) {
         erroSave('pedidos', error)
         setPedidos(prev => prev.filter(p => p.id !== novo.id))
