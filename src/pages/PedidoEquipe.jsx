@@ -250,54 +250,66 @@ export default function PedidoEquipe() {
 
   // ── STEP: montando marmitex ──────────────────────────────────────────────────
   if (step === 'montando' && !marmitexAtual) {
-    // Escolher opção + tamanho
     return (
       <div className="min-h-screen bg-stone-950 flex flex-col">
-        <div className="bg-stone-900 border-b border-stone-800 px-4 py-4 flex items-center gap-3">
-          <button onClick={() => setStep(carrinho.length > 0 ? 'revisao' : 'cliente')} className="text-stone-400 hover:text-white">
-            <ChevronLeft size={22} />
+        {/* Header */}
+        <div className="bg-stone-900 border-b border-stone-800 px-5 py-4 flex items-center gap-4">
+          <button onClick={() => setStep(carrinho.length > 0 ? 'revisao' : 'cliente')}
+            className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-white active:bg-stone-800 rounded-xl transition-colors">
+            <ChevronLeft size={24} />
           </button>
-          <div>
-            <h2 className="text-white font-bold">Nova marmitex</h2>
-            <p className="text-stone-400 text-xs">Cliente: {nomeCliente}</p>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-white font-bold text-lg leading-tight">Nova marmitex</h2>
+            <p className="text-orange-400 text-sm font-medium truncate">{nomeCliente}</p>
           </div>
+          {carrinho.length > 0 && (
+            <span className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">
+              {carrinho.length} no pedido
+            </span>
+          )}
         </div>
 
-        <div className="flex-1 px-4 py-5 space-y-5">
-          {/* Carnes */}
+        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+          {/* Carnes do dia */}
           {cardapioHoje?.carnes?.some(c => c) && (
-            <div className="bg-stone-800 rounded-xl p-4">
-              <p className="text-orange-400 text-xs font-bold uppercase mb-2">🔥 Carnes</p>
+            <div className="bg-stone-800/80 border border-stone-700 rounded-2xl p-5">
+              <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">🔥 Carnes do dia</p>
               {cardapioHoje.carnes.filter(c => c).map((c, i) => (
-                <p key={i} className="text-stone-300 text-sm">• {c}</p>
+                <p key={i} className="text-stone-100 font-medium text-base leading-relaxed">• {c}</p>
               ))}
             </div>
           )}
 
+          <p className="text-stone-500 text-xs uppercase tracking-widest font-semibold">Escolha a opção e o tamanho</p>
+
           {opcoes.map(op => (
-            <div key={op.id} className="bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden">
-              <div className="px-4 pt-4 pb-2">
-                <h3 className="text-white font-bold">{op.nome}</h3>
+            <div key={op.id} className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-lg">
+              <div className="px-5 pt-5 pb-4">
+                <h3 className="text-white font-bold text-xl leading-tight">{op.nome}</h3>
                 {op.acompanhamentos?.length > 0 && (
-                  <p className="text-stone-500 text-xs mt-0.5">{op.acompanhamentos.join(', ')}</p>
+                  <p className="text-stone-400 text-sm mt-2 leading-relaxed">{op.acompanhamentos.join(' · ')}</p>
                 )}
               </div>
-              <div className="grid grid-cols-2 divide-x divide-stone-800 border-t border-stone-800">
+              <div className="grid grid-cols-2 divide-x divide-stone-700 border-t border-stone-700">
                 <button
                   onClick={() => iniciarMarmitex(op.id, 'P')}
-                  className="py-4 flex flex-col items-center hover:bg-stone-800 active:bg-stone-700 transition-colors"
+                  className="py-6 flex flex-col items-center gap-2 hover:bg-stone-800 active:bg-stone-700 transition-colors"
                 >
-                  <span className="text-white font-bold">Pequena</span>
-                  <span className="text-orange-400 text-sm">{fmtR$(cardapioHoje?.precoP)}</span>
-                  <Plus size={16} className="text-orange-400 mt-1" />
+                  <span className="text-white font-bold text-lg">Pequena</span>
+                  <span className="text-orange-400 font-bold text-lg">{fmtR$(cardapioHoje?.precoP)}</span>
+                  <span className="bg-orange-500 rounded-xl w-10 h-10 flex items-center justify-center mt-1">
+                    <Plus size={20} className="text-white" />
+                  </span>
                 </button>
                 <button
                   onClick={() => iniciarMarmitex(op.id, 'G')}
-                  className="py-4 flex flex-col items-center hover:bg-stone-800 active:bg-stone-700 transition-colors"
+                  className="py-6 flex flex-col items-center gap-2 hover:bg-stone-800 active:bg-stone-700 transition-colors"
                 >
-                  <span className="text-white font-bold">Grande</span>
-                  <span className="text-orange-400 text-sm">{fmtR$(cardapioHoje?.precoG)}</span>
-                  <Plus size={16} className="text-orange-400 mt-1" />
+                  <span className="text-white font-bold text-lg">Grande</span>
+                  <span className="text-orange-400 font-bold text-lg">{fmtR$(cardapioHoje?.precoG)}</span>
+                  <span className="bg-orange-500 rounded-xl w-10 h-10 flex items-center justify-center mt-1">
+                    <Plus size={20} className="text-white" />
+                  </span>
                 </button>
               </div>
             </div>
@@ -312,35 +324,41 @@ export default function PedidoEquipe() {
     const acomp = marmitexAtual.opcao?.acompanhamentos || []
     return (
       <div className="min-h-screen bg-stone-950 flex flex-col">
-        <div className="bg-stone-900 border-b border-stone-800 px-4 py-4 flex items-center gap-3">
-          <button onClick={() => setMarmitexAtual(null)} className="text-stone-400 hover:text-white">
-            <ChevronLeft size={22} />
+        {/* Header */}
+        <div className="bg-stone-900 border-b border-stone-800 px-5 py-4 flex items-center gap-4">
+          <button onClick={() => setMarmitexAtual(null)}
+            className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-white active:bg-stone-800 rounded-xl transition-colors">
+            <ChevronLeft size={24} />
           </button>
-          <div>
-            <h2 className="text-white font-bold">
-              {marmitexAtual.opcao?.nome} ({marmitexAtual.tamanho}) · {fmtR$(marmitexAtual.preco)}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-white font-bold text-lg leading-tight">
+              {marmitexAtual.opcao?.nome}
+              <span className="text-orange-400"> · {marmitexAtual.tamanho}</span>
             </h2>
-            <p className="text-stone-400 text-xs">Toque nos itens que o cliente NÃO quer</p>
+            <p className="text-green-400 font-bold text-base">{fmtR$(marmitexAtual.preco)}</p>
           </div>
         </div>
 
-        <div className="flex-1 px-4 py-5 space-y-5">
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
           {/* Nome da marmitex */}
           <div>
-            <label className="text-stone-400 text-sm block mb-2">Nome nessa marmitex (opcional)</label>
+            <label className="text-stone-300 text-base font-semibold block mb-2">
+              Para quem é essa marmitex? <span className="text-stone-500 font-normal">(opcional)</span>
+            </label>
             <input
               type="text"
               placeholder="Ex: João, criança, sogra..."
               value={marmitexAtual.nome}
               onChange={e => setMarmitexAtual(prev => ({ ...prev, nome: e.target.value }))}
-              className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-3 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-base"
+              className="w-full bg-stone-800 border border-stone-700 rounded-2xl px-5 py-4 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-lg transition-colors"
             />
           </div>
 
           {/* Acompanhamentos */}
           {acomp.length > 0 && (
             <div>
-              <p className="text-stone-400 text-sm mb-3">Acompanhamentos — toque para remover</p>
+              <p className="text-stone-300 text-base font-semibold mb-1">Acompanhamentos</p>
+              <p className="text-stone-500 text-sm mb-4">Toque para remover o que o cliente NÃO quer</p>
               <div className="flex flex-wrap gap-3">
                 {acomp.map(item => {
                   const removido = marmitexAtual.semItens.includes(item)
@@ -348,33 +366,35 @@ export default function PedidoEquipe() {
                     <button
                       key={item}
                       onClick={() => toggleSemItem(item)}
-                      className={`px-4 py-3 rounded-xl text-sm font-semibold border-2 transition-all ${
+                      className={`px-5 py-3 rounded-2xl text-base font-semibold border-2 transition-all flex items-center gap-2 ${
                         removido
-                          ? 'bg-red-950 border-red-700 text-red-400 line-through opacity-60'
-                          : 'bg-stone-800 border-stone-600 text-white'
+                          ? 'bg-red-950 border-red-600 text-red-400 opacity-70'
+                          : 'bg-stone-800 border-stone-600 text-white active:bg-stone-700'
                       }`}
                     >
-                      {removido && <X size={12} className="inline mr-1" />}
-                      {item}
+                      {removido ? <X size={15} /> : null}
+                      <span className={removido ? 'line-through' : ''}>{item}</span>
                     </button>
                   )
                 })}
               </div>
               {marmitexAtual.semItens.length > 0 && (
-                <p className="text-red-400 text-sm mt-3">
-                  Sem: {marmitexAtual.semItens.join(', ')}
-                </p>
+                <div className="mt-4 bg-red-950/60 border border-red-800 rounded-xl px-4 py-3">
+                  <p className="text-red-400 font-semibold text-sm">
+                    ✗ Sem: {marmitexAtual.semItens.join(', ')}
+                  </p>
+                </div>
               )}
             </div>
           )}
         </div>
 
-        <div className="p-4 border-t border-stone-800">
+        <div className="p-5 border-t border-stone-800">
           <button
             onClick={adicionarMarmitex}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl text-base transition-colors"
+            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-5 rounded-2xl text-lg transition-colors shadow-lg shadow-orange-500/20"
           >
-            Adicionar marmitex
+            Adicionar ao pedido
           </button>
         </div>
       </div>
@@ -385,42 +405,46 @@ export default function PedidoEquipe() {
   if (step === 'revisao') {
     return (
       <div className="min-h-screen bg-stone-950 flex flex-col">
-        <div className="bg-stone-900 border-b border-stone-800 px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setStep('cliente')} className="text-stone-400 hover:text-white">
-              <ChevronLeft size={22} />
-            </button>
-            <div>
-              <h2 className="text-white font-bold">{nomeCliente}</h2>
-              {mensalista && <span className="text-xs text-green-400">Mensalista</span>}
-            </div>
+        {/* Header */}
+        <div className="bg-stone-900 border-b border-stone-800 px-5 py-4 flex items-center gap-4">
+          <button onClick={() => setStep('cliente')}
+            className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-white active:bg-stone-800 rounded-xl transition-colors">
+            <ChevronLeft size={24} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-white font-bold text-lg leading-tight truncate">{nomeCliente}</h2>
+            {mensalista
+              ? <span className="text-green-400 text-sm font-semibold">✓ Mensalista</span>
+              : <span className="text-stone-400 text-sm">{carrinho.length} {carrinho.length === 1 ? 'marmitex' : 'marmitex'}</span>
+            }
           </div>
-          <span className="text-orange-400 font-bold">{fmtR$(total)}</span>
+          <span className="text-orange-400 font-black text-xl">{fmtR$(total)}</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+          {/* Itens */}
+          <p className="text-stone-500 text-xs uppercase tracking-widest font-semibold">Itens do pedido</p>
           {carrinho.map((item, i) => (
-            <div key={item.uid} className="bg-stone-800 rounded-xl p-4 flex items-start justify-between gap-3">
-              <div className="flex gap-3 items-start">
-                <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0">
-                  {i + 1}
-                </div>
-                <div>
-                  <p className="text-white font-semibold text-sm">
-                    {item.opcao.nome} ({item.tamanho})
-                    {item.nome && <span className="text-orange-400"> · {item.nome}</span>}
-                  </p>
-                  {item.semItens.length > 0 && (
-                    <p className="text-red-400 text-xs">sem: {item.semItens.join(', ')}</p>
-                  )}
-                  <p className="text-orange-400 text-sm font-bold mt-0.5">{fmtR$(item.preco)}</p>
-                </div>
+            <div key={item.uid} className="bg-stone-900 border border-stone-700 rounded-2xl p-4 flex items-start gap-4">
+              <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white font-black text-base shrink-0">
+                {i + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-bold text-base leading-tight">
+                  {item.opcao.nome}
+                  <span className="text-orange-400"> · {item.tamanho}</span>
+                </p>
+                {item.nome && <p className="text-stone-400 text-sm mt-1">para: {item.nome}</p>}
+                {item.semItens.length > 0 && (
+                  <p className="text-red-400 text-sm mt-1">✗ sem: {item.semItens.join(', ')}</p>
+                )}
+                <p className="text-orange-400 font-bold text-lg mt-2">{fmtR$(item.preco)}</p>
               </div>
               <button
                 onClick={() => setCarrinho(prev => prev.filter(m => m.uid !== item.uid))}
-                className="text-stone-600 hover:text-red-400 transition-colors shrink-0"
+                className="text-stone-600 hover:text-red-400 transition-colors p-2 shrink-0"
               >
-                <X size={16} />
+                <X size={20} />
               </button>
             </div>
           ))}
@@ -428,19 +452,24 @@ export default function PedidoEquipe() {
           {/* Pagamento */}
           {!mensalista && (
             <div>
-              <p className="text-stone-400 text-sm mb-2">Pagamento</p>
-              <div className="grid grid-cols-3 gap-2">
-                {['Dinheiro', 'Pix', 'Cartão'].map(p => (
+              <p className="text-stone-300 text-base font-semibold mb-3">Forma de pagamento</p>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Dinheiro', emoji: '💵' },
+                  { label: 'Pix', emoji: '💠' },
+                  { label: 'Cartão', emoji: '💳' },
+                ].map(({ label, emoji }) => (
                   <button
-                    key={p}
-                    onClick={() => setPagamento(p)}
-                    className={`py-3 rounded-xl text-sm font-semibold border-2 transition-colors ${
-                      pagamento === p
-                        ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                        : 'border-stone-700 text-stone-400'
+                    key={label}
+                    onClick={() => setPagamento(label)}
+                    className={`py-5 rounded-2xl font-bold border-2 transition-colors flex flex-col items-center gap-1 ${
+                      pagamento === label
+                        ? 'border-orange-500 bg-orange-500/15 text-orange-400'
+                        : 'border-stone-700 bg-stone-800 text-stone-400 active:bg-stone-700'
                     }`}
                   >
-                    {p}
+                    <span className="text-2xl">{emoji}</span>
+                    <span className="text-sm">{label}</span>
                   </button>
                 ))}
               </div>
@@ -448,26 +477,26 @@ export default function PedidoEquipe() {
           )}
 
           {mensalista && (
-            <div className="bg-green-950 border border-green-800 rounded-xl p-3">
-              <p className="text-green-400 font-semibold text-sm">Mensalista</p>
-              <p className="text-green-600 text-xs">Cobrado no fechamento mensal</p>
+            <div className="bg-green-950 border border-green-800 rounded-2xl p-5">
+              <p className="text-green-400 font-bold text-lg">📋 Conta mensalista</p>
+              <p className="text-green-600 text-sm mt-1">Cobrado no fechamento mensal</p>
             </div>
           )}
         </div>
 
-        <div className="p-4 border-t border-stone-800 space-y-3">
+        <div className="p-5 border-t border-stone-800 space-y-3">
           <button
             onClick={novaMarmitex}
-            className="w-full border-2 border-dashed border-stone-700 text-stone-400 py-3 rounded-xl text-sm flex items-center justify-center gap-2"
+            className="w-full border-2 border-dashed border-stone-600 hover:border-orange-500 text-stone-400 hover:text-orange-400 py-4 rounded-2xl text-base font-semibold flex items-center justify-center gap-2 transition-colors"
           >
-            <Plus size={15} /> Adicionar outra marmitex
+            <Plus size={18} /> Adicionar outra marmitex
           </button>
           <button
             onClick={confirmar}
             disabled={enviando || carrinho.length === 0}
-            className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl transition-colors"
+            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:opacity-60 text-white font-black py-5 rounded-2xl text-lg transition-colors shadow-lg shadow-orange-500/20"
           >
-            {enviando ? 'Salvando...' : `Confirmar pedido · ${fmtR$(total)}`}
+            {enviando ? 'Salvando...' : `✓ Confirmar · ${fmtR$(total)}`}
           </button>
         </div>
       </div>
@@ -477,29 +506,30 @@ export default function PedidoEquipe() {
   // ── STEP: identificar cliente ────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-stone-950 flex flex-col">
-      <div className="bg-stone-900 border-b border-stone-800 px-4 py-4 flex items-center gap-3">
-        <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-          <Zap size={16} className="text-white" />
+      {/* Header */}
+      <div className="bg-stone-900 border-b border-stone-800 px-5 py-4 flex items-center gap-4">
+        <div className="w-11 h-11 bg-orange-500 rounded-2xl flex items-center justify-center shrink-0">
+          <Zap size={22} className="text-white" />
         </div>
         <div>
-          <h1 className="text-white font-bold">Pedido rápido</h1>
-          <p className="text-stone-400 text-xs">Equipe Fogão a Lenha</p>
+          <h1 className="text-white font-black text-lg leading-tight">Pedido rápido</h1>
+          <p className="text-stone-400 text-sm">Equipe Fogão a Lenha</p>
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-6 space-y-4">
-        {/* Cardápio rápido */}
+      <div className="flex-1 px-4 py-6 space-y-5">
+        {/* Carnes do dia */}
         {cardapioHoje?.carnes?.some(c => c) && (
-          <div className="bg-stone-800 rounded-xl p-3">
-            <p className="text-orange-400 text-xs font-bold mb-1">🔥 Carnes de hoje</p>
+          <div className="bg-stone-800/80 border border-stone-700 rounded-2xl p-5">
+            <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">🔥 Carnes de hoje</p>
             {cardapioHoje.carnes.filter(c => c).map((c, i) => (
-              <p key={i} className="text-stone-300 text-xs">• {c}</p>
+              <p key={i} className="text-stone-100 font-medium text-base leading-relaxed">• {c}</p>
             ))}
           </div>
         )}
 
         <div>
-          <label className="text-stone-400 text-sm block mb-2">Nome do cliente</label>
+          <label className="text-stone-300 text-base font-semibold block mb-3">Nome do cliente</label>
           <div className="relative">
             <input
               ref={nomeRef}
@@ -508,10 +538,10 @@ export default function PedidoEquipe() {
               value={nomeCliente}
               onChange={e => setNomeCliente(e.target.value)}
               autoFocus
-              className="w-full bg-stone-800 border border-stone-700 rounded-xl px-4 py-4 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-lg"
+              className="w-full bg-stone-800 border border-stone-700 rounded-2xl px-5 py-5 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500 text-xl font-semibold transition-colors"
             />
             {mensalista && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-green-800 text-green-300 px-2 py-1 rounded-full">
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm bg-green-800 text-green-300 px-3 py-1.5 rounded-full font-semibold">
                 Mensalista
               </span>
             )}
@@ -519,16 +549,16 @@ export default function PedidoEquipe() {
 
           {/* Sugestões */}
           {sugestoes.length > 0 && (
-            <div className="bg-stone-800 border border-stone-700 rounded-xl mt-1 overflow-hidden">
+            <div className="bg-stone-800 border border-stone-700 rounded-2xl mt-2 overflow-hidden shadow-xl">
               {sugestoes.map(c => (
                 <button
                   key={c.id}
                   onClick={() => { setNomeCliente(c.nome); setSugestoes([]) }}
-                  className="w-full text-left px-4 py-3 hover:bg-stone-700 transition-colors border-b border-stone-700 last:border-0"
+                  className="w-full text-left px-5 py-4 hover:bg-stone-700 active:bg-stone-600 transition-colors border-b border-stone-700 last:border-0 flex items-center justify-between"
                 >
-                  <span className="text-white text-sm">{c.nome}</span>
+                  <span className="text-white font-semibold text-base">{c.nome}</span>
                   {c.tipo === 'mensalista' && (
-                    <span className="ml-2 text-xs text-green-400">mensalista</span>
+                    <span className="text-sm text-green-400 font-semibold bg-green-950 px-2 py-0.5 rounded-full">mensalista</span>
                   )}
                 </button>
               ))}
@@ -537,11 +567,11 @@ export default function PedidoEquipe() {
         </div>
       </div>
 
-      <div className="p-4 border-t border-stone-800">
+      <div className="p-5 border-t border-stone-800">
         <button
           onClick={() => { if (nomeCliente.trim()) setStep('montando') }}
           disabled={!nomeCliente.trim()}
-          className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white font-bold py-4 rounded-2xl text-base transition-colors"
+          className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:opacity-40 text-white font-black py-5 rounded-2xl text-xl transition-colors shadow-lg shadow-orange-500/20"
         >
           Montar pedido →
         </button>
