@@ -61,6 +61,7 @@ export default function Configuracoes() {
     senhaAdmin: 'fogao2024',
   })
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [mostrarPIN, setMostrarPIN] = useState(false)
   const [salvo, setSalvo] = useState(false)
   const [copiado, setCopiad] = useState(null)
 
@@ -202,12 +203,22 @@ export default function Configuracoes() {
           label="PIN de acesso da equipe"
           hint="Código que a equipe digita para acessar a página /equipe"
         >
-          <Input
-            value={form.equipePIN}
-            onChange={e => set('equipePIN', e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="1234"
-            type="password"
-          />
+          <div className="relative">
+            <Input
+              value={form.equipePIN}
+              onChange={e => set('equipePIN', e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="1234"
+              type={mostrarPIN ? 'text' : 'password'}
+              data-nocase
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarPIN(v => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+            >
+              {mostrarPIN ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
         </Campo>
         <div className="bg-violet-50 border border-violet-200 rounded-xl px-5 py-3">
           <p className="text-sm font-semibold text-violet-800">
