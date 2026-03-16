@@ -308,7 +308,12 @@ export default function Cardapio() {
 
 // Seção de Salada Personalizada
 function SaladaSection({ cardapioHoje, salvarSalada }) {
-  const salada = cardapioHoje?.salada || { disponivel: false, preco: '', ingredientes: [] }
+  const saladaRaw = cardapioHoje?.salada || {}
+  const salada = {
+    disponivel: saladaRaw.disponivel ?? false,
+    preco: saladaRaw.preco ?? '',
+    ingredientes: saladaRaw.ingredientes ?? [],
+  }
   const [novoIngr, setNovoIngr] = useState('')
 
   function update(dados) {

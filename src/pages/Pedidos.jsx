@@ -291,7 +291,12 @@ export default function Pedidos() {
     setForm(prev => ({ ...prev, itensCombo: prev.itensCombo.filter(i => i.uid !== itemUid) }))
   }
 
-  const saladaConfig = cardapioHoje?.salada || {}
+  const saladaRaw = cardapioHoje?.salada || {}
+  const saladaConfig = {
+    disponivel: saladaRaw.disponivel ?? false,
+    preco: saladaRaw.preco ?? '',
+    ingredientes: saladaRaw.ingredientes ?? [],
+  }
   const precoSalada = Number(saladaConfig.preco || 0)
 
   const totalMarmitex = form.itensMarmitex.reduce((acc, i) => acc + i.preco * i.qtd, 0)
