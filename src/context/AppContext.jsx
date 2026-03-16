@@ -233,11 +233,20 @@ export function AppProvider({ children }) {
       criadoEm: new Date().toISOString(),
     }
     setPedidos(prev => [novo, ...prev])
-    // trocoPara: excluído do insert até o schema cache do Supabase ser recarregado
-    // Vá em Supabase → Settings → API → Reload schema cache para persistir este campo
-    const { trocoPara: _t, ...payloadSupabase } = novo
-    supabase.from('pedidos').insert(payloadSupabase).then(({ error }) => {
+    supabase.from('pedidos').insert(novo).then(({ error }) => {
       if (error) {
+        // Schema cache ainda não recarregado: tenta sem campos novos
+        if (error.message?.includes('schema cache')) {
+          const { trocoPara: _t, saladaIngredientes: _s, ...fallback } = novo
+          supabase.from('pedidos').insert(fallback).then(({ error: e2 }) => {
+            if (e2) {
+              erroSave('pedidos', e2)
+              setPedidos(prev => prev.filter(p => p.id !== novo.id))
+              alert('Erro ao salvar pedido:\n' + (e2.message || JSON.stringify(e2)))
+            }
+          })
+          return
+        }
         erroSave('pedidos', error)
         setPedidos(prev => prev.filter(p => p.id !== novo.id))
         alert('Erro ao salvar pedido:\n' + (error.message || JSON.stringify(error)))
