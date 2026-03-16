@@ -404,6 +404,13 @@ export function AppProvider({ children }) {
       .reduce((acc, p) => acc + Number(p.total), 0)
   }
 
+  // Soma de pedidos fiado (mensalista/semanal/quinzenal) ainda não quitados
+  function debitoFiado(clienteId) {
+    return pedidos
+      .filter(p => p.clienteId === clienteId && p.statusPagamento === 'mensalista' && p.status !== 'cancelado')
+      .reduce((acc, p) => acc + Number(p.total), 0)
+  }
+
   // ── Despesas ────────────────────────────────────────────────
   function adicionarDespesa(dados) {
     const nova = {
@@ -619,7 +626,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente,
+      clientes, adicionarCliente, editarCliente, removerCliente, debitoPendente, debitoFiado,
       pedidos, adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atualizarFormaPagamento, atribuirMotoboy, quitarPedido, removerPedido, marcarComandaImpressa,
       cardapio, adicionarItemCardapio, editarItemCardapio, toggleDisponibilidade, removerItemCardapio,
       cardapioHoje, salvarCarnes, salvarPrecos, salvarAcompanhamentos, salvarNomeOpcao, toggleOpcaoAlmoco, salvarOpcao, salvarSalada,

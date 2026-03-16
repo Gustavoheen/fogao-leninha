@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { BarChart3, TrendingUp, ShoppingBag, AlertCircle, Banknote, Smartphone, CreditCard, CircleDollarSign, Bike } from 'lucide-react'
+import { BarChart3, TrendingUp, ShoppingBag, AlertCircle, Banknote, Smartphone, CreditCard, CircleDollarSign, Bike, HandCoins, ChevronDown, ChevronUp } from 'lucide-react'
 
 const ICONE_PAGAMENTO = {
   'Dinheiro': Banknote,
@@ -73,7 +73,7 @@ function dataFimPeriodo(periodo, dataCustom) {
 }
 
 export default function Dashboard() {
-  const { pedidos, despesas, funcionarios, clientes, quitarPedido, debitoPendente } = useApp()
+  const { pedidos, despesas, funcionarios, clientes, quitarPedido, debitoPendente, debitoFiado } = useApp()
   const [periodo, setPeriodo] = useState('hoje')
   const [dataCustom, setDataCustom] = useState({ inicio: '', fim: '' })
 
@@ -142,10 +142,30 @@ export default function Dashboard() {
     return acc
   }, {})
 
-  const mensalistasComDebito = clientes
-    .filter(c => c.tipo === 'mensalista')
-    .map(c => ({ ...c, debito: debitoPendente(c.id) }))
-    .filter(c => c.debito > 0)
+  // Pedidos fiado não quitados agrupados por cliente
+  const pedidosFiado = pedidos.filter(p =>
+    p.statusPagamento === 'mensalista' && p.status !== 'cancelado'
+  )
+  const fiadoPorCliente = pedidosFiado.reduce((acc, p) => {
+    const key = p.clienteId || p.clienteNome
+    if (!acc[key]) {
+      const clienteReg = clientes.find(c => c.id === p.clienteId)
+      acc[key] = {
+        nome: p.clienteNome,
+        clienteId: p.clienteId,
+        tipo: clienteReg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
+        precoMarmitexP: clienteReg?.precoMarmitexP || '',
+        precoMarmitexG: clienteReg?.precoMarmitexG || '',
+        total: 0,
+        pedidos: [],
+      }
+    }
+    acc[key].total += Number(p.total)
+    acc[key].pedidos.push(p)
+    return acc
+  }, {})
+  const fiadoLista = Object.values(fiadoPorCliente).sort((a, b) => b.total - a.total)
+  const totalFiadoGeral = fiadoLista.reduce((acc, c) => acc + c.total, 0)
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -328,30 +348,24 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Mensalistas com débito */}
-      {mensalistasComDebito.length > 0 && (
+      {/* Dinheiro a Receber (fiado) */}
+      {fiadoLista.length > 0 && (
         <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14 }}>
-            Mensalistas com Débito
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <HandCoins size={13} /> Dinheiro a Receber
+            </h2>
+            <span style={{
+              fontSize: 13, fontWeight: 700, color: '#7C2D12',
+              background: '#FFF7ED', border: '1.5px solid #FED7AA',
+              borderRadius: 20, padding: '4px 12px',
+            }}>
+              Total: R$ {totalFiadoGeral.toFixed(2).replace('.', ',')}
+            </span>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {mensalistasComDebito.map(c => (
-              <div key={c.id} style={{
-                background: '#fff', border: '1.5px solid #FDE68A',
-                borderRadius: 12, padding: '12px 16px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <div>
-                  <p style={{ fontWeight: 700, color: '#1A0E08', fontSize: 14, margin: '0 0 4px' }}>{c.nome}</p>
-                  <span style={{ fontSize: 11, background: '#CA8A04', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
-                    Mensalista
-                  </span>
-                </div>
-                <span style={{ fontWeight: 700, color: '#92400E', fontSize: 16 }}>
-                  R$ {c.debito.toFixed(2).replace('.', ',')}
-                </span>
-              </div>
+            {fiadoLista.map((c, idx) => (
+              <FiadoClienteCard key={c.clienteId || c.nome + idx} cliente={c} onQuitar={quitarPedido} />
             ))}
           </div>
         </div>
@@ -427,6 +441,99 @@ function FechamentoMensal({ pedidos, despesas, funcionarios }) {
       }}>
         {positivo ? 'Mês com LUCRO' : 'Mês com PREJUÍZO'}
       </div>
+    </div>
+  )
+}
+
+const BADGE_FIADO = {
+  mensalista: { bg: '#EA580C', label: 'Mensalista' },
+  semanal:    { bg: '#2563EB', label: 'Semanal' },
+  quinzenal:  { bg: '#7C3AED', label: 'Quinzenal' },
+}
+
+function FiadoClienteCard({ cliente, onQuitar }) {
+  const [aberto, setAberto] = useState(false)
+  const [formaPagto, setFormaPagto] = useState('Dinheiro')
+  const [, forceUpdate] = useState(0)
+  const badge = BADGE_FIADO[cliente.tipo] || BADGE_FIADO.mensalista
+
+  return (
+    <div style={{
+      background: '#fff', border: '1.5px solid #FED7AA',
+      borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden',
+    }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', cursor: 'pointer' }}
+        onClick={() => setAberto(!aberto)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div>
+            <p style={{ fontWeight: 700, color: '#1A0E08', fontSize: 14, margin: '0 0 4px' }}>{cliente.nome}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11, background: badge.bg, color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                {badge.label}
+              </span>
+              <span style={{ fontSize: 11, color: '#9D8878' }}>{cliente.pedidos.length} pedido(s)</span>
+              {cliente.precoMarmitexP && (
+                <span style={{ fontSize: 11, color: '#6B5A4E' }}>P: R${Number(cliente.precoMarmitexP).toFixed(2).replace('.', ',')}</span>
+              )}
+              {cliente.precoMarmitexG && (
+                <span style={{ fontSize: 11, color: '#6B5A4E' }}>G: R${Number(cliente.precoMarmitexG).toFixed(2).replace('.', ',')}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontWeight: 700, color: '#7C2D12', fontSize: 15 }}>R$ {cliente.total.toFixed(2).replace('.', ',')}</span>
+          {aberto ? <ChevronUp size={15} color="#9D8878" /> : <ChevronDown size={15} color="#9D8878" />}
+        </div>
+      </div>
+
+      {aberto && (
+        <div style={{ borderTop: '1px solid #FEF3C7' }}>
+          {/* Quitar tudo de uma vez */}
+          <div style={{ padding: '10px 16px', background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#92400E' }}>Quitar todos os pedidos</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <select value={formaPagto} onChange={e => setFormaPagto(e.target.value)}
+                style={{ border: '1.5px solid #CFC4BB', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none', background: '#fff', color: '#1A0E08', fontFamily: 'Inter, sans-serif' }}>
+                {['Dinheiro', 'PIX', 'Cartão de Débito', 'Cartão de Crédito'].map(f => <option key={f}>{f}</option>)}
+              </select>
+              <button
+                onClick={() => { cliente.pedidos.forEach(p => onQuitar(p.id, formaPagto)); forceUpdate(n => n + 1) }}
+                style={{ background: '#16A34A', color: '#fff', border: 'none', borderRadius: 7, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                Quitar Tudo
+              </button>
+            </div>
+          </div>
+
+          {/* Lista de pedidos individuais */}
+          {cliente.pedidos.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #FEF3C7' }}>
+              <div>
+                <p style={{ fontSize: 13, color: '#1A0E08', margin: '0 0 2px', fontWeight: 600 }}>
+                  {new Date(p.criadoEm).toLocaleDateString('pt-BR')}
+                  <span style={{ fontWeight: 400, color: '#9D8878', marginLeft: 6 }}>
+                    {new Date(p.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </p>
+                <p style={{ fontSize: 11, color: '#9D8878', margin: 0 }}>
+                  {p.itens?.length || 0} item(s)
+                  {p.itens?.some(i => i.tamanho === 'P') && ` · ${p.itens.filter(i => i.tamanho === 'P').length}P`}
+                  {p.itens?.some(i => i.tamanho === 'G') && ` · ${p.itens.filter(i => i.tamanho === 'G').length}G`}
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#1A0E08' }}>R$ {Number(p.total).toFixed(2).replace('.', ',')}</span>
+                <button
+                  onClick={() => { onQuitar(p.id, formaPagto); forceUpdate(n => n + 1) }}
+                  style={{ background: '#EA580C', color: '#fff', border: 'none', borderRadius: 7, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                  Quitar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
