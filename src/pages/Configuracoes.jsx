@@ -228,6 +228,7 @@ export default function Configuracoes() {
               onChange={e => set('senhaAdmin', e.target.value)}
               placeholder="fogao2024"
               type={mostrarSenha ? 'text' : 'password'}
+              data-nocase
             />
             <button
               type="button"

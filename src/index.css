@@ -53,11 +53,11 @@ input, select, textarea {
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
 
 /* ── Caixa alta em todos os campos de texto (exceto senhas, números, e-mails, tel e datas) */
-input:not([type="password"]):not([type="number"]):not([type="email"]):not([type="tel"]):not([type="date"]):not([type="time"]):not([type="datetime-local"]),
-textarea {
+input:not([type="password"]):not([type="number"]):not([type="email"]):not([type="tel"]):not([type="date"]):not([type="time"]):not([type="datetime-local"]):not([data-nocase]),
+textarea:not([data-nocase]) {
   text-transform: uppercase;
 }
-input:not([type="password"]):not([type="number"]):not([type="email"]):not([type="tel"]):not([type="date"]):not([type="time"]):not([type="datetime-local"])::placeholder,
-textarea::placeholder {
+input:not([type="password"]):not([type="number"]):not([type="email"]):not([type="tel"]):not([type="date"]):not([type="time"]):not([type="datetime-local"]):not([data-nocase])::placeholder,
+textarea:not([data-nocase])::placeholder {
   text-transform: none;
 }

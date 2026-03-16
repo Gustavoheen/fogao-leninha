@@ -10,6 +10,7 @@ document.addEventListener('input', e => {
   const el = e.target
   if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return
   if (TIPOS_EXCLUIDOS.has(el.type)) return
+  if (el.hasAttribute('data-nocase')) return
   const upper = el.value.toUpperCase()
   if (upper === el.value) return
   const { selectionStart, selectionEnd } = el

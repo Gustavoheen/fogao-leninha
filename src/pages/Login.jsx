@@ -76,6 +76,7 @@ export default function Login() {
               </div>
               <input
                 type={mostrar ? 'text' : 'password'}
+                data-nocase
                 value={senha}
                 onChange={e => { setSenha(e.target.value); setErro(false) }}
                 placeholder="••••••••"
