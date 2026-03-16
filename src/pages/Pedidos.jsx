@@ -148,13 +148,14 @@ function uid() { return ++_uid }
 const INPUT_BASE = {
   background: '#fff',
   border: '1.5px solid #CFC4BB',
-  borderRadius: 8,
-  padding: '8px 12px',
-  fontSize: 13,
+  borderRadius: 10,
+  padding: '14px 16px',
+  fontSize: 16,
   width: '100%',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
   color: '#1A0E08',
+  boxSizing: 'border-box',
 }
 
 const SECTION_LABEL = {
@@ -1119,24 +1120,21 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
   const pagStatus = PAGAMENTO_STATUS[pedido.statusPagamento] || PAGAMENTO_STATUS.pago
   const BADGE_PAGTO = FORMAS_PAGAMENTO_OPCOES.find(f => f.value === pedido.pagamento)
 
-  // Border-left por status de pedido
-  const borderLeft = pedido.status === 'entregue'
-    ? '3px solid #9CA3AF'
-    : (pedido.statusPagamento === 'pendente' || pedido.statusPagamento === 'mensalista')
-      ? '3px solid #F59E0B'
-      : '3px solid #3B82F6'
+  const isEntregue = pedido.status === 'entregue'
+  const isPendente = pedido.statusPagamento === 'pendente' || pedido.statusPagamento === 'mensalista'
 
-  // Estilo de badge pagamento status: saturado
+  // Cor do card baseada no status
+  const accentColor = isEntregue ? '#9CA3AF' : isPendente ? '#F59E0B' : '#3B82F6'
+  const accentBg    = isEntregue ? '#F8FAFC'  : isPendente ? '#FFFBEB'  : '#EFF6FF'
+
   const PAG_STATUS_STYLE = {
-    pago:       { background: '#16A34A', color: '#fff' },
-    pendente:   { background: '#CA8A04', color: '#fff' },
-    mensalista: { background: '#EA580C', color: '#fff' },
+    pago:       { background: '#16A34A', color: '#fff', border: 'none' },
+    pendente:   { background: '#CA8A04', color: '#fff', border: 'none' },
+    mensalista: { background: '#EA580C', color: '#fff', border: 'none' },
   }
 
   function confirmarMotoboy() {
-    if (motoboyInput) {
-      onAtribuirMotoboy(pedido.id, motoboyInput)
-    }
+    if (motoboyInput) onAtribuirMotoboy(pedido.id, motoboyInput)
     setMostrarMotoboy(false)
     setMotoboyInput('')
   }
@@ -1144,236 +1142,275 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onAtribuirMotoboy, on
   return (
     <div style={{
       background: '#fff',
-      borderRadius: 12,
+      borderRadius: 16,
       border: '1.5px solid #E6DDD5',
-      borderLeft,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      borderLeft: `5px solid ${accentColor}`,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
       overflow: 'hidden',
     }}>
-      {/* Linha principal */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 16px', gap: 10 }}>
-        {/* Left: name + meta */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <p style={{ fontWeight: 700, fontSize: 15, color: '#1A0E08', wordBreak: 'break-word' }}>{pedido.clienteNome}</p>
-            {BADGE_PAGTO && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${BADGE_PAGTO.cor}`}>
-                {BADGE_PAGTO.label}
-              </span>
-            )}
-          </div>
-          {endFormatado && (
-            <p style={{ fontSize: 11, color: '#9D8878', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-              <MapPin size={10} />{endFormatado}
+
+      {/* ── Cabeçalho do card (sempre visível) ── */}
+      <div
+        onClick={() => setAberto(v => !v)}
+        style={{ padding: '16px 16px 0', cursor: 'pointer', userSelect: 'none' }}
+      >
+        {/* Linha 1: Nome + Total */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 800, fontSize: 18, color: '#1A0E08', lineHeight: 1.2, wordBreak: 'break-word' }}>
+              {pedido.clienteNome}
             </p>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-            <p style={{ fontSize: 11, color: '#9D8878' }}>{hora}</p>
-            {pedido.horarioEntrega && (
-              <span style={{ fontSize: 11, color: '#6B5A4E', display: 'flex', alignItems: 'center', gap: 3 }}>
-                <Clock size={10} /> {pedido.horarioEntrega}
-              </span>
-            )}
-            {pedido.motoboy && (
-              <span style={{ fontSize: 11, color: '#6366F1', display: 'flex', alignItems: 'center', gap: 3 }}>
-                <Bike size={10} /> {pedido.motoboy}
-              </span>
-            )}
-            {pedido.comandaImpressaEm ? (
-              <span style={{ fontSize: 10, background: '#DCFCE7', color: '#15803D', padding: '2px 6px', borderRadius: 20, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                <Printer size={9} /> Impressa
-              </span>
-            ) : (
-              <span style={{ fontSize: 10, background: '#FFF7ED', color: '#EA580C', padding: '2px 6px', borderRadius: 20, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                <Printer size={9} /> Pendente
-              </span>
-            )}
+            <p style={{ fontSize: 12, color: '#9D8878', marginTop: 2 }}>{hora}{pedido.horarioEntrega ? ` · entrega ${pedido.horarioEntrega}` : ''}</p>
           </div>
-        </div>
-        {/* Right: value + status + chevron */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontWeight: 700, color: '#16A34A', fontSize: 15 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, gap: 4 }}>
+            <span style={{ fontWeight: 900, fontSize: 22, color: '#16A34A', lineHeight: 1 }}>
               R$ {Number(pedido.total).toFixed(2).replace('.', ',')}
             </span>
-            <button onClick={() => setAberto(!aberto)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', padding: 4 }}>
-              <ChevronDown size={18} style={{ transition: 'transform 0.2s', transform: aberto ? 'rotate(180deg)' : 'none' }} />
-            </button>
+            <ChevronDown size={18} color="#9D8878" style={{ transition: 'transform 0.2s', transform: aberto ? 'rotate(180deg)' : 'none' }} />
           </div>
+        </div>
+
+        {/* Linha 2: Badges */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+          {/* Status pedido */}
           <span style={{
-            padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-            background: pedido.status === 'entregue' ? '#F1F5F9' : '#DBEAFE',
-            color: pedido.status === 'entregue' ? '#64748B' : '#1D4ED8',
+            fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20,
+            background: isEntregue ? '#F1F5F9' : '#DBEAFE',
+            color: isEntregue ? '#64748B' : '#1D4ED8',
           }}>
             {statusInfo.label}
           </span>
-        </div>
-      </div>
 
-      {/* Painel expandido */}
-      {aberto && (
-        <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #F7F3EF' }}>
-
-          {/* Status de pagamento — botões saturados */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-            {Object.entries(PAGAMENTO_STATUS).map(([key, info]) => {
-              const ativo = pedido.statusPagamento === key
-              const style = PAG_STATUS_STYLE[key]
-              return (
-                <button key={key}
-                  onClick={() => onPagamentoStatus(pedido.id, key)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                    border: ativo ? 'none' : '1.5px solid #E6DDD5',
-                    background: ativo ? style.background : '#fff',
-                    color: ativo ? style.color : '#9D8878',
-                    cursor: 'pointer', transition: 'all 0.15s',
-                    boxShadow: ativo ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                  }}>
-                  {info.icon} {info.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Itens */}
-          {pedido.itens?.map((item, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '3px 0' }}>
-              <div>
-                <span style={{ color: '#6B5A4E' }}>
-                  {item.qtd}x {item.nome}
-                  {item.tamanho && <span style={{ fontWeight: 700, color: '#EA580C' }}> ({item.tamanho})</span>}
-                  {item.subtipo && <span style={{ color: '#2563EB' }}> [{item.subtipo}]</span>}
-                </span>
-                {item.retirados && item.retirados.length > 0 && (
-                  <p style={{ fontSize: 11, color: '#DC2626', marginLeft: 12 }}>Sem: {item.retirados.join(', ')}</p>
-                )}
-                {item.extras && <p style={{ fontSize: 11, color: '#16A34A', marginLeft: 12 }}>+ {item.extras}</p>}
-                {item.adicionais && <p style={{ fontSize: 11, color: '#16A34A', marginLeft: 12 }}>+ {item.adicionais}</p>}
-                {item.remover && <p style={{ fontSize: 11, color: '#DC2626', marginLeft: 12 }}>- {item.remover}</p>}
-              </div>
-              <span style={{ color: '#9D8878', flexShrink: 0 }}>
-                R$ {(item.preco * item.qtd).toFixed(2).replace('.', ',')}
-              </span>
-            </div>
-          ))}
-          {pedido.observacoes && (
-            <p style={{ fontSize: 11, color: '#D97706', marginTop: 8, fontStyle: 'italic' }}>
-              Obs: {pedido.observacoes}
-            </p>
+          {/* Forma de pagamento */}
+          {BADGE_PAGTO && (
+            <span className={`text-xs font-bold px-3 py-1 rounded-full ${BADGE_PAGTO.cor}`} style={{ fontSize: 12 }}>
+              {BADGE_PAGTO.label}
+            </span>
           )}
 
+          {/* Status pagamento */}
+          <span style={{
+            fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20,
+            ...PAG_STATUS_STYLE[pedido.statusPagamento] || PAG_STATUS_STYLE.pago,
+          }}>
+            {pagStatus.icon} {pagStatus.label}
+          </span>
+
+          {/* Motoboy */}
+          {pedido.motoboy && (
+            <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: '#EEF2FF', color: '#4338CA', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Bike size={12} /> {pedido.motoboy}
+            </span>
+          )}
+
+          {/* Comanda */}
+          {pedido.comandaImpressaEm ? (
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, background: '#DCFCE7', color: '#15803D', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Printer size={11} /> Impressa
+            </span>
+          ) : (
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, background: '#FFF7ED', color: '#EA580C', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Printer size={11} /> Não impressa
+            </span>
+          )}
+        </div>
+
+        {/* Endereço */}
+        {endFormatado && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <MapPin size={13} color="#9D8878" />
+            <p style={{ fontSize: 13, color: '#6B5A4E' }}>{endFormatado}</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Painel expandido ── */}
+      {aberto && (
+        <div style={{ borderTop: '1.5px solid #F0EBE5' }}>
+
+          {/* Itens do pedido */}
+          {pedido.itens?.length > 0 && (
+            <div style={{ padding: '14px 16px', background: '#FAFAF9', borderBottom: '1.5px solid #F0EBE5' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
+                Itens do pedido
+              </p>
+              {pedido.itens.map((item, idx) => (
+                <div key={idx} style={{
+                  background: '#fff', borderRadius: 10, padding: '10px 14px',
+                  marginBottom: 8, border: '1.5px solid #EDE8E3',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8,
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: 15, color: '#1A0E08' }}>
+                      {item.qtd && item.qtd > 1 ? `${item.qtd}x ` : ''}{item.nome || item.opcaoNome}
+                      {item.tamanho && <span style={{ fontWeight: 800, color: '#EA580C' }}> · {item.tamanho}</span>}
+                      {item.subtipo && <span style={{ color: '#2563EB', fontWeight: 600 }}> [{item.subtipo}]</span>}
+                    </p>
+                    {item.retirados?.length > 0 && (
+                      <p style={{ fontSize: 13, color: '#DC2626', marginTop: 3 }}>✗ sem: {item.retirados.join(', ')}</p>
+                    )}
+                    {item.semItens?.length > 0 && (
+                      <p style={{ fontSize: 13, color: '#DC2626', marginTop: 3 }}>✗ sem: {item.semItens.join(', ')}</p>
+                    )}
+                    {item.extras && <p style={{ fontSize: 13, color: '#16A34A', marginTop: 3 }}>+ {item.extras}</p>}
+                    {item.adicionais && <p style={{ fontSize: 13, color: '#16A34A', marginTop: 3 }}>+ {item.adicionais}</p>}
+                    {item.remover && <p style={{ fontSize: 13, color: '#DC2626', marginTop: 3 }}>✗ {item.remover}</p>}
+                    {item.nome && item.tipo === 'marmitex' && (
+                      <p style={{ fontSize: 12, color: '#9D8878', marginTop: 2 }}>para: {item.nome}</p>
+                    )}
+                  </div>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: '#1A0E08', flexShrink: 0 }}>
+                    R$ {((item.preco || 0) * (item.qtd || 1)).toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+              ))}
+              {pedido.observacoes && (
+                <div style={{ background: '#FFFBEB', borderRadius: 10, padding: '10px 14px', border: '1.5px solid #FDE68A' }}>
+                  <p style={{ fontSize: 13, color: '#92400E', fontStyle: 'italic' }}>📝 {pedido.observacoes}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Status de pagamento */}
+          <div style={{ padding: '14px 16px', borderBottom: '1.5px solid #F0EBE5' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
+              Status do pagamento
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(PAGAMENTO_STATUS).map(([key, info]) => {
+                const ativo = pedido.statusPagamento === key
+                const st = PAG_STATUS_STYLE[key]
+                return (
+                  <button key={key}
+                    onClick={() => onPagamentoStatus(pedido.id, key)}
+                    style={{
+                      padding: '12px 8px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+                      border: ativo ? 'none' : '1.5px solid #E6DDD5',
+                      background: ativo ? st.background : '#F7F3EF',
+                      color: ativo ? st.color : '#9D8878',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                      boxShadow: ativo ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    }}>
+                    <span style={{ fontSize: 18 }}>{info.icon}</span>
+                    {info.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Ações */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Ações
+            </p>
+
+            {/* Imprimir comanda */}
             <button onClick={() => imprimirComanda(pedido, autoImprimir, onImpresso)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '8px 16px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '14px', borderRadius: 12, fontSize: 14, fontWeight: 700,
                 background: '#FFF7ED', color: '#C2410C',
                 border: '1.5px solid #FED7AA', cursor: 'pointer',
               }}>
-              <Printer size={12} /> {pedido.comandaImpressaEm ? 'Reimprimir' : 'Imprimir Comanda'}
+              <Printer size={16} /> {pedido.comandaImpressaEm ? 'Reimprimir Comanda' : 'Imprimir Comanda'}
             </button>
 
-            {/* Motoboy — botão separado */}
             {pedido.status !== 'entregue' && (
               <>
+                {/* Motoboy */}
                 <button onClick={() => setMostrarMotoboy(v => !v)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '8px 16px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '14px', borderRadius: 12, fontSize: 14, fontWeight: 700,
                     background: pedido.motoboy ? '#EEF2FF' : '#F8FAFC',
                     color: pedido.motoboy ? '#4338CA' : '#475569',
                     border: pedido.motoboy ? '1.5px solid #C7D2FE' : '1.5px solid #CBD5E1',
                     cursor: 'pointer',
                   }}>
-                  <Bike size={12} />
-                  {pedido.motoboy ? pedido.motoboy : 'Motoboy / Retirada'}
+                  <Bike size={16} />
+                  {pedido.motoboy ? `🛵 ${pedido.motoboy}` : 'Atribuir Motoboy / Retirada'}
                 </button>
 
+                {/* Painel seleção motoboy */}
+                {mostrarMotoboy && (
+                  <div style={{ background: '#F8FAFC', border: '1.5px solid #CBD5E1', borderRadius: 12, padding: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Bike size={14} /> Selecionar entrega
+                    </p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                      <button
+                        onClick={() => { onAtribuirMotoboy(pedido.id, 'Retirar no local'); setMostrarMotoboy(false) }}
+                        style={{
+                          padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                          background: pedido.motoboy === 'Retirar no local' ? '#DBEAFE' : '#fff',
+                          color: pedido.motoboy === 'Retirar no local' ? '#1D4ED8' : '#475569',
+                          border: pedido.motoboy === 'Retirar no local' ? '1.5px solid #93C5FD' : '1.5px solid #CBD5E1',
+                          cursor: 'pointer',
+                        }}>
+                        🏠 Retirar no local
+                      </button>
+                      {(motoboys || []).map(m => (
+                        <button key={m}
+                          onClick={() => { onAtribuirMotoboy(pedido.id, m); setMostrarMotoboy(false) }}
+                          style={{
+                            padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                            background: pedido.motoboy === m ? '#EEF2FF' : '#fff',
+                            color: pedido.motoboy === m ? '#4338CA' : '#475569',
+                            border: pedido.motoboy === m ? '1.5px solid #C7D2FE' : '1.5px solid #CBD5E1',
+                            cursor: 'pointer',
+                          }}>
+                          🛵 {m}
+                        </button>
+                      ))}
+                    </div>
+                    {(!motoboys || motoboys.length === 0) && (
+                      <p style={{ fontSize: 13, color: '#9D8878', marginBottom: 10 }}>Nenhum motoboy cadastrado. Cadastre em Funcionários.</p>
+                    )}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input type="text" value={motoboyInput} onChange={e => setMotoboyInput(e.target.value)}
+                        style={{ ...INPUT_BASE, flex: 1, padding: '12px 14px', fontSize: 15 }}
+                        placeholder="Ou digite o nome..." />
+                      <button onClick={confirmarMotoboy}
+                        style={{
+                          background: '#16A34A', color: '#fff',
+                          padding: '12px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700,
+                          border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+                        }}>
+                        <Check size={14} /> OK
+                      </button>
+                      <button onClick={() => setMostrarMotoboy(false)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', padding: 4 }}>
+                        <X size={18} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Marcar Entregue */}
                 <button onClick={() => onStatus(pedido.id, 'entregue')}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '8px 16px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '14px', borderRadius: 12, fontSize: 14, fontWeight: 700,
                     background: '#F0FDF4', color: '#16A34A',
                     border: '1.5px solid #BBF7D0', cursor: 'pointer',
                   }}>
-                  <Check size={12} /> Marcar Entregue
+                  <Check size={16} /> Marcar como Entregue
                 </button>
               </>
             )}
 
-            {/* Painel de seleção de motoboy */}
-            {mostrarMotoboy && pedido.status !== 'entregue' && (
-              <div style={{
-                width: '100%', marginTop: 2,
-                background: '#F8FAFC', border: '1.5px solid #CBD5E1',
-                borderRadius: 8, padding: 12,
-              }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Bike size={12} /> Selecionar motoboy ou retirada
-                </p>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                  <button
-                    onClick={() => { onAtribuirMotoboy(pedido.id, 'Retirar no local'); setMostrarMotoboy(false) }}
-                    style={{
-                      padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                      background: pedido.motoboy === 'Retirar no local' ? '#DBEAFE' : '#fff',
-                      color: pedido.motoboy === 'Retirar no local' ? '#1D4ED8' : '#475569',
-                      border: pedido.motoboy === 'Retirar no local' ? '1.5px solid #93C5FD' : '1.5px solid #CBD5E1',
-                      cursor: 'pointer',
-                    }}>
-                    🏠 Retirar no local
-                  </button>
-                  {(motoboys || []).map(m => (
-                    <button key={m}
-                      onClick={() => { onAtribuirMotoboy(pedido.id, m); setMostrarMotoboy(false) }}
-                      style={{
-                        padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                        background: pedido.motoboy === m ? '#EEF2FF' : '#fff',
-                        color: pedido.motoboy === m ? '#4338CA' : '#475569',
-                        border: pedido.motoboy === m ? '1.5px solid #C7D2FE' : '1.5px solid #CBD5E1',
-                        cursor: 'pointer',
-                      }}>
-                      🛵 {m}
-                    </button>
-                  ))}
-                </div>
-                {(!motoboys || motoboys.length === 0) && (
-                  <p style={{ fontSize: 11, color: '#9D8878', marginBottom: 8 }}>
-                    Nenhum motoboy cadastrado. Cadastre em Funcionários.
-                  </p>
-                )}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input type="text" value={motoboyInput} onChange={e => setMotoboyInput(e.target.value)}
-                    style={{ ...INPUT_BASE, flex: 1, fontSize: 12, padding: '6px 10px' }}
-                    placeholder="Ou digite o nome do motoboy..." />
-                  <button onClick={confirmarMotoboy}
-                    style={{
-                      background: '#16A34A', color: '#fff',
-                      padding: '6px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-                      border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                    }}>
-                    <Check size={12} /> OK
-                  </button>
-                  <button onClick={() => setMostrarMotoboy(false)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878' }}>
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            )}
-
+            {/* Excluir */}
             <button onClick={() => onRemover(pedido.id)}
               style={{
-                padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '12px', borderRadius: 12, fontSize: 13, fontWeight: 600,
                 background: '#FEF2F2', color: '#DC2626',
                 border: '1.5px solid #FECACA', cursor: 'pointer',
-                marginLeft: 'auto',
               }}>
-              Excluir
+              <X size={15} /> Excluir pedido
             </button>
           </div>
         </div>
