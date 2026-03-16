@@ -326,7 +326,10 @@ export default function Pedidos() {
       })
     }
     const troco = form.pagamento === 'Dinheiro' && form.trocoPara ? Number(form.trocoPara) : null
-    const obsSufixo = troco ? `\n[Troco para: R$ ${troco.toFixed(2).replace('.', ',')} — Troco: R$ ${(troco - total).toFixed(2).replace('.', ',')}]` : ''
+    // Troco salvo dentro de itens (JSONB existente) para persistir no Supabase sem coluna nova
+    if (troco) {
+      todosItens.push({ tipo: 'troco', valorPago: troco, troco: troco - total })
+    }
     adicionarPedido({
       clienteNome: form.clienteNome || 'Cliente não identificado',
       clienteTelefone: form.clienteTelefone,
@@ -339,7 +342,7 @@ export default function Pedidos() {
       itens: todosItens,
       pagamento: form.pagamento,
       trocoPara: troco,
-      observacoes: form.observacoes + obsSufixo,
+      observacoes: form.observacoes,
       horarioEntrega: form.horarioEntrega,
       embalagensAdicionais: form.embalagensAdicionais,
       total,
@@ -1349,11 +1352,15 @@ function PedidoCard({ pedido, onStatus, onPagamentoStatus, onFormaPagamento, onA
               {BADGE_PAGTO.label}
             </span>
           )}
-          {pedido.trocoPara > 0 && (
-            <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#DCFCE7', color: '#166534' }}>
-              💵 Troco: R$ {(pedido.trocoPara - pedido.total).toFixed(2).replace('.', ',')}
-            </span>
-          )}
+          {(() => {
+            const itemTroco = pedido.itens?.find(i => i.tipo === 'troco')
+            const trocoVal = itemTroco ? itemTroco.troco : (pedido.trocoPara > 0 ? pedido.trocoPara - pedido.total : null)
+            return trocoVal > 0 ? (
+              <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#DCFCE7', color: '#166534' }}>
+                💵 Troco: R$ {Number(trocoVal).toFixed(2).replace('.', ',')}
+              </span>
+            ) : null
+          })()}
 
           {/* Status pagamento */}
           <span style={{
