@@ -237,7 +237,7 @@ export function AppProvider({ children }) {
       if (error) {
         erroSave('pedidos', error)
         setPedidos(prev => prev.filter(p => p.id !== novo.id))
-        alert('Erro ao salvar pedido. Tente novamente.')
+        alert('Erro ao salvar pedido:\n' + (error.message || JSON.stringify(error)))
       }
     })
     return novo
