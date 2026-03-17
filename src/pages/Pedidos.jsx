@@ -148,6 +148,9 @@ const FORM_VAZIO = {
 let _uid = 0
 function uid() { return ++_uid }
 
+// Normaliza acompanhamentos: aceita string[] ou {nome,grupo}[] → string[]
+function toNomes(arr) { return (arr || []).map(a => typeof a === 'string' ? a : a.nome) }
+
 // ── Estilos compartilhados ────────────────────────────────────────────────────
 const INPUT_BASE = {
   background: '#fff',
@@ -234,7 +237,7 @@ export default function Pedidos() {
       uid: uid(), opcaoId: opcao.id, nome: opcao.nome,
       proteina, tamanho, preco, adicionais: extras || '', remover: '', qtd: 1,
       retirados: retirados || [], extras: extras || '',
-      acompanhamentos: opcao.acompanhamentos || [],
+      acompanhamentos: toNomes(opcao.acompanhamentos),
     }))
     setForm(prev => ({ ...prev, itensMarmitex: [...prev.itensMarmitex, ...novas] }))
   }
@@ -1037,7 +1040,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
   function selecionarOpcao(opcao) {
     setOpcaoSel(opcao)
     setCarneSel('')
-    setAcompSel(opcao.acompanhamentos || [])
+    setAcompSel(toNomes(opcao.acompanhamentos))
     setExtras('')
     setQtd(1)
   }
@@ -1050,7 +1053,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
 
   function confirmar(tamanho) {
     if (!opcaoSel) return
-    const todosAcomp = opcaoSel.acompanhamentos || []
+    const todosAcomp = toNomes(opcaoSel.acompanhamentos)
     const retirados = todosAcomp.filter(a => !acompSel.includes(a))
     const proteinaFinal = tipoCarnesAtual === 'especial' ? (opcaoSel.pratoEspecial || '') : carneSel
     onAdicionar(opcaoSel, proteinaFinal, tamanho, retirados, extras, qtd)
@@ -1102,8 +1105,8 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
               {opcao.nome}
             </span>
             <div style={{ marginTop: 2 }}>
-              {(opcao.acompanhamentos || []).length > 0
-                ? opcao.acompanhamentos.map((a, i) => (
+              {toNomes(opcao.acompanhamentos).length > 0
+                ? toNomes(opcao.acompanhamentos).map((a, i) => (
                     <p key={i} style={{ fontSize: 12, color: '#6B5A4E', lineHeight: 1.6 }}>· {a}</p>
                   ))
                 : <p style={{ fontSize: 12, color: '#9D8878', fontStyle: 'italic' }}>Sem acompanhamentos</p>
@@ -1126,7 +1129,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
       </div>
 
       {/* Passo 2 – acompanhamentos */}
-      {opcaoSel && (opcaoSel.acompanhamentos || []).length > 0 && (
+      {opcaoSel && toNomes(opcaoSel.acompanhamentos).length > 0 && (
         <div style={{
           background: '#fff', border: '1.5px solid #FED7AA',
           borderRadius: 12, padding: '14px 14px', marginBottom: 10,
@@ -1135,7 +1138,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
             Acompanhamentos — clique para retirar
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-            {(opcaoSel.acompanhamentos || []).map((a, i) => {
+            {toNomes(opcaoSel.acompanhamentos).map((a, i) => {
               const selecionado = acompSel.includes(a)
               return (
                 <button key={i} onClick={() => toggleAcomp(a)}
