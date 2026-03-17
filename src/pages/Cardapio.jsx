@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { supabase } from '../lib/supabase'
 import {
   Plus, Trash2, ToggleLeft, ToggleRight, X, Check, Save,
-  UtensilsCrossed, GlassWater, Package, Flame, Beef, Salad
+  UtensilsCrossed, GlassWater, Package, Flame, Beef, Salad, ImagePlus, Loader2
 } from 'lucide-react'
 
 const SUBTIPOS_REFRIGERANTE = ['Lata', 'Mini', '2 Litros']
@@ -40,13 +40,42 @@ export default function Cardapio() {
   const [addCombo, setAddCombo] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
+  const [uploadando, setUploadando] = useState(false)
+  const [imagemUrl, setImagemUrl] = useState(cardapioHoje?.imagemUrl || '')
+  const inputImagemRef = useRef()
+
+  async function fazerUploadImagem(arquivo) {
+    if (!arquivo) return
+    setUploadando(true)
+    try {
+      const ext = arquivo.name.split('.').pop()
+      const path = `cardapio/cardapio_hoje.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('cardapio-imagens')
+        .upload(path, arquivo, { upsert: true, contentType: arquivo.type })
+      if (upErr) throw upErr
+      const { data } = supabase.storage.from('cardapio-imagens').getPublicUrl(path)
+      const url = data.publicUrl + '?t=' + Date.now()
+      setImagemUrl(url)
+    } catch (e) {
+      alert('Erro no upload: ' + e.message)
+    } finally {
+      setUploadando(false)
+    }
+  }
+
+  async function removerImagem() {
+    setImagemUrl('')
+  }
 
   async function salvarTudo() {
     setSalvando(true)
     const ts = new Date().toISOString()
+    // Salvar apenas colunas conhecidas da tabela (salada fica só no localStorage)
+    const { salada: _s, ...dadosSupabase } = cardapioHoje
     const { error } = await supabase
       .from('cardapio_hoje')
-      .upsert({ id: 1, ...cardapioHoje, atualizadoEm: ts })
+      .upsert({ id: 1, ...dadosSupabase, atualizadoEm: ts })
     setSalvando(false)
     if (!error) {
       setSalvo(true)
@@ -85,6 +114,79 @@ export default function Cardapio() {
           </p>
         )}
       </div>
+
+      {/* Imagem do Cardápio para WhatsApp */}
+      <section style={{
+        background: '#fff', border: '1.5px solid #E6DDD5',
+        borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', padding: 20,
+      }}>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, color: '#7C3AED', marginTop: 0, marginBottom: 4 }}>
+          <ImagePlus size={17} /> Imagem do Cardápio (WhatsApp)
+        </h2>
+        <p style={{ fontSize: 12, color: '#9D8878', margin: '0 0 14px' }}>
+          O bot envia essa imagem automaticamente quando o cliente pede o cardápio
+        </p>
+
+        <input
+          ref={inputImagemRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={e => fazerUploadImagem(e.target.files[0])}
+        />
+
+        {imagemUrl ? (
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <img
+              src={imagemUrl}
+              alt="Cardápio"
+              style={{ width: 180, height: 180, objectFit: 'cover', borderRadius: 10, border: '1.5px solid #E6DDD5' }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                onClick={() => inputImagemRef.current?.click()}
+                disabled={uploadando}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: '#7C3AED', color: '#fff',
+                  border: 'none', borderRadius: 8, padding: '9px 16px',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}>
+                {uploadando ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <ImagePlus size={14} />}
+                {uploadando ? 'Enviando...' : 'Trocar imagem'}
+              </button>
+              <button
+                onClick={removerImagem}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: '#FEF2F2', color: '#991B1B',
+                  border: '1.5px solid #FECACA', borderRadius: 8, padding: '9px 16px',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}>
+                <Trash2 size={14} /> Remover imagem
+              </button>
+              <p style={{ fontSize: 11, color: '#9D8878', margin: 0 }}>
+                Salve o cardápio para atualizar o bot
+              </p>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => inputImagemRef.current?.click()}
+            disabled={uploadando}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
+              width: '100%', minHeight: 120,
+              background: '#F5F3FF', border: '2px dashed #C4B5FD',
+              borderRadius: 12, cursor: 'pointer', color: '#7C3AED',
+            }}>
+            {uploadando
+              ? <><Loader2 size={28} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: 13 }}>Enviando imagem...</span></>
+              : <><ImagePlus size={28} /><span style={{ fontSize: 13, fontWeight: 600 }}>Clique para adicionar foto do cardápio</span><span style={{ fontSize: 11, color: '#A78BFA' }}>JPG, PNG ou WebP — o bot vai enviar no WhatsApp</span></>
+            }
+          </button>
+        )}
+      </section>
 
       {/* Carnes e Tamanhos */}
       <section style={{
