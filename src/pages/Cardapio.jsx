@@ -43,14 +43,19 @@ export default function Cardapio() {
   const [salvandoImagem, setSalvandoImagem] = useState(false)
   const [imagemUrl, setImagemUrl] = useState('')
   const [inputUrl, setInputUrl] = useState('')
+  const [botAtivo, setBotAtivo] = useState(true)
+  const [salvandoBot, setSalvandoBot] = useState(false)
 
-  // Carregar imagemUrl da row de metadados do Supabase (id=99)
+  // Carregar metadados da row id=99 (imagemUrl + botAtivo)
   useState(() => {
     supabase.from('cardapio_hoje').select('opcoes').eq('id', 99).single()
       .then(({ data }) => {
         if (data?.opcoes?.imagemUrl) {
           setImagemUrl(data.opcoes.imagemUrl)
           setInputUrl(data.opcoes.imagemUrl)
+        }
+        if (data?.opcoes?.botAtivo !== undefined) {
+          setBotAtivo(data.opcoes.botAtivo)
         }
       })
   })
@@ -59,7 +64,7 @@ export default function Cardapio() {
     const url = inputUrl.trim()
     setSalvandoImagem(true)
     try {
-      await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl: url || null } })
+      await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl: url || null, botAtivo } })
       setImagemUrl(url)
     } catch (err) {
       alert('Erro ao salvar imagem: ' + err.message)
@@ -71,7 +76,15 @@ export default function Cardapio() {
   async function removerImagem() {
     setImagemUrl('')
     setInputUrl('')
-    await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl: null } })
+    await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl: null, botAtivo } })
+  }
+
+  async function toggleBot() {
+    const novo = !botAtivo
+    setSalvandoBot(true)
+    setBotAtivo(novo)
+    await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl: imagemUrl || null, botAtivo: novo } })
+    setSalvandoBot(false)
   }
 
   async function salvarTudo() {
@@ -125,11 +138,32 @@ export default function Cardapio() {
         )}
       </div>
 
-      {/* Imagem do Cardápio para WhatsApp */}
+      {/* Bot WhatsApp + Imagem do Cardápio */}
       <section style={{
         background: '#fff', border: '1.5px solid #E6DDD5',
         borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', padding: 20,
       }}>
+        {/* Toggle Bot */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: botAtivo ? '#F0FDF4' : '#FEF2F2',
+          border: `1.5px solid ${botAtivo ? '#86EFAC' : '#FECACA'}`,
+          borderRadius: 10, padding: '12px 16px', marginBottom: 20,
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: botAtivo ? '#15803D' : '#991B1B' }}>
+              🤖 Bot WhatsApp — {botAtivo ? 'LIGADO' : 'DESLIGADO'}
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: botAtivo ? '#16A34A' : '#B91C1C' }}>
+              {botAtivo ? 'Respondendo automaticamente' : 'Atendimento manual ativo'}
+            </p>
+          </div>
+          <button onClick={toggleBot} disabled={salvandoBot}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: botAtivo ? '#16A34A' : '#9D8878', opacity: salvandoBot ? 0.5 : 1 }}>
+            {botAtivo ? <ToggleRight size={38} /> : <ToggleLeft size={38} />}
+          </button>
+        </div>
+
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, color: '#7C3AED', marginTop: 0, marginBottom: 4 }}>
           <ImagePlus size={17} /> Imagem do Cardápio (WhatsApp)
         </h2>
