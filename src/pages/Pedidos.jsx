@@ -1037,22 +1037,49 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
 
   const COR_BADGE = ['#EA580C', '#B45309']
 
+  // Retorna itens normalizados com grupo
+  function acompsComGrupo(opcao) {
+    return (opcao?.acompanhamentos || []).map(a => typeof a === 'string' ? { nome: a, grupo: null } : a)
+  }
+
+  // Grupos únicos de uma opção
+  function gruposDaOpcao(opcao) {
+    return [...new Set(acompsComGrupo(opcao).map(a => a.grupo).filter(Boolean))]
+  }
+
+  // Verifica se todos os grupos têm uma seleção
+  function gruposCompletos(opcao, sel) {
+    return gruposDaOpcao(opcao).every(g => {
+      const nomes = acompsComGrupo(opcao).filter(a => a.grupo === g).map(a => a.nome)
+      return nomes.some(n => sel.includes(n))
+    })
+  }
+
   function selecionarOpcao(opcao) {
     setOpcaoSel(opcao)
     setCarneSel('')
-    setAcompSel(toNomes(opcao.acompanhamentos))
+    // Pré-seleciona apenas itens SEM grupo; com grupo ficam em branco (obrigatório escolher)
+    setAcompSel(acompsComGrupo(opcao).filter(a => !a.grupo).map(a => a.nome))
     setExtras('')
     setQtd(1)
   }
 
-  function toggleAcomp(item) {
-    setAcompSel(prev =>
-      prev.includes(item) ? prev.filter(a => a !== item) : [...prev, item]
-    )
+  function toggleAcomp(item, grupo) {
+    setAcompSel(prev => {
+      if (grupo) {
+        // Comportamento rádio: remove outros do grupo, adiciona este
+        const grupoNomes = acompsComGrupo(opcaoSel).filter(a => a.grupo === grupo).map(a => a.nome)
+        const semGrupo = prev.filter(n => !grupoNomes.includes(n))
+        return prev.includes(item) ? semGrupo : [...semGrupo, item]
+      }
+      return prev.includes(item) ? prev.filter(a => a !== item) : [...prev, item]
+    })
   }
 
   function confirmar(tamanho) {
     if (!opcaoSel) return
+    // Bloquear se algum grupo não foi escolhido
+    if (!gruposCompletos(opcaoSel, acompSel)) return
     const todosAcomp = toNomes(opcaoSel.acompanhamentos)
     const retirados = todosAcomp.filter(a => !acompSel.includes(a))
     const proteinaFinal = tipoCarnesAtual === 'especial' ? (opcaoSel.pratoEspecial || '') : carneSel
@@ -1069,7 +1096,7 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
 
   const tipoCarnesAtual = opcaoSel?.tipoCarnes || 'globais'
   const temCarnesLivres = tipoCarnesAtual === 'globais' && carnesGlobais.length > 0
-  const prontoParaTamanho = opcaoSel && (!temCarnesLivres || carneSel !== '')
+  const prontoParaTamanho = opcaoSel && (!temCarnesLivres || carneSel !== '') && gruposCompletos(opcaoSel, acompSel)
 
   return (
     <div>
@@ -1137,24 +1164,67 @@ function SeletorMarmitex({ opcoesAlmoco, carnesGlobais, precoP, precoG, onAdicio
           <p style={{ fontSize: 14, fontWeight: 700, color: '#6B5A4E', marginBottom: 10 }}>
             Acompanhamentos — clique para retirar
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-            {toNomes(opcaoSel.acompanhamentos).map((a, i) => {
-              const selecionado = acompSel.includes(a)
-              return (
-                <button key={i} onClick={() => toggleAcomp(a)}
-                  style={{
-                    padding: '8px 14px', borderRadius: 20, fontSize: 14, fontWeight: 600,
-                    border: selecionado ? '1.5px solid #16A34A' : '1.5px solid #CBD5E1',
-                    background: selecionado ? '#DCFCE7' : '#F1F5F9',
-                    color: selecionado ? '#15803D' : '#94A3B8',
-                    textDecoration: selecionado ? 'none' : 'line-through',
-                    cursor: 'pointer', transition: 'all 0.1s',
-                    minHeight: 40,
-                  }}>
-                  {a}
-                </button>
-              )
-            })}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 10 }}>
+            {/* Itens sem grupo — toggle normal */}
+            {(() => {
+              const semGrupo = acompsComGrupo(opcaoSel).filter(a => !a.grupo)
+              const grupos = gruposDaOpcao(opcaoSel)
+              return <>
+                {semGrupo.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {semGrupo.map((a, i) => {
+                      const sel = acompSel.includes(a.nome)
+                      return (
+                        <button key={i} onClick={() => toggleAcomp(a.nome, null)}
+                          style={{
+                            padding: '8px 14px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                            border: sel ? '1.5px solid #16A34A' : '1.5px solid #CBD5E1',
+                            background: sel ? '#DCFCE7' : '#F1F5F9',
+                            color: sel ? '#15803D' : '#94A3B8',
+                            textDecoration: sel ? 'none' : 'line-through',
+                            cursor: 'pointer', minHeight: 40,
+                          }}>
+                          {a.nome}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                {/* Grupos — escolha obrigatória (rádio) */}
+                {grupos.map(grupo => {
+                  const itens = acompsComGrupo(opcaoSel).filter(a => a.grupo === grupo)
+                  const temSelecao = itens.some(a => acompSel.includes(a.nome))
+                  return (
+                    <div key={grupo} style={{
+                      background: temSelecao ? '#F0FDF4' : '#FEF2F2',
+                      border: `1.5px solid ${temSelecao ? '#BBF7D0' : '#FECACA'}`,
+                      borderRadius: 10, padding: '10px 12px',
+                    }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: temSelecao ? '#15803D' : '#991B1B', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {temSelecao ? '✓' : '⚠️'} Escolha um — {grupo}
+                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {itens.map((a, i) => {
+                          const sel = acompSel.includes(a.nome)
+                          return (
+                            <button key={i} onClick={() => toggleAcomp(a.nome, grupo)}
+                              style={{
+                                padding: '8px 14px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                                border: sel ? '2px solid #16A34A' : '1.5px solid #CBD5E1',
+                                background: sel ? '#DCFCE7' : '#fff',
+                                color: sel ? '#15803D' : '#6B5A4E',
+                                cursor: 'pointer', minHeight: 40,
+                              }}>
+                              {sel ? '● ' : '○ '}{a.nome}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </>
+            })()}
           </div>
           <input type="text" value={extras} onChange={e => setExtras(e.target.value)}
             style={{ ...INPUT_BASE }}
