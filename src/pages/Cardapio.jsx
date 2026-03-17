@@ -568,6 +568,14 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
     onAcomp(acomps.filter((_, i) => i !== idx))
   }
 
+  function moverItem(idx, dir) {
+    const novo = [...acomps]
+    const alvo = idx + dir
+    if (alvo < 0 || alvo >= novo.length) return
+    ;[novo[idx], novo[alvo]] = [novo[alvo], novo[idx]]
+    onAcomp(novo)
+  }
+
   function criarGrupoExclusivo() {
     if (grupoSel.length < 2) return
     const id = `grupo${Date.now()}`
@@ -628,37 +636,52 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
         </p>
 
         {/* Lista de acompanhamentos */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12, minHeight: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 12, minHeight: 24 }}>
           {acomps.length === 0 && (
             <p style={{ fontSize: 12, color: '#CFC4BB', fontStyle: 'italic' }}>Nenhum item ainda</p>
           )}
           {acomps.map((a, idx) => (
-            <span key={idx} style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              background: a.grupo ? corGrupo(a.grupo, gruposAtivos) + '18' : '#F3F4F6',
-              border: a.grupo ? `1.5px solid ${corGrupo(a.grupo, gruposAtivos)}50` : '1px solid #E5E7EB',
-              color: a.grupo ? corGrupo(a.grupo, gruposAtivos) : '#374151',
-              fontSize: 12, padding: '5px 10px', borderRadius: 20,
-            }}>
-              {a.grupo && <span style={{ fontSize: 10 }}>⇄</span>}
-              {criandoGrupo
-                ? <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={grupoSel.includes(a.nome)}
-                      onChange={() => setGrupoSel(prev => prev.includes(a.nome) ? prev.filter(n => n !== a.nome) : [...prev, a.nome])}
-                    />
-                    {a.nome}
-                  </label>
-                : a.nome
-              }
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {/* Botões mover */}
               {!criandoGrupo && (
-                <button onClick={() => removerItem(idx)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
-                  <X size={11} />
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <button onClick={() => moverItem(idx, -1)} disabled={idx === 0}
+                    style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', color: idx === 0 ? '#E5E7EB' : '#9D8878', lineHeight: 1, padding: 0, fontSize: 10 }}>
+                    ▲
+                  </button>
+                  <button onClick={() => moverItem(idx, 1)} disabled={idx === acomps.length - 1}
+                    style={{ background: 'none', border: 'none', cursor: idx === acomps.length - 1 ? 'default' : 'pointer', color: idx === acomps.length - 1 ? '#E5E7EB' : '#9D8878', lineHeight: 1, padding: 0, fontSize: 10 }}>
+                    ▼
+                  </button>
+                </div>
               )}
-            </span>
+              <span style={{
+                display: 'flex', alignItems: 'center', gap: 4, flex: 1,
+                background: a.grupo ? corGrupo(a.grupo, gruposAtivos) + '18' : '#F3F4F6',
+                border: a.grupo ? `1.5px solid ${corGrupo(a.grupo, gruposAtivos)}50` : '1px solid #E5E7EB',
+                color: a.grupo ? corGrupo(a.grupo, gruposAtivos) : '#374151',
+                fontSize: 12, padding: '5px 10px', borderRadius: 20,
+              }}>
+                {a.grupo && <span style={{ fontSize: 10 }}>⇄</span>}
+                {criandoGrupo
+                  ? <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={grupoSel.includes(a.nome)}
+                        onChange={() => setGrupoSel(prev => prev.includes(a.nome) ? prev.filter(n => n !== a.nome) : [...prev, a.nome])}
+                      />
+                      {a.nome}
+                    </label>
+                  : a.nome
+                }
+                {!criandoGrupo && (
+                  <button onClick={() => removerItem(idx)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
+                    <X size={11} />
+                  </button>
+                )}
+              </span>
+            </div>
           ))}
         </div>
 
