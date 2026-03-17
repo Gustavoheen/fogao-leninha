@@ -41,31 +41,38 @@ export default function Cardapio() {
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
   const [uploadando, setUploadando] = useState(false)
-  const [imagemUrl, setImagemUrl] = useState(cardapioHoje?.imagemUrl || '')
+  const [imagemUrl, setImagemUrl] = useState('')
   const inputImagemRef = useRef()
+
+  // Carregar imagemUrl da row de metadados do Supabase (id=99)
+  useState(() => {
+    supabase.from('cardapio_hoje').select('opcoes').eq('id', 99).single()
+      .then(({ data }) => { if (data?.opcoes?.imagemUrl) setImagemUrl(data.opcoes.imagemUrl) })
+  })
 
   async function fazerUploadImagem(arquivo) {
     if (!arquivo) return
     setUploadando(true)
     try {
-      const ext = arquivo.name.split('.').pop()
-      const path = `cardapio/cardapio_hoje.${ext}`
-      const { error: upErr } = await supabase.storage
-        .from('cardapio-imagens')
-        .upload(path, arquivo, { upsert: true, contentType: arquivo.type })
-      if (upErr) throw upErr
-      const { data } = supabase.storage.from('cardapio-imagens').getPublicUrl(path)
-      const url = data.publicUrl + '?t=' + Date.now()
-      setImagemUrl(url)
-    } catch (e) {
-      alert('Erro no upload: ' + e.message)
-    } finally {
+      // Converter para base64 e salvar como URL de dados na row de metadados
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64url = e.target.result
+        setImagemUrl(base64url)
+        // Salvar imediatamente na row de metadados do Supabase
+        await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl: base64url } })
+        setUploadando(false)
+      }
+      reader.readAsDataURL(arquivo)
+    } catch (err) {
+      alert('Erro no upload: ' + err.message)
       setUploadando(false)
     }
   }
 
   async function removerImagem() {
     setImagemUrl('')
+    await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl: null } })
   }
 
   async function salvarTudo() {
@@ -76,6 +83,10 @@ export default function Cardapio() {
     const { error } = await supabase
       .from('cardapio_hoje')
       .upsert({ id: 1, ...dadosSupabase, atualizadoEm: ts })
+    // Salvar imagemUrl na row de metadados (id=99) sem precisar de nova coluna
+    if (imagemUrl) {
+      await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl } })
+    }
     setSalvando(false)
     if (!error) {
       setSalvo(true)
