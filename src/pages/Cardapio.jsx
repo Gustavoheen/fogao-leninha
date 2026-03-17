@@ -541,8 +541,9 @@ function normItem(a) { return typeof a === 'string' ? { nome: a, grupo: null } :
 // Card de cada opção de almoço
 function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
   const [novoNome, setNovoNome] = useState('')
-  const [novoGrupo, setNovoGrupo] = useState('')
   const [editandoNome, setEditandoNome] = useState(false)
+  const [criandoGrupo, setCriandoGrupo] = useState(false)
+  const [grupoSel, setGrupoSel] = useState([])
   const [nomeTemp, setNomeTemp] = useState(opcao.nome)
   const tipoCarnes = opcao.tipoCarnes || 'globais'
   const pratoEspecial = opcao.pratoEspecial || ''
@@ -559,19 +560,25 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
   function adicionarItem() {
     const nome = novoNome.trim()
     if (!nome) return
-    onAcomp([...acomps, { nome, grupo: novoGrupo.trim() || null }])
+    onAcomp([...acomps, { nome, grupo: null }])
     setNovoNome('')
-    setNovoGrupo('')
   }
 
   function removerItem(idx) {
     onAcomp(acomps.filter((_, i) => i !== idx))
   }
 
-  function editarGrupo(idx, grupo) {
-    const novo = [...acomps]
-    novo[idx] = { ...novo[idx], grupo: grupo || null }
+  function criarGrupoExclusivo() {
+    if (grupoSel.length < 2) return
+    const id = `grupo${Date.now()}`
+    const novo = acomps.map(a => grupoSel.includes(a.nome) ? { ...a, grupo: id } : a)
     onAcomp(novo)
+    setGrupoSel([])
+    setCriandoGrupo(false)
+  }
+
+  function removerGrupo(id) {
+    onAcomp(acomps.map(a => a.grupo === id ? { ...a, grupo: null } : a))
   }
 
   function confirmarNome() {
@@ -620,65 +627,43 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
           Acompanhamentos
         </p>
 
-        {/* Legenda de grupos */}
-        {gruposAtivos.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-            {gruposAtivos.map(g => (
-              <span key={g} style={{
-                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                background: corGrupo(g, gruposAtivos) + '20',
-                color: corGrupo(g, gruposAtivos),
-                border: `1px solid ${corGrupo(g, gruposAtivos)}40`,
-                textTransform: 'uppercase', letterSpacing: '0.04em'
-              }}>⇄ {g} (exclusivo)</span>
-            ))}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12, minHeight: 24 }}>
+        {/* Lista de acompanhamentos */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12, minHeight: 24 }}>
           {acomps.length === 0 && (
             <p style={{ fontSize: 12, color: '#CFC4BB', fontStyle: 'italic' }}>Nenhum item ainda</p>
           )}
           {acomps.map((a, idx) => (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {/* Badge com nome */}
-              <span style={{
-                display: 'flex', alignItems: 'center', gap: 4, flex: 1,
-                background: a.grupo ? corGrupo(a.grupo, gruposAtivos) + '15' : '#F3F4F6',
-                border: a.grupo ? `1.5px solid ${corGrupo(a.grupo, gruposAtivos)}40` : '1px solid #E5E7EB',
-                color: a.grupo ? corGrupo(a.grupo, gruposAtivos) : '#374151',
-                fontSize: 12, padding: '5px 10px', borderRadius: 8,
-              }}>
-                {a.grupo && <span style={{ fontSize: 10, fontWeight: 700, marginRight: 2 }}>⇄</span>}
-                <span style={{ flex: 1 }}>{a.nome}</span>
-                {a.grupo && <span style={{ fontSize: 10, opacity: 0.7 }}>{a.grupo}</span>}
-              </span>
-              {/* Input grupo */}
-              <input
-                type="text"
-                value={a.grupo || ''}
-                onChange={e => editarGrupo(idx, e.target.value)}
-                placeholder="grupo"
-                title="Nome do grupo exclusivo (itens do mesmo grupo se excluem)"
-                style={{
-                  width: 60, background: '#fff', border: '1px solid #CFC4BB',
-                  borderRadius: 6, padding: '4px 6px', fontSize: 11,
-                  outline: 'none', fontFamily: 'Inter, sans-serif', color: '#6B5A4E',
-                  textTransform: 'lowercase',
-                }}
-              />
-              <button onClick={() => removerItem(idx)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center', padding: 2 }}
-                onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
-                onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
-                <X size={13} />
-              </button>
-            </div>
+            <span key={idx} style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: a.grupo ? corGrupo(a.grupo, gruposAtivos) + '18' : '#F3F4F6',
+              border: a.grupo ? `1.5px solid ${corGrupo(a.grupo, gruposAtivos)}50` : '1px solid #E5E7EB',
+              color: a.grupo ? corGrupo(a.grupo, gruposAtivos) : '#374151',
+              fontSize: 12, padding: '5px 10px', borderRadius: 20,
+            }}>
+              {a.grupo && <span style={{ fontSize: 10 }}>⇄</span>}
+              {criandoGrupo
+                ? <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={grupoSel.includes(a.nome)}
+                      onChange={() => setGrupoSel(prev => prev.includes(a.nome) ? prev.filter(n => n !== a.nome) : [...prev, a.nome])}
+                    />
+                    {a.nome}
+                  </label>
+                : a.nome
+              }
+              {!criandoGrupo && (
+                <button onClick={() => removerItem(idx)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
+                  <X size={11} />
+                </button>
+              )}
+            </span>
           ))}
         </div>
 
         {/* Adicionar novo item */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
           <input
             type="text"
             value={novoNome}
@@ -689,30 +674,62 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
               borderRadius: 8, padding: '7px 10px', fontSize: 12,
               outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08',
             }}
-            placeholder="Nome do item (ex: Tutu de Feijão)"
-          />
-          <input
-            type="text"
-            value={novoGrupo}
-            onChange={e => setNovoGrupo(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && adicionarItem()}
-            placeholder="grupo"
-            title="Grupo exclusivo (opcional) — itens do mesmo grupo se excluem"
-            style={{
-              width: 64, background: '#fff', border: '1.5px solid #CFC4BB',
-              borderRadius: 8, padding: '7px 8px', fontSize: 11,
-              outline: 'none', fontFamily: 'Inter, sans-serif', color: '#6B5A4E',
-              textTransform: 'lowercase',
-            }}
+            placeholder="Ex: Tutu de Feijão, Batata Frita..."
           />
           <button onClick={adicionarItem}
             style={{ background: HEADER_BG, color: '#fff', border: 'none', borderRadius: 8, padding: '0 12px', cursor: 'pointer' }}>
             <Plus size={13} />
           </button>
         </div>
-        <p style={{ fontSize: 10, color: '#9D8878', margin: '5px 0 0' }}>
-          Coluna <b>grupo</b>: itens com mesmo grupo são exclusivos (ex: "feijao" → cliente escolhe um)
-        </p>
+
+        {/* Escolhas Exclusivas (grupos) */}
+        {acomps.length >= 2 && (
+          <div style={{ borderTop: '1px solid #F3F0ED', paddingTop: 10, marginTop: 4 }}>
+            {gruposAtivos.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                {gruposAtivos.map(g => {
+                  const itens = acomps.filter(a => a.grupo === g)
+                  return (
+                    <div key={g} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <span style={{
+                        flex: 1, fontSize: 11, padding: '4px 10px', borderRadius: 8,
+                        background: corGrupo(g, gruposAtivos) + '15',
+                        color: corGrupo(g, gruposAtivos), fontWeight: 600,
+                      }}>
+                        ⇄ Cliente escolhe: {itens.map(a => a.nome).join(' ou ')}
+                      </span>
+                      <button onClick={() => removerGrupo(g)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex' }}>
+                        <X size={13} />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {criandoGrupo ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: '#6B5A4E', flex: 1 }}>
+                  {grupoSel.length < 2 ? 'Marque 2 ou mais itens acima' : `${grupoSel.length} selecionados`}
+                </span>
+                <button onClick={criarGrupoExclusivo} disabled={grupoSel.length < 2}
+                  style={{ background: grupoSel.length >= 2 ? '#15803D' : '#CFC4BB', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: grupoSel.length >= 2 ? 'pointer' : 'default' }}>
+                  <Check size={12} /> Criar
+                </button>
+                <button onClick={() => { setCriandoGrupo(false); setGrupoSel([]) }}
+                  style={{ background: '#fff', color: '#6B5A4E', border: '1px solid #CFC4BB', borderRadius: 8, padding: '6px 10px', fontSize: 11, cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setCriandoGrupo(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: '1px dashed #CFC4BB', borderRadius: 8, padding: '5px 10px', fontSize: 11, color: '#9D8878', cursor: 'pointer' }}>
+                <Plus size={11} /> Marcar itens como escolha exclusiva
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Tipo de carnes para esta opção */}
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F3F0ED' }}>
