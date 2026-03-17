@@ -528,9 +528,20 @@ function SaladaSection({ cardapioHoje, salvarSalada }) {
   )
 }
 
+// Cores para grupos de acompanhamentos exclusivos
+const GRUPO_CORES = ['#7C3AED', '#0369A1', '#B45309', '#15803D', '#BE185D', '#C2410C']
+function corGrupo(grupo, grupos) {
+  const idx = grupos.indexOf(grupo)
+  return GRUPO_CORES[idx % GRUPO_CORES.length]
+}
+
+// Normaliza item: string → {nome, grupo: null}
+function normItem(a) { return typeof a === 'string' ? { nome: a, grupo: null } : a }
+
 // Card de cada opção de almoço
 function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
-  const [novoItem, setNovoItem] = useState('')
+  const [novoNome, setNovoNome] = useState('')
+  const [novoGrupo, setNovoGrupo] = useState('')
   const [editandoNome, setEditandoNome] = useState(false)
   const [nomeTemp, setNomeTemp] = useState(opcao.nome)
   const tipoCarnes = opcao.tipoCarnes || 'globais'
@@ -539,15 +550,28 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
 
   const HEADER_BG = cor === 'orange' ? '#EA580C' : '#B45309'
 
+  // Normalizar acompanhamentos (compatível com strings antigas)
+  const acomps = (opcao.acompanhamentos || []).map(normItem)
+
+  // Grupos únicos presentes
+  const gruposAtivos = [...new Set(acomps.map(a => a.grupo).filter(Boolean))]
+
   function adicionarItem() {
-    const val = novoItem.trim()
-    if (!val) return
-    onAcomp([...opcao.acompanhamentos, val])
-    setNovoItem('')
+    const nome = novoNome.trim()
+    if (!nome) return
+    onAcomp([...acomps, { nome, grupo: novoGrupo.trim() || null }])
+    setNovoNome('')
+    setNovoGrupo('')
   }
 
-  function removerItem(item) {
-    onAcomp(opcao.acompanhamentos.filter(a => a !== item))
+  function removerItem(idx) {
+    onAcomp(acomps.filter((_, i) => i !== idx))
+  }
+
+  function editarGrupo(idx, grupo) {
+    const novo = [...acomps]
+    novo[idx] = { ...novo[idx], grupo: grupo || null }
+    onAcomp(novo)
   }
 
   function confirmarNome() {
@@ -596,44 +620,99 @@ function OpcaoCard({ opcao, cor, onNome, onAcomp, onToggle, onOpcao }) {
           Acompanhamentos
         </p>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12, minHeight: 24 }}>
-          {opcao.acompanhamentos.length === 0 && (
+        {/* Legenda de grupos */}
+        {gruposAtivos.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            {gruposAtivos.map(g => (
+              <span key={g} style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                background: corGrupo(g, gruposAtivos) + '20',
+                color: corGrupo(g, gruposAtivos),
+                border: `1px solid ${corGrupo(g, gruposAtivos)}40`,
+                textTransform: 'uppercase', letterSpacing: '0.04em'
+              }}>⇄ {g} (exclusivo)</span>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12, minHeight: 24 }}>
+          {acomps.length === 0 && (
             <p style={{ fontSize: 12, color: '#CFC4BB', fontStyle: 'italic' }}>Nenhum item ainda</p>
           )}
-          {opcao.acompanhamentos.map(a => (
-            <span key={a} style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              background: '#F3F4F6', color: '#374151',
-              fontSize: 12, padding: '4px 10px', borderRadius: 20,
-            }}>
-              {a}
-              <button onClick={() => removerItem(a)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center' }}
+          {acomps.map((a, idx) => (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Badge com nome */}
+              <span style={{
+                display: 'flex', alignItems: 'center', gap: 4, flex: 1,
+                background: a.grupo ? corGrupo(a.grupo, gruposAtivos) + '15' : '#F3F4F6',
+                border: a.grupo ? `1.5px solid ${corGrupo(a.grupo, gruposAtivos)}40` : '1px solid #E5E7EB',
+                color: a.grupo ? corGrupo(a.grupo, gruposAtivos) : '#374151',
+                fontSize: 12, padding: '5px 10px', borderRadius: 8,
+              }}>
+                {a.grupo && <span style={{ fontSize: 10, fontWeight: 700, marginRight: 2 }}>⇄</span>}
+                <span style={{ flex: 1 }}>{a.nome}</span>
+                {a.grupo && <span style={{ fontSize: 10, opacity: 0.7 }}>{a.grupo}</span>}
+              </span>
+              {/* Input grupo */}
+              <input
+                type="text"
+                value={a.grupo || ''}
+                onChange={e => editarGrupo(idx, e.target.value)}
+                placeholder="grupo"
+                title="Nome do grupo exclusivo (itens do mesmo grupo se excluem)"
+                style={{
+                  width: 60, background: '#fff', border: '1px solid #CFC4BB',
+                  borderRadius: 6, padding: '4px 6px', fontSize: 11,
+                  outline: 'none', fontFamily: 'Inter, sans-serif', color: '#6B5A4E',
+                  textTransform: 'lowercase',
+                }}
+              />
+              <button onClick={() => removerItem(idx)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', display: 'flex', alignItems: 'center', padding: 2 }}
                 onMouseEnter={e => e.currentTarget.style.color = '#C8221A'}
                 onMouseLeave={e => e.currentTarget.style.color = '#9D8878'}>
-                <X size={11} />
+                <X size={13} />
               </button>
-            </span>
+            </div>
           ))}
         </div>
 
+        {/* Adicionar novo item */}
         <div style={{ display: 'flex', gap: 6 }}>
           <input
             type="text"
-            value={novoItem}
-            onChange={e => setNovoItem(e.target.value)}
+            value={novoNome}
+            onChange={e => setNovoNome(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && adicionarItem()}
             style={{
               flex: 1, background: '#fff', border: '1.5px solid #CFC4BB',
               borderRadius: 8, padding: '7px 10px', fontSize: 12,
               outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08',
             }}
-            placeholder="Ex: Arroz, Feijão, Farofa..."
+            placeholder="Nome do item (ex: Tutu de Feijão)"
+          />
+          <input
+            type="text"
+            value={novoGrupo}
+            onChange={e => setNovoGrupo(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && adicionarItem()}
+            placeholder="grupo"
+            title="Grupo exclusivo (opcional) — itens do mesmo grupo se excluem"
+            style={{
+              width: 64, background: '#fff', border: '1.5px solid #CFC4BB',
+              borderRadius: 8, padding: '7px 8px', fontSize: 11,
+              outline: 'none', fontFamily: 'Inter, sans-serif', color: '#6B5A4E',
+              textTransform: 'lowercase',
+            }}
           />
           <button onClick={adicionarItem}
             style={{ background: HEADER_BG, color: '#fff', border: 'none', borderRadius: 8, padding: '0 12px', cursor: 'pointer' }}>
             <Plus size={13} />
           </button>
         </div>
+        <p style={{ fontSize: 10, color: '#9D8878', margin: '5px 0 0' }}>
+          Coluna <b>grupo</b>: itens com mesmo grupo são exclusivos (ex: "feijao" → cliente escolhe um)
+        </p>
 
         {/* Tipo de carnes para esta opção */}
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F3F0ED' }}>
