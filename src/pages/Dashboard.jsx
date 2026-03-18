@@ -73,14 +73,10 @@ function dataFimPeriodo(periodo, dataCustom) {
 }
 
 export default function Dashboard() {
-  const { pedidos, despesas, funcionarios, clientes, quitarPedido, debitoPendente, debitoFiado } = useApp()
+  const { pedidos, despesas, funcionarios, clientes, quitarPedido, debitoPendente } = useApp()
   const [periodo, setPeriodo] = useState('hoje')
   const [dataCustom, setDataCustom] = useState({ inicio: '', fim: '' })
-  const [mesCaderneta, setMesCaderneta] = useState(() => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
-  })
-  const [clienteFiltro, setClienteFiltro] = useState('')
+  const [mostrarCaderneta, setMostrarCaderneta] = useState(false)
 
   const inicio = dataInicioPeriodo(periodo, dataCustom)
   const fim = dataFimPeriodo(periodo, dataCustom)
@@ -139,30 +135,18 @@ export default function Dashboard() {
     return acc
   }, {})
 
-  const clientesComPendente = pedidosPendentes.reduce((acc, p) => {
-    const key = p.clienteId || p.clienteNome
-    if (!acc[key]) acc[key] = { nome: p.clienteNome, total: 0, pedidos: [] }
-    acc[key].total += Number(p.total)
-    acc[key].pedidos.push(p)
-    return acc
-  }, {})
-
-  // Pedidos fiado não quitados agrupados por cliente
+  // Clientes fiado com débito pendente
   const pedidosFiado = pedidos.filter(p =>
     p.statusPagamento === 'mensalista' && p.status !== 'cancelado'
   )
   const fiadoPorCliente = pedidosFiado.reduce((acc, p) => {
     const key = p.clienteId || p.clienteNome
     if (!acc[key]) {
-      const clienteReg = clientes.find(c => c.id === p.clienteId)
+      const reg = clientes.find(c => c.id === p.clienteId)
       acc[key] = {
-        nome: p.clienteNome,
-        clienteId: p.clienteId,
-        tipo: clienteReg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
-        precoMarmitexP: clienteReg?.precoMarmitexP || '',
-        precoMarmitexG: clienteReg?.precoMarmitexG || '',
-        total: 0,
-        pedidos: [],
+        nome: p.clienteNome, clienteId: p.clienteId,
+        tipo: reg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
+        total: 0, pedidos: [],
       }
     }
     acc[key].total += Number(p.total)
@@ -170,70 +154,16 @@ export default function Dashboard() {
     return acc
   }, {})
   const fiadoLista = Object.values(fiadoPorCliente).sort((a, b) => b.total - a.total)
-  const totalFiadoGeral = fiadoLista.reduce((acc, c) => acc + c.total, 0)
+  const totalFiado = fiadoLista.reduce((a, c) => a + c.total, 0)
 
-  // Extrato do período — todos os pedidos fiado do período selecionado (pago ou não)
-  const extratoPeriodo = pedidosPeriodo.filter(p =>
-    p.statusPagamento === 'mensalista' || ['Mensalista', 'Semanal', 'Quinzenal'].includes(p.pagamento)
-  )
-  const extratoPorCliente = extratoPeriodo.reduce((acc, p) => {
-    const key = p.clienteId || p.clienteNome
-    if (!acc[key]) {
-      const reg = clientes.find(c => c.id === p.clienteId)
-      acc[key] = {
-        nome: p.clienteNome,
-        tipo: reg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
-        pedidos: [],
-        total: 0,
-      }
-    }
-    acc[key].pedidos.push(p)
-    acc[key].total += Number(p.total)
-    return acc
-  }, {})
-  const extratoLista = Object.values(extratoPorCliente).sort((a, b) => a.nome.localeCompare(b.nome))
-
-  // Caderneta — período mensal (dia 1 ao último dia do mês selecionado)
-  const [anoMes, mesMes] = mesCaderneta.split('-').map(Number)
-  const inicioCaderneta = new Date(anoMes, mesMes - 1, 1, 0, 0, 0)
-  const fimCaderneta = new Date(anoMes, mesMes, 0, 23, 59, 59)
-  const pedidosCaderneta = pedidos.filter(p => {
-    const d = new Date(p.criadoEm)
-    return d >= inicioCaderneta && d <= fimCaderneta &&
-      p.status !== 'cancelado' &&
-      (p.statusPagamento === 'mensalista' || ['Mensalista','Semanal','Quinzenal'].includes(p.pagamento))
-  })
-  const caderneta = pedidosCaderneta.reduce((acc, p) => {
-    const key = p.clienteId || p.clienteNome
-    if (!acc[key]) {
-      const reg = clientes.find(c => c.id === p.clienteId)
-      acc[key] = {
-        nome: p.clienteNome,
-        clienteId: p.clienteId,
-        tipo: reg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
-        pedidos: [],
-        totalMes: 0,
-        debitoAtual: debitoPendente(p.clienteId || p.clienteNome),
-      }
-    }
-    acc[key].pedidos.push(p)
-    acc[key].totalMes += Number(p.total)
-    return acc
-  }, {})
-  const cadernetaLista = Object.values(caderneta)
-    .filter(c => !clienteFiltro || c.nome.toLowerCase().includes(clienteFiltro.toLowerCase()))
-    .sort((a, b) => b.debitoAtual - a.debitoAtual)
-  const totalDebitoCaderneta = Object.values(caderneta).reduce((acc, c) => acc + c.debitoAtual, 0)
-
-  // Contagem de itens vendidos no período
+  // Itens vendidos
   const contagemItens = pedidosPeriodo.reduce((acc, p) => {
     ;(p.itens || []).forEach(item => {
       if (item.tipo === 'marmitex') {
         const key = item.opcaoId === 1 ? 'op1' : item.opcaoId === 2 ? 'op2' : 'op1'
         acc[key] = (acc[key] || 0) + (item.qtd || 1)
         acc.marmitex = (acc.marmitex || 0) + (item.qtd || 1)
-        const nomeOp = item.nome || (item.opcaoId === 1 ? 'Opção 1' : 'Opção 2')
-        acc[`nome_${key}`] = nomeOp
+        acc[`nome_${key}`] = item.nome || (item.opcaoId === 1 ? 'Opção 1' : 'Opção 2')
       } else if (item.tipo === 'refrigerante') {
         acc.refrigerante = (acc.refrigerante || 0) + (item.qtd || 1)
       } else if (item.tipo === 'salada') {
@@ -248,7 +178,7 @@ export default function Dashboard() {
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
             Dashboard
@@ -257,36 +187,28 @@ export default function Dashboard() {
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
+        {/* Botão Caderneta */}
+        <button
+          onClick={() => setMostrarCaderneta(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: fiadoLista.length > 0 ? '#FEF2F2' : '#fff',
+            border: fiadoLista.length > 0 ? '1.5px solid #FECACA' : '1.5px solid #E6DDD5',
+            color: fiadoLista.length > 0 ? '#991B1B' : '#6B5A4E',
+            borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          }}>
+          <HandCoins size={15} />
+          Caderneta
+          {fiadoLista.length > 0 && (
+            <span style={{ background: '#C8221A', color: '#fff', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 800 }}>
+              {fiadoLista.length}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Tags de clientes em débito */}
-      {fiadoLista.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Em débito:</span>
-          {fiadoLista.slice(0, 6).map((c, i) => (
-            <span
-              key={i}
-              onClick={() => { setClienteFiltro(c.nome); document.getElementById('caderneta-section')?.scrollIntoView({ behavior: 'smooth' }) }}
-              style={{
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                background: c.total > 100 ? '#FEF2F2' : '#FFFBEB',
-                color: c.total > 100 ? '#991B1B' : '#92400E',
-                border: c.total > 100 ? '1.5px solid #FECACA' : '1.5px solid #FDE68A',
-                borderRadius: 20, padding: '4px 12px',
-              }}
-              title={`Débito: R$ ${c.total.toFixed(2).replace('.', ',')}`}
-            >
-              {c.nome} · R$ {c.total.toFixed(2).replace('.', ',')}
-            </span>
-          ))}
-          {fiadoLista.length > 6 && (
-            <span style={{ fontSize: 12, color: '#9D8878' }}>+{fiadoLista.length - 6} mais</span>
-          )}
-        </div>
-      )}
-
       {/* Seletor de período */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         {[['hoje', 'Hoje'], ['semana', 'Esta semana'], ['mes', 'Este mês'], ['custom', 'Personalizado']].map(([key, label]) => (
           <button key={key} onClick={() => setPeriodo(key)}
             style={{
@@ -313,170 +235,116 @@ export default function Dashboard() {
       </div>
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-        {/* Receitas */}
-        <div style={{
-          background: 'linear-gradient(135deg, #C8221A 0%, #7F1D1D 100%)',
-          borderRadius: 14, padding: 18, boxShadow: '0 4px 16px rgba(200,34,26,0.3)',
-          color: '#fff',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, opacity: 0.85 }}>
-            <TrendingUp size={14} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 22 }}>
+        <div style={{ background: 'linear-gradient(135deg, #C8221A 0%, #7F1D1D 100%)', borderRadius: 12, padding: 16, color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5, opacity: 0.8 }}>
+            <TrendingUp size={13} />
             <span style={{ fontSize: 11, fontWeight: 600 }}>Receitas</span>
           </div>
-          <p style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>R$ {totalReceitas.toFixed(2).replace('.', ',')}</p>
-          <p style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>{pedidosPagos.length} pedido(s)</p>
+          <p style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>R$ {totalReceitas.toFixed(2).replace('.', ',')}</p>
+          <p style={{ fontSize: 11, opacity: 0.65, marginTop: 3 }}>{pedidosPagos.length} pedido(s)</p>
         </div>
-
-        {/* Despesas */}
-        <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 14, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: '#9D8878' }}>
-            <TrendingUp size={14} style={{ transform: 'rotate(180deg)' }} />
+        <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 12, padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5, color: '#9D8878' }}>
+            <TrendingUp size={13} style={{ transform: 'rotate(180deg)' }} />
             <span style={{ fontSize: 11, fontWeight: 600 }}>Despesas</span>
           </div>
-          <p style={{ fontSize: 22, fontWeight: 700, color: '#C8221A', margin: 0 }}>R$ {totalDespesas.toFixed(2).replace('.', ',')}</p>
-          <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>{despesasPeriodo.length} lançamento(s)</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: '#C8221A', margin: 0 }}>R$ {totalDespesas.toFixed(2).replace('.', ',')}</p>
+          <p style={{ fontSize: 11, color: '#9D8878', marginTop: 3 }}>{despesasPeriodo.length} lançamento(s)</p>
         </div>
-
-        {/* Lucro Líquido */}
-        <div style={{
-          background: lucroLiquido >= 0 ? '#F0FDF4' : '#FEF2F2',
-          border: lucroLiquido >= 0 ? '1.5px solid #BBF7D0' : '1.5px solid #FECACA',
-          borderRadius: 14, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-        }}>
-          <div style={{ marginBottom: 6 }}>
+        <div style={{ background: lucroLiquido >= 0 ? '#F0FDF4' : '#FEF2F2', border: lucroLiquido >= 0 ? '1.5px solid #BBF7D0' : '1.5px solid #FECACA', borderRadius: 12, padding: 16 }}>
+          <div style={{ marginBottom: 5 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: '#9D8878' }}>Lucro Líquido</span>
           </div>
-          <p style={{ fontSize: 22, fontWeight: 700, color: lucroLiquido >= 0 ? '#15803D' : '#991B1B', margin: 0 }}>
+          <p style={{ fontSize: 20, fontWeight: 700, color: lucroLiquido >= 0 ? '#15803D' : '#991B1B', margin: 0 }}>
             R$ {Math.abs(lucroLiquido).toFixed(2).replace('.', ',')}
           </p>
-          <p style={{ fontSize: 11, color: lucroLiquido >= 0 ? '#16A34A' : '#C8221A', marginTop: 4 }}>
+          <p style={{ fontSize: 11, color: lucroLiquido >= 0 ? '#16A34A' : '#C8221A', marginTop: 3 }}>
             {lucroLiquido >= 0 ? 'Lucro' : 'Prejuízo'}
           </p>
         </div>
-
-        {/* Pendente */}
-        <div style={{
-          background: totalPendente > 0 ? '#FFFBEB' : '#fff',
-          border: totalPendente > 0 ? '1.5px solid #FDE68A' : '1.5px solid #E6DDD5',
-          borderRadius: 14, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-            <AlertCircle size={14} style={{ color: totalPendente > 0 ? '#CA8A04' : '#9D8878' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9D8878' }}>Pendente</span>
+        <div style={{ background: totalPendente > 0 ? '#FFFBEB' : '#fff', border: totalPendente > 0 ? '1.5px solid #FDE68A' : '1.5px solid #E6DDD5', borderRadius: 12, padding: 16, cursor: totalPendente > 0 ? 'pointer' : 'default' }}
+          onClick={() => totalPendente > 0 && setMostrarCaderneta(true)}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+            <AlertCircle size={13} style={{ color: totalPendente > 0 ? '#CA8A04' : '#9D8878' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9D8878' }}>A Receber</span>
           </div>
-          <p style={{ fontSize: 22, fontWeight: 700, color: totalPendente > 0 ? '#92400E' : '#1A0E08', margin: 0 }}>
-            R$ {totalPendente.toFixed(2).replace('.', ',')}
+          <p style={{ fontSize: 20, fontWeight: 700, color: totalPendente > 0 ? '#92400E' : '#1A0E08', margin: 0 }}>
+            R$ {totalFiado.toFixed(2).replace('.', ',')}
           </p>
-          <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>{pedidosPendentes.length} pedido(s)</p>
+          <p style={{ fontSize: 11, color: '#9D8878', marginTop: 3 }}>{fiadoLista.length} cliente(s)</p>
         </div>
       </div>
 
-      {/* Contagem de itens vendidos */}
+      {/* Itens Vendidos */}
       {contagemItens.marmitex > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
             <ShoppingBag size={13} /> Itens Vendidos
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-
-            {/* Opção 1 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
             {contagemItens.op1 > 0 && (
-              <div style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 12, padding: '14px 16px' }}>
-                <p style={{ fontSize: 11, color: '#EA580C', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
-                  🍱 {contagemItens.nome_op1 || 'Opção 1'}
-                </p>
-                <p style={{ fontSize: 28, fontWeight: 900, color: '#C2410C', margin: 0, lineHeight: 1 }}>{contagemItens.op1}</p>
-                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>marmitex</p>
+              <div style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 10, padding: '12px 14px' }}>
+                <p style={{ fontSize: 10, color: '#EA580C', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 4px' }}>🍱 {contagemItens.nome_op1 || 'Opção 1'}</p>
+                <p style={{ fontSize: 26, fontWeight: 900, color: '#C2410C', margin: 0, lineHeight: 1 }}>{contagemItens.op1}</p>
               </div>
             )}
-
-            {/* Opção 2 */}
             {contagemItens.op2 > 0 && (
-              <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: '14px 16px' }}>
-                <p style={{ fontSize: 11, color: '#B45309', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
-                  🍱 {contagemItens.nome_op2 || 'Opção 2'}
-                </p>
-                <p style={{ fontSize: 28, fontWeight: 900, color: '#92400E', margin: 0, lineHeight: 1 }}>{contagemItens.op2}</p>
-                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>marmitex</p>
+              <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 10, padding: '12px 14px' }}>
+                <p style={{ fontSize: 10, color: '#B45309', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 4px' }}>🍱 {contagemItens.nome_op2 || 'Opção 2'}</p>
+                <p style={{ fontSize: 26, fontWeight: 900, color: '#92400E', margin: 0, lineHeight: 1 }}>{contagemItens.op2}</p>
               </div>
             )}
-
-            {/* Total marmitex */}
-            <div style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 12, padding: '14px 16px' }}>
-              <p style={{ fontSize: 11, color: '#C8221A', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
-                🍱 Total Marmitex
-              </p>
-              <p style={{ fontSize: 28, fontWeight: 900, color: '#991B1B', margin: 0, lineHeight: 1 }}>{contagemItens.marmitex || 0}</p>
-              <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>unidades</p>
+            <div style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 10, padding: '12px 14px' }}>
+              <p style={{ fontSize: 10, color: '#C8221A', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 4px' }}>🍱 Total</p>
+              <p style={{ fontSize: 26, fontWeight: 900, color: '#991B1B', margin: 0, lineHeight: 1 }}>{contagemItens.marmitex || 0}</p>
             </div>
-
-            {/* Refrigerantes */}
             {contagemItens.refrigerante > 0 && (
-              <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 12, padding: '14px 16px' }}>
-                <p style={{ fontSize: 11, color: '#2563EB', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
-                  🥤 Refrigerantes
-                </p>
-                <p style={{ fontSize: 28, fontWeight: 900, color: '#1D4ED8', margin: 0, lineHeight: 1 }}>{contagemItens.refrigerante}</p>
-                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>unidades</p>
+              <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 10, padding: '12px 14px' }}>
+                <p style={{ fontSize: 10, color: '#2563EB', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 4px' }}>🥤 Bebidas</p>
+                <p style={{ fontSize: 26, fontWeight: 900, color: '#1D4ED8', margin: 0, lineHeight: 1 }}>{contagemItens.refrigerante}</p>
               </div>
             )}
-
-            {/* Saladas */}
             {contagemItens.salada > 0 && (
-              <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 12, padding: '14px 16px' }}>
-                <p style={{ fontSize: 11, color: '#16A34A', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
-                  🥗 Saladas
-                </p>
-                <p style={{ fontSize: 28, fontWeight: 900, color: '#15803D', margin: 0, lineHeight: 1 }}>{contagemItens.salada}</p>
-                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>unidades</p>
+              <div style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 10, padding: '12px 14px' }}>
+                <p style={{ fontSize: 10, color: '#16A34A', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 4px' }}>🥗 Saladas</p>
+                <p style={{ fontSize: 26, fontWeight: 900, color: '#15803D', margin: 0, lineHeight: 1 }}>{contagemItens.salada}</p>
               </div>
             )}
-
-            {/* Combos */}
             {contagemItens.combo > 0 && (
-              <div style={{ background: '#F5F3FF', border: '1.5px solid #DDD6FE', borderRadius: 12, padding: '14px 16px' }}>
-                <p style={{ fontSize: 11, color: '#7C3AED', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 6px' }}>
-                  📦 Combos
-                </p>
-                <p style={{ fontSize: 28, fontWeight: 900, color: '#6D28D9', margin: 0, lineHeight: 1 }}>{contagemItens.combo}</p>
-                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 4 }}>unidades</p>
+              <div style={{ background: '#F5F3FF', border: '1.5px solid #DDD6FE', borderRadius: 10, padding: '12px 14px' }}>
+                <p style={{ fontSize: 10, color: '#7C3AED', fontWeight: 700, textTransform: 'uppercase', margin: '0 0 4px' }}>📦 Combos</p>
+                <p style={{ fontSize: 26, fontWeight: 900, color: '#6D28D9', margin: 0, lineHeight: 1 }}>{contagemItens.combo}</p>
               </div>
             )}
-
           </div>
         </div>
       )}
 
-      {/* Por forma de pagamento */}
+      {/* Por Forma de Pagamento */}
       {Object.keys(porForma).length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14 }}>
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 12 }}>
             Por Forma de Pagamento
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
             {Object.entries(porForma).sort((a, b) => b[1] - a[1]).map(([forma, valor]) => {
               const Icon = ICONE_PAGAMENTO[forma] || CreditCard
               const percent = totalReceitas > 0 ? (valor / totalReceitas) * 100 : 0
               const cor = COR_PAGAMENTO[forma] || { bg: '#6B7280', light: '#F9FAFB', border: '#E5E7EB', text: '#111827' }
               return (
-                <div key={forma} style={{
-                  background: cor.light,
-                  border: `1.5px solid ${cor.border}`,
-                  borderRadius: 12, padding: 16,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <div style={{ background: cor.bg, borderRadius: 8, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Icon size={14} style={{ color: '#fff' }} />
+                <div key={forma} style={{ background: cor.light, border: `1.5px solid ${cor.border}`, borderRadius: 10, padding: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+                    <div style={{ background: cor.bg, borderRadius: 7, padding: 5, display: 'flex', alignItems: 'center' }}>
+                      <Icon size={13} style={{ color: '#fff' }} />
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: cor.text }}>{forma}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: cor.text }}>{forma}</span>
                   </div>
-                  <p style={{ fontSize: 20, fontWeight: 700, color: cor.text, margin: 0 }}>R$ {valor.toFixed(2).replace('.', ',')}</p>
-                  <div style={{ marginTop: 8, height: 5, background: 'rgba(0,0,0,0.08)', borderRadius: 10, overflow: 'hidden' }}>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: cor.text, margin: 0 }}>R$ {valor.toFixed(2).replace('.', ',')}</p>
+                  <div style={{ marginTop: 6, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 10, overflow: 'hidden' }}>
                     <div style={{ height: '100%', background: cor.bg, borderRadius: 10, width: `${percent}%` }} />
                   </div>
-                  <p style={{ fontSize: 11, color: cor.text, opacity: 0.65, marginTop: 4 }}>{percent.toFixed(0)}% do total</p>
+                  <p style={{ fontSize: 10, color: cor.text, opacity: 0.6, marginTop: 3 }}>{percent.toFixed(0)}%</p>
                 </div>
               )
             })}
@@ -486,27 +354,22 @@ export default function Dashboard() {
 
       {/* Motoboys hoje */}
       {Object.keys(porMotoboy).length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Bike size={13} /> Motoboys Hoje
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {Object.entries(porMotoboy).map(([nome, info]) => (
-              <div key={nome} style={{
-                background: '#fff', border: '1.5px solid #E6DDD5',
-                borderRadius: 12, padding: '12px 16px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 8, padding: 7, display: 'flex', alignItems: 'center' }}>
-                    <Bike size={15} style={{ color: '#2563EB' }} />
+              <div key={nome} style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 7, padding: 6, display: 'flex' }}>
+                    <Bike size={14} style={{ color: '#2563EB' }} />
                   </div>
-                  <span style={{ fontWeight: 600, color: '#1A0E08', fontSize: 14 }}>{nome}</span>
+                  <span style={{ fontWeight: 600, color: '#1A0E08', fontSize: 13 }}>{nome}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <span style={{ fontSize: 12, color: '#9D8878' }}>{info.entregas} entrega(s)</span>
-                  <span style={{ fontWeight: 700, color: '#16A34A', fontSize: 14 }}>R$ {info.valor.toFixed(2).replace('.', ',')}</span>
+                  <span style={{ fontWeight: 700, color: '#16A34A', fontSize: 13 }}>R$ {info.valor.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
             ))}
@@ -514,111 +377,211 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Pagamentos pendentes */}
-      {Object.keys(clientesComPendente).length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <AlertCircle size={13} /> Pagamentos Pendentes
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {Object.values(clientesComPendente).map((c, idx) => (
-              <ClientePendenteCard key={idx} cliente={c} onQuitar={quitarPedido} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Dinheiro a Receber (fiado) */}
-      {fiadoLista.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <HandCoins size={13} /> Dinheiro a Receber
-            </h2>
-            <span style={{
-              fontSize: 13, fontWeight: 700, color: '#7C2D12',
-              background: '#FFF7ED', border: '1.5px solid #FED7AA',
-              borderRadius: 20, padding: '4px 12px',
-            }}>
-              Total: R$ {totalFiadoGeral.toFixed(2).replace('.', ',')}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {fiadoLista.map((c, idx) => (
-              <FiadoClienteCard key={c.clienteId || c.nome + idx} cliente={c} onQuitar={quitarPedido} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Caderneta Virtual */}
-      <div id="caderneta-section" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', margin: 0 }}>
-              📒 Caderneta Virtual
-            </h2>
-            {totalDebitoCaderneta > 0 && (
-              <span style={{ fontSize: 12, fontWeight: 700, background: '#FEF2F2', color: '#991B1B', border: '1.5px solid #FECACA', borderRadius: 20, padding: '2px 10px' }}>
-                Débito total: R$ {totalDebitoCaderneta.toFixed(2).replace('.', ',')}
-              </span>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input
-              type="month"
-              value={mesCaderneta}
-              onChange={e => setMesCaderneta(e.target.value)}
-              style={{ border: '1.5px solid #E6DDD5', borderRadius: 8, padding: '5px 10px', fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', background: '#fff' }}
-            />
-            <input
-              type="text"
-              placeholder="🔍 Filtrar cliente..."
-              value={clienteFiltro}
-              onChange={e => setClienteFiltro(e.target.value)}
-              style={{ border: '1.5px solid #E6DDD5', borderRadius: 8, padding: '5px 10px', fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', width: 160, background: '#fff' }}
-            />
-            {clienteFiltro && (
-              <button onClick={() => setClienteFiltro('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', fontSize: 16 }}>×</button>
-            )}
-          </div>
-        </div>
-        {cadernetaLista.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '30px 0', color: '#9D8878', fontSize: 13 }}>
-            Nenhum lançamento fiado em {new Date(anoMes, mesMes - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {cadernetaLista.map((c, idx) => (
-              <CadernetaCard key={c.clienteId || c.nome + idx} cliente={c} mes={mesCaderneta} onQuitar={quitarPedido} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Extrato Fiado por período */}
-      {extratoLista.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <FileText size={13} /> Extrato Fiado — {periodo === 'hoje' ? 'Hoje' : periodo === 'semana' ? 'Esta Semana' : periodo === 'mes' ? 'Este Mês' : 'Período'}
-            </h2>
-            <span style={{ fontSize: 11, color: '#9D8878' }}>{extratoLista.length} cliente(s)</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {extratoLista.map((c, idx) => (
-              <ExtratoCard key={c.nome + idx} cliente={c} inicio={inicio} fim={fim} />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Fechamento mensal */}
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 14 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 12 }}>
           Fechamento do Mês
         </h2>
         <FechamentoMensal pedidos={pedidos} despesas={despesas} funcionarios={funcionariosAtivos} />
+      </div>
+
+      {/* Painel Caderneta (fullscreen overlay) */}
+      {mostrarCaderneta && (
+        <CadernetaPanel
+          pedidos={pedidos}
+          clientes={clientes}
+          debitoPendente={debitoPendente}
+          quitarPedido={quitarPedido}
+          onFechar={() => setMostrarCaderneta(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function CadernetaPanel({ pedidos, clientes, debitoPendente, quitarPedido, onFechar }) {
+  const [mesCaderneta, setMesCaderneta] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
+  })
+  const [busca, setBusca] = useState('')
+
+  // Ontem e hoje (para destacar)
+  const agora = new Date()
+  agora.setHours(0, 0, 0, 0)
+  const ontem = new Date(agora)
+  ontem.setDate(ontem.getDate() - 1)
+
+  function isRecenteFiado(pedido) {
+    const d = new Date(pedido.criadoEm)
+    d.setHours(0, 0, 0, 0)
+    return d.getTime() === agora.getTime() || d.getTime() === ontem.getTime()
+  }
+
+  // Clientes com qualquer pedido mensalista pendente (todo histórico)
+  const pedidosFiado = pedidos.filter(p =>
+    p.statusPagamento === 'mensalista' && p.status !== 'cancelado'
+  )
+  const fiadoPorCliente = pedidosFiado.reduce((acc, p) => {
+    const key = p.clienteId || p.clienteNome
+    if (!acc[key]) {
+      const reg = clientes.find(c => c.id === p.clienteId)
+      acc[key] = {
+        nome: p.clienteNome, clienteId: p.clienteId,
+        tipo: reg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
+        total: 0, pedidos: [],
+        temRecente: false,
+      }
+    }
+    acc[key].total += Number(p.total)
+    acc[key].pedidos.push(p)
+    if (isRecenteFiado(p)) acc[key].temRecente = true
+    return acc
+  }, {})
+
+  // Pedidos mensalistas de ontem+hoje (independente de quitação)
+  const pedidosRecentesFiado = pedidos.filter(p =>
+    isRecenteFiado(p) &&
+    (p.statusPagamento === 'mensalista' || ['Mensalista', 'Semanal', 'Quinzenal'].includes(p.pagamento)) &&
+    p.status !== 'cancelado'
+  )
+  const clientesRecentesNovos = pedidosRecentesFiado.reduce((acc, p) => {
+    const key = p.clienteId || p.clienteNome
+    if (!acc[key]) {
+      const reg = clientes.find(c => c.id === p.clienteId)
+      acc[key] = {
+        nome: p.clienteNome, clienteId: p.clienteId,
+        tipo: reg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
+        pedidos: [], total: 0,
+      }
+    }
+    acc[key].pedidos.push(p)
+    acc[key].total += Number(p.total)
+    return acc
+  }, {})
+  const clientesRecentesLista = Object.values(clientesRecentesNovos).sort((a, b) => a.nome.localeCompare(b.nome))
+
+  // Caderneta do mês
+  const [anoMes, mesMes] = mesCaderneta.split('-').map(Number)
+  const inicioCaderneta = new Date(anoMes, mesMes - 1, 1, 0, 0, 0)
+  const fimCaderneta = new Date(anoMes, mesMes, 0, 23, 59, 59)
+  const pedidosCaderneta = pedidos.filter(p => {
+    const d = new Date(p.criadoEm)
+    return d >= inicioCaderneta && d <= fimCaderneta &&
+      p.status !== 'cancelado' &&
+      (p.statusPagamento === 'mensalista' || ['Mensalista', 'Semanal', 'Quinzenal'].includes(p.pagamento))
+  })
+  const caderneta = pedidosCaderneta.reduce((acc, p) => {
+    const key = p.clienteId || p.clienteNome
+    if (!acc[key]) {
+      const reg = clientes.find(c => c.id === p.clienteId)
+      acc[key] = {
+        nome: p.clienteNome, clienteId: p.clienteId,
+        tipo: reg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
+        pedidos: [], totalMes: 0,
+        debitoAtual: debitoPendente(p.clienteId || p.clienteNome),
+      }
+    }
+    acc[key].pedidos.push(p)
+    acc[key].totalMes += Number(p.total)
+    return acc
+  }, {})
+  const cadernetaLista = Object.values(caderneta)
+    .filter(c => !busca || c.nome.toLowerCase().includes(busca.toLowerCase()))
+    .sort((a, b) => b.debitoAtual - a.debitoAtual)
+
+  const totalDebitoGeral = Object.values(fiadoPorCliente).reduce((a, c) => a + c.total, 0)
+  const qtdClientesDebito = Object.keys(fiadoPorCliente).length
+
+  const badge = (tipo) => ({ mensalista: { bg: '#EA580C', label: 'Mensalista' }, semanal: { bg: '#2563EB', label: 'Semanal' }, quinzenal: { bg: '#7C3AED', label: 'Quinzenal' } }[tipo] || { bg: '#EA580C', label: 'Fiado' })
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'flex-end' }}
+      onClick={e => e.target === e.currentTarget && onFechar()}>
+      <div style={{ background: '#F9F6F3', width: '100%', maxWidth: 780, height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {/* Header do painel */}
+        <div style={{ background: '#1A0E08', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#fff', margin: 0 }}>
+              📒 Caderneta de Débitos
+            </p>
+            <p style={{ fontSize: 12, color: '#9D8878', margin: '2px 0 0' }}>
+              {qtdClientesDebito} cliente(s) — Total a receber: R$ {totalDebitoGeral.toFixed(2).replace('.', ',')}
+            </p>
+          </div>
+          <button onClick={onFechar} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8, color: '#fff', padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            ✕ Fechar
+          </button>
+        </div>
+
+        <div style={{ padding: '20px 24px', flex: 1 }}>
+          {/* Resumo rápido */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+            <div style={{ background: '#fff', border: '1.5px solid #FECACA', borderRadius: 12, padding: 16 }}>
+              <p style={{ fontSize: 11, color: '#9D8878', margin: '0 0 4px', fontWeight: 600, textTransform: 'uppercase' }}>Total em Débito</p>
+              <p style={{ fontSize: 22, fontWeight: 700, color: '#991B1B', margin: 0 }}>R$ {totalDebitoGeral.toFixed(2).replace('.', ',')}</p>
+            </div>
+            <div style={{ background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 12, padding: 16 }}>
+              <p style={{ fontSize: 11, color: '#9D8878', margin: '0 0 4px', fontWeight: 600, textTransform: 'uppercase' }}>Clientes</p>
+              <p style={{ fontSize: 22, fontWeight: 700, color: '#1A0E08', margin: 0 }}>{qtdClientesDebito}</p>
+            </div>
+            <div style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 12, padding: 16 }}>
+              <p style={{ fontSize: 11, color: '#9D8878', margin: '0 0 4px', fontWeight: 600, textTransform: 'uppercase' }}>Pendentes ontem/hoje</p>
+              <p style={{ fontSize: 22, fontWeight: 700, color: '#EA580C', margin: 0 }}>{clientesRecentesLista.length}</p>
+            </div>
+          </div>
+
+          {/* Recentes — ontem e hoje */}
+          {clientesRecentesLista.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <h3 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AlertCircle size={13} style={{ color: '#EA580C' }} /> Lançamentos de Ontem e Hoje
+              </h3>
+              <div style={{ background: '#fff', border: '1.5px solid #FED7AA', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: 8, padding: '8px 16px', background: '#FFF7ED', fontSize: 11, fontWeight: 700, color: '#92400E', textTransform: 'uppercase' }}>
+                  <span>Cliente</span><span>Tipo</span><span>Pedidos</span><span style={{ textAlign: 'right' }}>Valor</span>
+                </div>
+                {clientesRecentesLista.map((c, i) => {
+                  const bd = badge(c.tipo)
+                  return (
+                    <div key={c.clienteId || c.nome + i} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: 8, padding: '10px 16px', borderTop: '1px solid #FEF3C7', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, color: '#1A0E08', fontSize: 13 }}>{c.nome}</span>
+                      <span style={{ fontSize: 11, background: bd.bg, color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 600, whiteSpace: 'nowrap' }}>{bd.label}</span>
+                      <span style={{ fontSize: 12, color: '#6B5A4E', textAlign: 'center' }}>{c.pedidos.length}x</span>
+                      <span style={{ fontWeight: 700, color: '#EA580C', fontSize: 13, textAlign: 'right' }}>R$ {c.total.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Caderneta do mês */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+              <h3 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', margin: 0 }}>
+                Caderneta Mensal
+              </h3>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input type="month" value={mesCaderneta} onChange={e => setMesCaderneta(e.target.value)}
+                  style={{ border: '1.5px solid #E6DDD5', borderRadius: 8, padding: '5px 10px', fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', background: '#fff' }} />
+                <input type="text" placeholder="🔍 Buscar cliente..." value={busca} onChange={e => setBusca(e.target.value)}
+                  style={{ border: '1.5px solid #E6DDD5', borderRadius: 8, padding: '5px 10px', fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', width: 160, background: '#fff' }} />
+              </div>
+            </div>
+            {cadernetaLista.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#9D8878', fontSize: 13 }}>
+                Nenhum lançamento fiado no período
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {cadernetaLista.map((c, idx) => (
+                  <CadernetaCard key={c.clienteId || c.nome + idx} cliente={c} mes={mesCaderneta} onQuitar={quitarPedido} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

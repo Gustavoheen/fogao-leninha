@@ -380,6 +380,33 @@ export default function Pedidos() {
 
   const emAberto = pedidos.filter(p => p.status === 'aberto').length
 
+  // ── Seleção em massa ─────────────────────────────────────────────────────────
+  const [selecionados, setSelecionados] = useState(new Set())
+
+  function toggleSelecionado(id) {
+    setSelecionados(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleTodos() {
+    if (selecionados.size === pedidosFiltrados.length) {
+      setSelecionados(new Set())
+    } else {
+      setSelecionados(new Set(pedidosFiltrados.map(p => p.id)))
+    }
+  }
+
+  function marcarSelecionadosComo(status) {
+    selecionados.forEach(id => atualizarStatusPedido(id, status))
+    setSelecionados(new Set())
+  }
+
+  const todosSelec = pedidosFiltrados.length > 0 && selecionados.size === pedidosFiltrados.length
+  const algunsSelec = selecionados.size > 0 && selecionados.size < pedidosFiltrados.length
+
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
 
@@ -1044,23 +1071,85 @@ export default function Pedidos() {
           <p style={{ fontSize: 13 }}>Nenhum pedido encontrado</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {pedidosFiltrados.map(pedido => (
-            <PedidoCard
-              key={pedido.id}
-              pedido={pedido}
-              onStatus={atualizarStatusPedido}
-              onPagamentoStatus={atualizarPagamentoPedido}
-              onFormaPagamento={atualizarFormaPagamento}
-              onAtribuirMotoboy={atribuirMotoboy}
-              onQuitar={quitarPedido}
-              onRemover={removerPedido}
-              motoboys={motoboys}
-              autoImprimir={autoImprimir}
-              onImpresso={() => marcarComandaImpressa(pedido.id)}
-            />
-          ))}
-        </div>
+        <>
+          {/* Barra de seleção em massa */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10,
+            background: selecionados.size > 0 ? '#FFF7ED' : '#FAFAF8',
+            border: `1.5px solid ${selecionados.size > 0 ? '#FED7AA' : '#E6DDD5'}`,
+            borderRadius: 10, padding: '8px 14px', transition: 'all 0.2s',
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                ref={el => { if (el) el.indeterminate = algunsSelec }}
+                checked={todosSelec}
+                onChange={toggleTodos}
+                style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#C8221A' }}
+              />
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#6B5A4E' }}>
+                {selecionados.size === 0 ? 'Selecionar todos' : `${selecionados.size} selecionado(s)`}
+              </span>
+            </label>
+            {selecionados.size > 0 && (
+              <>
+                <div style={{ height: 18, width: 1, background: '#E6DDD5', marginLeft: 4 }} />
+                <button
+                  onClick={() => marcarSelecionadosComo('entregue')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: '#16A34A', color: '#fff', border: 'none',
+                    borderRadius: 7, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  }}>
+                  <Check size={12} /> Marcar Entregue
+                </button>
+                <button
+                  onClick={() => marcarSelecionadosComo('aberto')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: '#2563EB', color: '#fff', border: 'none',
+                    borderRadius: 7, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  }}>
+                  Marcar Em Aberto
+                </button>
+                <button
+                  onClick={() => setSelecionados(new Set())}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', marginLeft: 'auto', fontSize: 13 }}>
+                  ✕ Limpar
+                </button>
+              </>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {pedidosFiltrados.map(pedido => (
+              <div key={pedido.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <div style={{ paddingTop: 16, flexShrink: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={selecionados.has(pedido.id)}
+                    onChange={() => toggleSelecionado(pedido.id)}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#C8221A' }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <PedidoCard
+                    pedido={pedido}
+                    onStatus={atualizarStatusPedido}
+                    onPagamentoStatus={atualizarPagamentoPedido}
+                    onFormaPagamento={atualizarFormaPagamento}
+                    onAtribuirMotoboy={atribuirMotoboy}
+                    onQuitar={quitarPedido}
+                    onRemover={removerPedido}
+                    motoboys={motoboys}
+                    autoImprimir={autoImprimir}
+                    onImpresso={() => marcarComandaImpressa(pedido.id)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
