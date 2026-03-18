@@ -76,6 +76,11 @@ export default function Dashboard() {
   const { pedidos, despesas, funcionarios, clientes, quitarPedido, debitoPendente, debitoFiado } = useApp()
   const [periodo, setPeriodo] = useState('hoje')
   const [dataCustom, setDataCustom] = useState({ inicio: '', fim: '' })
+  const [mesCaderneta, setMesCaderneta] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
+  })
+  const [clienteFiltro, setClienteFiltro] = useState('')
 
   const inicio = dataInicioPeriodo(periodo, dataCustom)
   const fim = dataFimPeriodo(periodo, dataCustom)
@@ -188,6 +193,38 @@ export default function Dashboard() {
   }, {})
   const extratoLista = Object.values(extratoPorCliente).sort((a, b) => a.nome.localeCompare(b.nome))
 
+  // Caderneta — período mensal (dia 1 ao último dia do mês selecionado)
+  const [anoMes, mesMes] = mesCaderneta.split('-').map(Number)
+  const inicioCaderneta = new Date(anoMes, mesMes - 1, 1, 0, 0, 0)
+  const fimCaderneta = new Date(anoMes, mesMes, 0, 23, 59, 59)
+  const pedidosCaderneta = pedidos.filter(p => {
+    const d = new Date(p.criadoEm)
+    return d >= inicioCaderneta && d <= fimCaderneta &&
+      p.status !== 'cancelado' &&
+      (p.statusPagamento === 'mensalista' || ['Mensalista','Semanal','Quinzenal'].includes(p.pagamento))
+  })
+  const caderneta = pedidosCaderneta.reduce((acc, p) => {
+    const key = p.clienteId || p.clienteNome
+    if (!acc[key]) {
+      const reg = clientes.find(c => c.id === p.clienteId)
+      acc[key] = {
+        nome: p.clienteNome,
+        clienteId: p.clienteId,
+        tipo: reg?.tipo || (p.pagamento === 'Semanal' ? 'semanal' : p.pagamento === 'Quinzenal' ? 'quinzenal' : 'mensalista'),
+        pedidos: [],
+        totalMes: 0,
+        debitoAtual: debitoPendente(p.clienteId || p.clienteNome),
+      }
+    }
+    acc[key].pedidos.push(p)
+    acc[key].totalMes += Number(p.total)
+    return acc
+  }, {})
+  const cadernetaLista = Object.values(caderneta)
+    .filter(c => !clienteFiltro || c.nome.toLowerCase().includes(clienteFiltro.toLowerCase()))
+    .sort((a, b) => b.debitoAtual - a.debitoAtual)
+  const totalDebitoCaderneta = Object.values(caderneta).reduce((acc, c) => acc + c.debitoAtual, 0)
+
   // Contagem de itens vendidos no período
   const contagemItens = pedidosPeriodo.reduce((acc, p) => {
     ;(p.itens || []).forEach(item => {
@@ -221,6 +258,32 @@ export default function Dashboard() {
           </p>
         </div>
       </div>
+
+      {/* Tags de clientes em débito */}
+      {fiadoLista.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Em débito:</span>
+          {fiadoLista.slice(0, 6).map((c, i) => (
+            <span
+              key={i}
+              onClick={() => { setClienteFiltro(c.nome); document.getElementById('caderneta-section')?.scrollIntoView({ behavior: 'smooth' }) }}
+              style={{
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                background: c.total > 100 ? '#FEF2F2' : '#FFFBEB',
+                color: c.total > 100 ? '#991B1B' : '#92400E',
+                border: c.total > 100 ? '1.5px solid #FECACA' : '1.5px solid #FDE68A',
+                borderRadius: 20, padding: '4px 12px',
+              }}
+              title={`Débito: R$ ${c.total.toFixed(2).replace('.', ',')}`}
+            >
+              {c.nome} · R$ {c.total.toFixed(2).replace('.', ',')}
+            </span>
+          ))}
+          {fiadoLista.length > 6 && (
+            <span style={{ fontSize: 12, color: '#9D8878' }}>+{fiadoLista.length - 6} mais</span>
+          )}
+        </div>
+      )}
 
       {/* Seletor de período */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -488,6 +551,51 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Caderneta Virtual */}
+      <div id="caderneta-section" style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9D8878', margin: 0 }}>
+              📒 Caderneta Virtual
+            </h2>
+            {totalDebitoCaderneta > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 700, background: '#FEF2F2', color: '#991B1B', border: '1.5px solid #FECACA', borderRadius: 20, padding: '2px 10px' }}>
+                Débito total: R$ {totalDebitoCaderneta.toFixed(2).replace('.', ',')}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="month"
+              value={mesCaderneta}
+              onChange={e => setMesCaderneta(e.target.value)}
+              style={{ border: '1.5px solid #E6DDD5', borderRadius: 8, padding: '5px 10px', fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', background: '#fff' }}
+            />
+            <input
+              type="text"
+              placeholder="🔍 Filtrar cliente..."
+              value={clienteFiltro}
+              onChange={e => setClienteFiltro(e.target.value)}
+              style={{ border: '1.5px solid #E6DDD5', borderRadius: 8, padding: '5px 10px', fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif', color: '#1A0E08', width: 160, background: '#fff' }}
+            />
+            {clienteFiltro && (
+              <button onClick={() => setClienteFiltro('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9D8878', fontSize: 16 }}>×</button>
+            )}
+          </div>
+        </div>
+        {cadernetaLista.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '30px 0', color: '#9D8878', fontSize: 13 }}>
+            Nenhum lançamento fiado em {new Date(anoMes, mesMes - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {cadernetaLista.map((c, idx) => (
+              <CadernetaCard key={c.clienteId || c.nome + idx} cliente={c} mes={mesCaderneta} onQuitar={quitarPedido} />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Extrato Fiado por período */}
       {extratoLista.length > 0 && (
         <div style={{ marginBottom: 24 }}>
@@ -512,6 +620,106 @@ export default function Dashboard() {
         </h2>
         <FechamentoMensal pedidos={pedidos} despesas={despesas} funcionarios={funcionariosAtivos} />
       </div>
+    </div>
+  )
+}
+
+function CadernetaCard({ cliente, mes, onQuitar }) {
+  const [aberto, setAberto] = useState(false)
+  const [formaPagto, setFormaPagto] = useState('Dinheiro')
+  const [, forceUpdate] = useState(0)
+  const badge = { mensalista: { bg: '#EA580C', label: 'Mensalista' }, semanal: { bg: '#2563EB', label: 'Semanal' }, quinzenal: { bg: '#7C3AED', label: 'Quinzenal' } }[cliente.tipo] || { bg: '#EA580C', label: 'Fiado' }
+
+  const pedidosOrdenados = [...cliente.pedidos].sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm))
+  const qtdMarmitex = cliente.pedidos.reduce((acc, p) => acc + (p.itens || []).filter(i => i.tipo === 'marmitex').reduce((s, i) => s + (i.qtd || 1), 0), 0)
+  const pendentes = cliente.pedidos.filter(p => p.statusPagamento === 'mensalista').length
+  const [anoMes, mesMes] = mes.split('-').map(Number)
+  const nomeMes = new Date(anoMes, mesMes - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+  return (
+    <div style={{ background: '#fff', border: cliente.debitoAtual > 0 ? '1.5px solid #FECACA' : '1.5px solid #E6DDD5', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', cursor: 'pointer' }} onClick={() => setAberto(!aberto)}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <p style={{ fontWeight: 700, color: '#1A0E08', fontSize: 15, margin: 0 }}>{cliente.nome}</p>
+            <span style={{ fontSize: 11, background: badge.bg, color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{badge.label}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: '#9D8878' }}>🍱 {qtdMarmitex} marmitex em {nomeMes}</span>
+            <span style={{ fontSize: 11, color: '#9D8878' }}>{cliente.pedidos.length} pedido(s)</span>
+            {pendentes > 0 && <span style={{ fontSize: 11, color: '#C8221A', fontWeight: 700 }}>⏳ {pendentes} pendente(s)</span>}
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, marginLeft: 12 }}>
+          <span style={{ fontSize: 12, color: '#9D8878' }}>Mês: R$ {cliente.totalMes.toFixed(2).replace('.', ',')}</span>
+          {cliente.debitoAtual > 0 && (
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#C8221A' }}>Deve: R$ {cliente.debitoAtual.toFixed(2).replace('.', ',')}</span>
+          )}
+          {cliente.debitoAtual === 0 && <span style={{ fontSize: 12, fontWeight: 700, color: '#16A34A' }}>✓ Quitado</span>}
+        </div>
+      </div>
+
+      {aberto && (
+        <div style={{ borderTop: '1px solid #F3F0ED' }}>
+          {/* Quitar tudo */}
+          {cliente.debitoAtual > 0 && (
+            <div style={{ padding: '10px 16px', background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#92400E' }}>Quitar todos os pendentes</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <select value={formaPagto} onChange={e => setFormaPagto(e.target.value)}
+                  style={{ border: '1.5px solid #CFC4BB', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none', background: '#fff', color: '#1A0E08', fontFamily: 'Inter, sans-serif' }}>
+                  {['Dinheiro', 'PIX', 'Cartão de Débito', 'Cartão de Crédito'].map(f => <option key={f}>{f}</option>)}
+                </select>
+                <button
+                  onClick={() => { cliente.pedidos.filter(p => p.statusPagamento === 'mensalista').forEach(p => onQuitar(p.id, formaPagto)); forceUpdate(n => n + 1) }}
+                  style={{ background: '#16A34A', color: '#fff', border: 'none', borderRadius: 7, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  Quitar Tudo
+                </button>
+              </div>
+            </div>
+          )}
+          {/* Tabela de pedidos por dia */}
+          <div style={{ padding: '0 0 8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto 80px', gap: 8, padding: '8px 16px', background: '#FAFAF8', fontSize: 11, fontWeight: 700, color: '#9D8878', textTransform: 'uppercase' }}>
+              <span>Dia</span><span>Pedido</span><span style={{ textAlign: 'right' }}>Valor</span><span style={{ textAlign: 'center' }}>Status</span>
+            </div>
+            {pedidosOrdenados.map((p, i) => {
+              const marmitexP = p.itens.filter(i => i.tipo === 'marmitex' && i.tamanho === 'P')
+              const marmitexG = p.itens.filter(i => i.tipo === 'marmitex' && i.tamanho === 'G')
+              const isPendente = p.statusPagamento === 'mensalista'
+              return (
+                <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto 80px', gap: 8, padding: '10px 16px', borderTop: '1px solid #F3F0ED', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: '#1A0E08', margin: 0 }}>
+                      {new Date(p.criadoEm).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </p>
+                    <p style={{ fontSize: 11, color: '#9D8878', margin: 0 }}>
+                      {new Date(p.criadoEm).toLocaleDateString('pt-BR', { weekday: 'short' })}
+                    </p>
+                  </div>
+                  <div>
+                    {marmitexP.length > 0 && <p style={{ fontSize: 12, color: '#1A0E08', margin: '0 0 2px' }}>🍱 {marmitexP.length}x P {marmitexP[0]?.nome || ''}</p>}
+                    {marmitexG.length > 0 && <p style={{ fontSize: 12, color: '#1A0E08', margin: '0 0 2px' }}>🍱 {marmitexG.length}x G {marmitexG[0]?.nome || ''}</p>}
+                    {marmitexP.length === 0 && marmitexG.length === 0 && <p style={{ fontSize: 12, color: '#9D8878', margin: 0, fontStyle: 'italic' }}>—</p>}
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1A0E08', textAlign: 'right' }}>R$ {Number(p.total).toFixed(2).replace('.', ',')}</span>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    {isPendente ? (
+                      <button
+                        onClick={() => { onQuitar(p.id, formaPagto); forceUpdate(n => n + 1) }}
+                        style={{ background: '#EA580C', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                        Quitar
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#16A34A' }}>✓ Pago</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

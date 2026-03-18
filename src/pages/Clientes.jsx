@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext'
 import { UserPlus, Search, Pencil, Trash2, Phone, MapPin, X, Check, AlertCircle, Star } from 'lucide-react'
 import { formatarEndereco, ENDERECO_VAZIO } from '../utils/endereco'
 
-const VAZIO = { nome: '', telefone: '', ...ENDERECO_VAZIO, observacoes: '', tipo: 'normal', precoMarmitexP: '', precoMarmitexG: '' }
+const VAZIO = { nome: '', telefone: '', ...ENDERECO_VAZIO, observacoes: '', tipo: 'normal', precoMarmitexP: '', precoMarmitexG: '', precosMarmitex: [] }
 const TIPOS_FIADO = ['mensalista', 'semanal', 'quinzenal']
 
 const INPUT_BASE = {
@@ -67,6 +67,7 @@ export default function Clientes() {
       tipo: cliente.tipo || 'normal',
       precoMarmitexP: cliente.precoMarmitexP ?? '',
       precoMarmitexG: cliente.precoMarmitexG ?? '',
+      precosMarmitex: cliente.precosMarmitex ?? [],
     })
     setEditandoId(cliente.id)
     setMostrarForm(true)
@@ -233,30 +234,53 @@ export default function Clientes() {
             {/* Preços personalizados — só para clientes fiado */}
             {TIPOS_FIADO.includes(form.tipo) && (
               <div style={{ marginTop: 12, borderTop: '1px solid #D1FAE5', paddingTop: 12 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#166534', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  💰 Preço personalizado da marmitex
-                  <span style={{ fontSize: 11, fontWeight: 400, color: '#6B5A4E' }}>(deixe em branco para usar o preço padrão)</span>
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Marmitex Pequena (R$)</label>
-                    <input
-                      type="number" min="0" step="0.01"
-                      value={form.precoMarmitexP}
-                      onChange={e => setForm({ ...form, precoMarmitexP: e.target.value })}
-                      style={INPUT_BASE} placeholder="Ex: 14,00"
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#6B5A4E', marginBottom: 6 }}>Marmitex Grande (R$)</label>
-                    <input
-                      type="number" min="0" step="0.01"
-                      value={form.precoMarmitexG}
-                      onChange={e => setForm({ ...form, precoMarmitexG: e.target.value })}
-                      style={INPUT_BASE} placeholder="Ex: 17,00"
-                    />
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#166534', margin: 0 }}>
+                    💰 Preço especial da marmitex
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, precosMarmitex: [...(form.precosMarmitex || []), { qtd: (form.precosMarmitex?.length || 0) + 1, preco: '' }] })}
+                    style={{ fontSize: 12, fontWeight: 700, background: '#D1FAE5', color: '#166534', border: '1.5px solid #6EE7B7', borderRadius: 7, padding: '5px 12px', cursor: 'pointer' }}>
+                    + Adicionar faixa
+                  </button>
                 </div>
+                {(!form.precosMarmitex || form.precosMarmitex.length === 0) && (
+                  <p style={{ fontSize: 12, color: '#9D8878', fontStyle: 'italic', marginBottom: 8 }}>
+                    Sem preço especial — usa o preço padrão do cardápio. Clique em "+ Adicionar faixa" para definir.
+                  </p>
+                )}
+                {(form.precosMarmitex || []).map((tier, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, background: '#F0FDF4', borderRadius: 8, padding: '8px 10px' }}>
+                    <span style={{ fontSize: 13, color: '#166534', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {tier.qtd} marmitex =
+                    </span>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#9D8878', fontWeight: 600 }}>R$</span>
+                      <input
+                        type="number" min="0" step="0.01"
+                        value={tier.preco}
+                        onChange={e => {
+                          const nova = [...form.precosMarmitex]
+                          nova[idx] = { ...nova[idx], preco: e.target.value }
+                          setForm({ ...form, precosMarmitex: nova })
+                        }}
+                        style={{ ...INPUT_BASE, paddingLeft: 32, padding: '10px 10px 10px 32px' }}
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <span style={{ fontSize: 11, color: '#6B5A4E', whiteSpace: 'nowrap' }}>(qualquer tamanho)</span>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, precosMarmitex: form.precosMarmitex.filter((_, i) => i !== idx) })}
+                      style={{ background: '#FEE2E2', color: '#991B1B', border: 'none', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <p style={{ fontSize: 11, color: '#9D8878', marginTop: 6 }}>
+                  O preço definido aqui substitui o preço do cardápio para este cliente (P e G).
+                </p>
               </div>
             )}
           </div>

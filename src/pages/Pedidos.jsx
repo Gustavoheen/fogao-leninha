@@ -180,10 +180,14 @@ export default function Pedidos() {
   const {
     clientes, pedidos, cardapio, cardapioHoje,
     adicionarPedido, atualizarStatusPedido, atualizarPagamentoPedido, atualizarFormaPagamento,
-    atribuirMotoboy, quitarPedido, removerPedido, motoboys, marcarComandaImpressa,
+    atribuirMotoboy, quitarPedido, removerPedido, motoboys, marcarComandaImpressa, editarCliente,
   } = useApp()
   const [mostrarForm, setMostrarForm] = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('todos')
+  const [filtroData, setFiltroData] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  })
   const [form, setForm] = useState(FORM_VAZIO)
   const [sugestoes, setSugestoes] = useState([])
   const [autoImprimir, setAutoImprimir] = useState(() => {
@@ -211,8 +215,9 @@ export default function Pedidos() {
   function selecionarCliente(c) {
     // Aplica preços personalizados se cliente fiado tiver preços definidos
     const isFiado = ['mensalista', 'semanal', 'quinzenal'].includes(c.tipo)
-    setPrecoP(isFiado && c.precoMarmitexP ? Number(c.precoMarmitexP) : Number(cardapioHoje?.precoP || 0))
-    setPrecoG(isFiado && c.precoMarmitexG ? Number(c.precoMarmitexG) : Number(cardapioHoje?.precoG || 0))
+    const precoEspecial = isFiado && c.precosMarmitex?.length > 0 ? Number(c.precosMarmitex[0].preco) : null
+    setPrecoP(precoEspecial ?? (isFiado && c.precoMarmitexP ? Number(c.precoMarmitexP) : Number(cardapioHoje?.precoP || 0)))
+    setPrecoG(precoEspecial ?? (isFiado && c.precoMarmitexG ? Number(c.precoMarmitexG) : Number(cardapioHoje?.precoG || 0)))
     setForm(prev => ({
       ...prev,
       clienteNome: c.nome,
@@ -333,6 +338,15 @@ export default function Pedidos() {
     if (troco) {
       todosItens.push({ tipo: 'troco', valorPago: troco, troco: troco - total })
     }
+    // Auto-atualiza tipo do cliente quando pagamento é fiado
+    const FIADO_MAP = { 'Mensalista': 'mensalista', 'Quinzenal': 'quinzenal', 'Semanal': 'semanal' }
+    if (FIADO_MAP[form.pagamento] && form.clienteNome) {
+      const clienteExistente = clientes.find(c => c.nome.toLowerCase().trim() === form.clienteNome.toLowerCase().trim())
+      if (clienteExistente && clienteExistente.tipo !== FIADO_MAP[form.pagamento]) {
+        editarCliente(clienteExistente.id, { ...clienteExistente, tipo: FIADO_MAP[form.pagamento] })
+      }
+    }
+
     adicionarPedido({
       clienteNome: form.clienteNome || 'Cliente não identificado',
       clienteTelefone: form.clienteTelefone,
@@ -354,9 +368,15 @@ export default function Pedidos() {
     setMostrarForm(false)
   }
 
-  const pedidosFiltrados = filtroStatus === 'todos'
-    ? pedidos
-    : pedidos.filter(p => p.status === filtroStatus)
+  function toDateStr(iso) {
+    const d = new Date(iso)
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  }
+  const pedidosFiltrados = pedidos.filter(p => {
+    const statusOk = filtroStatus === 'todos' || p.status === filtroStatus
+    const dataOk = !filtroData || toDateStr(p.criadoEm) === filtroData
+    return statusOk && dataOk
+  })
 
   const emAberto = pedidos.filter(p => p.status === 'aberto').length
 
@@ -411,24 +431,44 @@ export default function Pedidos() {
         </div>
       </div>
 
-      {/* Filtros de Status */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[['todos', 'Todos'], ...Object.entries(STATUS_LABELS).map(([k, v]) => [k, v.label])].map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setFiltroStatus(key)}
-            style={{
-              padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600,
-              border: filtroStatus === key ? 'none' : '1.5px solid #E6DDD5',
-              background: filtroStatus === key ? '#C8221A' : '#fff',
-              color: filtroStatus === key ? '#fff' : '#6B5A4E',
-              cursor: 'pointer', transition: 'all 0.15s',
-              boxShadow: filtroStatus === key ? '0 2px 6px rgba(200,34,26,0.25)' : 'none',
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Filtros */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Filtro de data */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1.5px solid #E6DDD5', borderRadius: 8, padding: '6px 12px' }}>
+          <span style={{ fontSize: 13, color: '#6B5A4E', fontWeight: 600 }}>📅</span>
+          <input
+            type="date"
+            value={filtroData}
+            onChange={e => setFiltroData(e.target.value)}
+            style={{ border: 'none', outline: 'none', fontSize: 14, color: '#1A0E08', fontFamily: 'Inter, sans-serif', background: 'transparent', cursor: 'pointer' }}
+          />
+          {filtroData !== (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })() && (
+            <button
+              onClick={() => { const d = new Date(); setFiltroData(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`) }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C8221A', fontSize: 11, fontWeight: 700, padding: '0 2px' }}
+              title="Voltar para hoje"
+            >Hoje</button>
+          )}
+        </div>
+        {/* Filtro de status */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[['todos', 'Todos'], ...Object.entries(STATUS_LABELS).map(([k, v]) => [k, v.label])].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setFiltroStatus(key)}
+              style={{
+                padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600,
+                border: filtroStatus === key ? 'none' : '1.5px solid #E6DDD5',
+                background: filtroStatus === key ? '#C8221A' : '#fff',
+                color: filtroStatus === key ? '#fff' : '#6B5A4E',
+                cursor: 'pointer', transition: 'all 0.15s',
+                boxShadow: filtroStatus === key ? '0 2px 6px rgba(200,34,26,0.25)' : 'none',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Formulário de Novo Pedido */}
