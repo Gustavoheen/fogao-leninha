@@ -13,6 +13,7 @@ import Fornecedores from './pages/Fornecedores'
 import Funcionarios from './pages/Funcionarios'
 import Dashboard from './pages/Dashboard'
 import Configuracoes from './pages/Configuracoes'
+import Atendimento from './pages/Atendimento'
 
 function RequireAuth({ children }) {
   const logado = sessionStorage.getItem('fogao_logado')
@@ -40,6 +41,7 @@ export default function App() {
               <Layout>
                 <Routes>
                   <Route path="/pedidos" element={<Pedidos />} />
+                  <Route path="/atendimento" element={<Atendimento />} />
                   <Route path="/clientes" element={<Clientes />} />
                   <Route path="/cardapio" element={<Cardapio />} />
                   <Route path="/financeiro" element={<Financeiro />} />

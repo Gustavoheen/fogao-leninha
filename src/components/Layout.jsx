@@ -4,11 +4,13 @@ import {
   Users, ClipboardList, BookOpen, TrendingUp,
   Package, Truck, UserCheck, BarChart3,
   ChevronRight, LogOut, Settings, X, Check, Eye, EyeOff,
+  MessageSquare,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const NAV = [
   { to: '/pedidos',       label: 'Pedidos',      icon: ClipboardList },
+  { to: '/atendimento',   label: 'WhatsApp',     icon: MessageSquare },
   { to: '/clientes',      label: 'Clientes',     icon: Users },
   { to: '/cardapio',      label: 'Cardápio',     icon: BookOpen },
   { to: '/financeiro',    label: 'Financeiro',   icon: TrendingUp },
