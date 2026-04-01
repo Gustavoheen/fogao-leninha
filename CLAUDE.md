@@ -91,9 +91,20 @@ INSERT INTO configuracoes (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 - Inserção direta no Supabase com origem: 'equipe'
 
 ## Pendente
-- WhatsApp automático ao confirmar pedido (aguarda API — Z-API ou Evolution API)
-- Impressão de comanda
-- Relatórios por período com exportação
+- Envio automático de relatório diário por email (ghenriique30@gmail.com)
+
+## Regra de Sincronização Git (OBRIGATÓRIO)
+
+**Ao iniciar sessão:** o hook `SessionStart` roda `git pull` automaticamente — aguarde antes de editar.
+**Ao encerrar sessão:** sempre commitar e pushar tudo antes de fechar.
+
+```bash
+git add src/...     # adicionar arquivos alterados
+git commit -m "..."
+git push origin main
+```
+
+Nunca deixar trabalho sem commitar. O GitHub é a fonte da verdade entre contas e dispositivos.
 
 ## GitHub
 Repositório: https://github.com/Gustavoheen/fogao-leninha

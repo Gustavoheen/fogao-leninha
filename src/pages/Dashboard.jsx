@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { BarChart3, TrendingUp, ShoppingBag, AlertCircle, Banknote, Smartphone, CreditCard, CircleDollarSign, Bike, HandCoins, ChevronDown, ChevronUp, Printer, FileText } from 'lucide-react'
+import { BarChart3, TrendingUp, ShoppingBag, AlertCircle, Banknote, Smartphone, CreditCard, CircleDollarSign, Bike, HandCoins, ChevronDown, ChevronUp, Printer, FileText, Download } from 'lucide-react'
 
 const ICONE_PAGAMENTO = {
   'Dinheiro': Banknote,
@@ -29,6 +29,224 @@ const INPUT_BASE = {
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
   color: '#1A0E08',
+}
+
+function labelPeriodo(periodo, dataCustom, inicio, fim) {
+  if (periodo === 'hoje') return new Date().toISOString().slice(0, 10)
+  if (periodo === 'semana') return `semana-${inicio.toISOString().slice(0, 10)}`
+  if (periodo === 'mes') {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  }
+  if (periodo === 'custom' && dataCustom.inicio) return `${dataCustom.inicio}_${dataCustom.fim || dataCustom.inicio}`
+  return 'periodo'
+}
+
+function labelPeriodoFormatado(periodo, dataCustom, inicio, fim) {
+  if (periodo === 'hoje') return new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  if (periodo === 'semana') return `${inicio.toLocaleDateString('pt-BR')} a ${fim.toLocaleDateString('pt-BR')}`
+  if (periodo === 'mes') return new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  if (periodo === 'custom') return `${inicio.toLocaleDateString('pt-BR')} a ${fim.toLocaleDateString('pt-BR')}`
+  return 'Período'
+}
+
+function exportarCSV({ pedidosPeriodo, despesasPeriodo, periodo, dataCustom, inicio, fim }) {
+  const label = labelPeriodo(periodo, dataCustom, inicio, fim)
+
+  const sep = ','
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`
+
+  // --- Aba Pedidos ---
+  const headerPedidos = ['Data', 'Hora', 'Nº', 'Cliente', 'Itens', 'Marm.P', 'Marm.G', 'Bebidas', 'Total', 'Forma Pagamento', 'Status']
+  const linhasPedidos = pedidosPeriodo.map(p => {
+    const dt = new Date(p.criadoEm)
+    const marmP = (p.itens || []).filter(i => i.tipo === 'marmitex' && i.tamanho === 'P').reduce((s, i) => s + (i.qtd || 1), 0)
+    const marmG = (p.itens || []).filter(i => i.tipo === 'marmitex' && i.tamanho === 'G').reduce((s, i) => s + (i.qtd || 1), 0)
+    const bebs = (p.itens || []).filter(i => i.tipo === 'refrigerante').reduce((s, i) => s + (i.qtd || 1), 0)
+    const itensList = (p.itens || []).filter(i => i.tipo === 'marmitex').map(i => `${i.tamanho} ${i.nome}${i.proteina ? ' (' + i.proteina + ')' : ''}`).join('; ')
+    const status = p.statusPagamento === 'pago' ? 'Pago' : p.statusPagamento === 'mensalista' ? 'Fiado' : p.statusPagamento === 'pendente' ? 'Pendente' : 'Pago'
+    return [
+      dt.toLocaleDateString('pt-BR'),
+      dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      String(p.id).slice(-4),
+      p.clienteNome || '',
+      itensList,
+      marmP,
+      marmG,
+      bebs,
+      Number(p.total).toFixed(2).replace('.', ','),
+      p.pagamento || '',
+      status,
+    ].map(q).join(sep)
+  })
+
+  // --- Aba Despesas ---
+  const headerDespesas = ['Data', 'Descrição', 'Categoria', 'Valor', 'Status']
+  const linhasDespesas = despesasPeriodo.map(d => [
+    d.data ? new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+    d.descricao || '',
+    d.categoria || '',
+    Number(d.valor).toFixed(2).replace('.', ','),
+    d.pago ? 'Pago' : 'Pendente',
+  ].map(q).join(sep))
+
+  const blocos = [
+    `FOGÃO A LENHA DA LENINHA — Relatório`,
+    `Período: ${labelPeriodoFormatado(periodo, dataCustom, inicio, fim)}`,
+    '',
+    'PEDIDOS',
+    headerPedidos.map(q).join(sep),
+    ...linhasPedidos,
+    '',
+    'DESPESAS',
+    headerDespesas.map(q).join(sep),
+    ...linhasDespesas,
+  ]
+
+  const csv = blocos.join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `fogao-relatorio-${label}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function imprimirRelatorio({ pedidosPeriodo, despesasPeriodo, contagemItens, porForma, totalReceitas, totalDespesas, lucroLiquido, periodo, dataCustom, inicio, fim }) {
+  const periodoStr = labelPeriodoFormatado(periodo, dataCustom, inicio, fim)
+  const totalPedidos = pedidosPeriodo.length
+  const totalMarmitex = contagemItens.marmitex || 0
+
+  const linhasPorForma = Object.entries(porForma)
+    .sort((a, b) => b[1] - a[1])
+    .map(([forma, valor]) => {
+      const pct = totalReceitas > 0 ? ((valor / totalReceitas) * 100).toFixed(0) : 0
+      return `<tr><td>${forma}</td><td style="text-align:right">R$ ${valor.toFixed(2).replace('.', ',')}</td><td style="text-align:right;color:#888">${pct}%</td></tr>`
+    }).join('')
+
+  const linhasPedidos = [...pedidosPeriodo]
+    .sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm))
+    .map(p => {
+      const dt = new Date(p.criadoEm)
+      const data = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      const hora = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      const marm = (p.itens || []).filter(i => i.tipo === 'marmitex').map(i => `${i.tamanho} ${i.nome}`).join(', ') || '—'
+      const status = p.statusPagamento === 'pago' ? '<span style="color:#16A34A;font-weight:700">Pago</span>'
+        : p.statusPagamento === 'mensalista' ? '<span style="color:#EA580C;font-weight:700">Fiado</span>'
+        : p.statusPagamento === 'pendente' ? '<span style="color:#C8221A;font-weight:700">Pendente</span>'
+        : '<span style="color:#16A34A;font-weight:700">Pago</span>'
+      return `<tr>
+        <td>${data} ${hora}</td>
+        <td>${p.clienteNome || '—'}</td>
+        <td>${marm}</td>
+        <td style="text-align:right;font-weight:bold">R$ ${Number(p.total).toFixed(2).replace('.', ',')}</td>
+        <td style="text-align:center">${status}</td>
+      </tr>`
+    }).join('')
+
+  const linhasDespesas = despesasPeriodo.map(d => {
+    const data = d.data ? new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
+    return `<tr>
+      <td>${data}</td>
+      <td>${d.descricao || '—'}</td>
+      <td>${d.categoria || '—'}</td>
+      <td style="text-align:right;font-weight:bold;color:#C8221A">R$ ${Number(d.valor).toFixed(2).replace('.', ',')}</td>
+    </tr>`
+  }).join('')
+
+  const cor = lucroLiquido >= 0 ? '#15803D' : '#991B1B'
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório — Fogão a Lenha da Leninha</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: #1A0E08; padding: 30px; max-width: 900px; margin: 0 auto; }
+  .header { text-align:center; margin-bottom: 24px; border-bottom: 2px solid #C8221A; padding-bottom: 16px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #1A0E08; margin-bottom: 4px; }
+  .header .periodo { font-size: 13px; color: #6B5A4E; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .kpi { border: 1.5px solid #E6DDD5; border-radius: 8px; padding: 14px; }
+  .kpi .label { font-size: 10px; color: #9D8878; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.05em; }
+  .kpi .value { font-size: 18px; font-weight: 700; }
+  .kpi.receitas { border-color: #FECACA; background: #FEF2F2; }
+  .kpi.receitas .value { color: #16A34A; }
+  .kpi.despesas .value { color: #C8221A; }
+  .kpi.lucro { background: ${lucroLiquido >= 0 ? '#F0FDF4' : '#FEF2F2'}; border-color: ${lucroLiquido >= 0 ? '#BBF7D0' : '#FECACA'}; }
+  .kpi.lucro .value { color: ${cor}; }
+  .kpi.pedidos .value { color: #2563EB; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #9D8878; font-weight: 700; margin: 20px 0 10px; border-bottom: 1px solid #E6DDD5; padding-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #9D8878; font-weight: 700; padding: 7px 8px; text-align: left; border-bottom: 1.5px solid #E6DDD5; }
+  td { padding: 8px; border-bottom: 1px solid #F3F0ED; vertical-align: top; }
+  tr:nth-child(even) td { background: #FAFAF8; }
+  .rodape { text-align: center; margin-top: 30px; font-size: 10px; color: #9D8878; border-top: 1px solid #E6DDD5; padding-top: 12px; }
+  @media print {
+    body { padding: 10px; }
+    .kpis { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Fogão a Lenha da Leninha</h1>
+    <div class="periodo">Relatório de resultados — ${periodoStr}</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi receitas">
+      <div class="label">Receitas</div>
+      <div class="value">R$ ${totalReceitas.toFixed(2).replace('.', ',')}</div>
+    </div>
+    <div class="kpi despesas">
+      <div class="label">Despesas</div>
+      <div class="value">R$ ${totalDespesas.toFixed(2).replace('.', ',')}</div>
+    </div>
+    <div class="kpi lucro">
+      <div class="label">${lucroLiquido >= 0 ? 'Lucro Líquido' : 'Prejuízo'}</div>
+      <div class="value">R$ ${Math.abs(lucroLiquido).toFixed(2).replace('.', ',')}</div>
+    </div>
+    <div class="kpi pedidos">
+      <div class="label">Pedidos · Marmitex</div>
+      <div class="value">${totalPedidos} · ${totalMarmitex}</div>
+    </div>
+  </div>
+
+  ${Object.keys(porForma).length > 0 ? `
+  <h2>Por Forma de Pagamento</h2>
+  <table>
+    <thead><tr><th>Forma</th><th style="text-align:right">Total</th><th style="text-align:right">%</th></tr></thead>
+    <tbody>${linhasPorForma}</tbody>
+  </table>` : ''}
+
+  ${pedidosPeriodo.length > 0 ? `
+  <h2>Pedidos (${pedidosPeriodo.length})</h2>
+  <table>
+    <thead><tr><th>Data / Hora</th><th>Cliente</th><th>Itens</th><th style="text-align:right">Total</th><th style="text-align:center">Status</th></tr></thead>
+    <tbody>${linhasPedidos}</tbody>
+  </table>` : ''}
+
+  ${despesasPeriodo.length > 0 ? `
+  <h2>Despesas (${despesasPeriodo.length})</h2>
+  <table>
+    <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>
+    <tbody>${linhasDespesas}</tbody>
+  </table>` : ''}
+
+  <div class="rodape">Emitido em ${new Date().toLocaleString('pt-BR')} — Fogão a Lenha da Leninha</div>
+</body>
+</html>`
+
+  const w = window.open('', '_blank', 'width=960,height=900')
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  setTimeout(() => w.print(), 500)
 }
 
 function dataInicioPeriodo(periodo, dataCustom) {
@@ -187,24 +405,46 @@ export default function Dashboard() {
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        {/* Botão Caderneta */}
-        <button
-          onClick={() => setMostrarCaderneta(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: fiadoLista.length > 0 ? '#FEF2F2' : '#fff',
-            border: fiadoLista.length > 0 ? '1.5px solid #FECACA' : '1.5px solid #E6DDD5',
-            color: fiadoLista.length > 0 ? '#991B1B' : '#6B5A4E',
-            borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          }}>
-          <HandCoins size={15} />
-          Caderneta
-          {fiadoLista.length > 0 && (
-            <span style={{ background: '#C8221A', color: '#fff', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 800 }}>
-              {fiadoLista.length}
-            </span>
-          )}
-        </button>
+        {/* Ações */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => exportarCSV({ pedidosPeriodo, despesasPeriodo, periodo, dataCustom, inicio, fim })}
+            title="Exportar CSV"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: '#fff', border: '1.5px solid #E6DDD5',
+              color: '#6B5A4E', borderRadius: 10, padding: '9px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            }}>
+            <Download size={15} /> CSV
+          </button>
+          <button
+            onClick={() => imprimirRelatorio({ pedidosPeriodo, despesasPeriodo, contagemItens, porForma, totalReceitas, totalDespesas, lucroLiquido, periodo, dataCustom, inicio, fim })}
+            title="Imprimir relatório"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: '#fff', border: '1.5px solid #E6DDD5',
+              color: '#6B5A4E', borderRadius: 10, padding: '9px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            }}>
+            <Printer size={15} /> Imprimir
+          </button>
+          <button
+            onClick={() => setMostrarCaderneta(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: fiadoLista.length > 0 ? '#FEF2F2' : '#fff',
+              border: fiadoLista.length > 0 ? '1.5px solid #FECACA' : '1.5px solid #E6DDD5',
+              color: fiadoLista.length > 0 ? '#991B1B' : '#6B5A4E',
+              borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            }}>
+            <HandCoins size={15} />
+            Caderneta
+            {fiadoLista.length > 0 && (
+              <span style={{ background: '#C8221A', color: '#fff', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 800 }}>
+                {fiadoLista.length}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Seletor de período */}
