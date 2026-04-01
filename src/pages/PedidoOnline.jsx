@@ -29,10 +29,10 @@ function strAcomp(a) {
 // ── Spinner ───────────────────────────────────────────────────────────────────
 function Spinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0f0a07' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0600' }}>
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-stone-500 text-sm">Carregando cardápio...</p>
+        <div className="w-12 h-12 rounded-full animate-spin" style={{ border: '3px solid rgba(249,115,22,0.2)', borderTopColor: '#F97316' }} />
+        <p className="text-sm font-medium" style={{ color: '#6B5040' }}>Carregando cardápio...</p>
       </div>
     </div>
   )
@@ -52,88 +52,111 @@ function TelaConfirmado({ pedido, config, onNovoPedido }) {
   const whatsRestaurante = config.restauranteWhatsapp?.replace(/\D/g, '')
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10 text-center" style={{ background: '#0f0a07' }}>
-      <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-500/30" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
-        <Check size={44} className="text-white" strokeWidth={3} />
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 text-center" style={{ background: '#0D0600' }}>
+      <div
+        className="absolute inset-x-0 top-0 h-64 pointer-events-none"
+        style={{ background: 'linear-gradient(180deg, rgba(120,40,0,0.35) 0%, transparent 100%)' }}
+      />
 
-      <h1 className="text-3xl font-black text-white mb-2">Pedido confirmado!</h1>
-      <p className="text-stone-400 mb-8">Seu número de pedido</p>
+      <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
+        <div
+          className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+          style={{ background: 'linear-gradient(135deg, #22C55E, #16a34a)', boxShadow: '0 0 40px rgba(34,197,94,0.3)' }}
+        >
+          <Check size={40} className="text-white" strokeWidth={3} />
+        </div>
 
-      <div className="text-white text-6xl font-black rounded-3xl px-12 py-6 mb-8 shadow-2xl shadow-orange-500/30" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}>
-        #{String(pedido.numeroPedido).padStart(2, '0')}
-      </div>
+        <h1 className="text-3xl font-black text-white mb-1">Pedido confirmado!</h1>
+        <p className="text-sm mb-6" style={{ color: '#C4A882' }}>Seu número de pedido</p>
 
-      <div className="w-full max-w-sm mb-6 text-left rounded-2xl overflow-hidden border border-stone-800" style={{ background: '#1a1008' }}>
-        <div className="px-5 py-3 border-b border-stone-800">
-          <p className="text-stone-500 text-xs uppercase tracking-widest font-semibold">Resumo do pedido</p>
+        <div
+          className="text-white text-5xl font-black rounded-2xl px-10 py-5 mb-8"
+          style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)', boxShadow: '0 8px 32px rgba(249,115,22,0.35)' }}
+        >
+          #{String(pedido.numeroPedido).padStart(2, '0')}
         </div>
-        <div className="p-5 space-y-2">
-          {pedido.itens.map((item, i) => (
-            <div key={i} className="flex justify-between text-sm text-stone-300">
-              <span>
-                {item.opcaoNome} <span className="text-stone-500">({item.tamanho})</span>
-                {item.nome ? <span className="text-orange-400"> · {item.nome}</span> : null}
-                {item.semItens?.length > 0 && (
-                  <span className="block text-xs text-stone-500 mt-0.5">sem: {item.semItens.join(', ')}</span>
-                )}
-              </span>
-              <span className="font-semibold text-white ml-4 shrink-0">{fmtR$(item.preco)}</span>
-            </div>
-          ))}
-        </div>
-        <div className="px-5 pb-5 flex justify-between font-bold text-white text-base border-t border-stone-800 pt-3">
-          <span>Total</span>
-          <span className="text-orange-400">{fmtR$(pedido.total)}</span>
-        </div>
-        <div className="px-5 pb-4">
-          <p className="text-xs text-stone-500">Pagamento: {pedido.pagamento}</p>
-        </div>
-      </div>
 
-      {isPix && config.pixChave && (
-        <div className="w-full max-w-sm mb-4 rounded-2xl overflow-hidden border border-blue-900/60" style={{ background: '#0a1628' }}>
-          <div className="px-5 py-3 border-b border-blue-900/40">
-            <p className="text-blue-400 font-semibold text-sm">Pagamento via Pix</p>
+        <div
+          className="w-full mb-5 rounded-2xl overflow-hidden text-left"
+          style={{ background: '#1C0E06', border: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#6B5040' }}>Resumo do pedido</p>
           </div>
-          <div className="p-5 space-y-3">
-            <p className="text-stone-300 text-sm">
-              Faça o Pix e envie o comprovante pelo WhatsApp para confirmar seu pedido.
-            </p>
-            <div className="rounded-xl p-3 border border-stone-800" style={{ background: '#0f0a07' }}>
-              <p className="text-xs text-stone-500 mb-1">Chave Pix</p>
-              <p className="text-white font-mono text-sm break-all">{config.pixChave}</p>
-              {config.pixNome && <p className="text-xs text-stone-400 mt-1">{config.pixNome}</p>}
+          <div className="p-5 space-y-2.5">
+            {pedido.itens.map((item, i) => (
+              <div key={i} className="flex justify-between text-sm gap-3">
+                <span style={{ color: '#C4A882' }}>
+                  {item.opcaoNome}
+                  <span className="ml-1" style={{ color: '#6B5040' }}>({item.tamanho === 'P' ? 'Pequena' : 'Grande'})</span>
+                  {item.nome ? <span className="ml-1" style={{ color: '#F97316' }}>· {item.nome}</span> : null}
+                  {item.semItens?.length > 0 && (
+                    <span className="block text-xs mt-0.5" style={{ color: '#6B5040' }}>sem: {item.semItens.join(', ')}</span>
+                  )}
+                </span>
+                <span className="font-semibold text-white shrink-0">{fmtR$(item.preco)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="px-5 py-3 flex justify-between font-bold text-white text-sm" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <span>Total</span>
+            <span style={{ color: '#F97316' }}>{fmtR$(pedido.total)}</span>
+          </div>
+          <div className="px-5 pb-4">
+            <p className="text-xs" style={{ color: '#6B5040' }}>Pagamento: {pedido.pagamento}</p>
+          </div>
+        </div>
+
+        {isPix && config.pixChave && (
+          <div
+            className="w-full mb-5 rounded-2xl overflow-hidden text-left"
+            style={{ background: '#0a1628', border: '1px solid rgba(59,130,246,0.2)' }}
+          >
+            <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(59,130,246,0.15)' }}>
+              <p className="text-sm font-semibold text-blue-400">Pagamento via Pix</p>
             </div>
-            <button
-              onClick={copiarPix}
-              className="w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-colors text-white text-sm"
-              style={{ background: copiado ? '#1d4ed8' : '#2563eb' }}
-            >
-              {copiado ? <Check size={16} /> : <Copy size={16} />}
-              {copiado ? 'Chave copiada!' : 'Copiar chave Pix'}
-            </button>
-            {whatsRestaurante && (
-              <a
-                href={`https://wa.me/${whatsRestaurante}?text=Comprovante%20pedido%20%23${String(pedido.numeroPedido).padStart(2, '0')}%20-%20${encodeURIComponent(pedido.clienteNome)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-colors text-white text-sm"
-                style={{ background: '#16a34a', display: 'flex' }}
+            <div className="p-5 space-y-3">
+              <p className="text-sm" style={{ color: '#C4A882' }}>
+                Faça o Pix e envie o comprovante pelo WhatsApp para confirmar seu pedido.
+              </p>
+              <div className="rounded-xl p-3" style={{ background: '#0D0600', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <p className="text-xs mb-1" style={{ color: '#6B5040' }}>Chave Pix</p>
+                <p className="text-white font-mono text-sm break-all">{config.pixChave}</p>
+                {config.pixNome && <p className="text-xs mt-1" style={{ color: '#C4A882' }}>{config.pixNome}</p>}
+              </div>
+              <button
+                onClick={copiarPix}
+                className="w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl text-white text-sm transition-colors"
+                style={{ background: copiado ? '#1d4ed8' : '#2563eb' }}
               >
-                Enviar comprovante no WhatsApp
-              </a>
-            )}
+                {copiado ? <Check size={16} /> : <Copy size={16} />}
+                {copiado ? 'Chave copiada!' : 'Copiar chave Pix'}
+              </button>
+              {whatsRestaurante && (
+                <a
+                  href={`https://wa.me/${whatsRestaurante}?text=Comprovante%20pedido%20%23${String(pedido.numeroPedido).padStart(2, '0')}%20-%20${encodeURIComponent(pedido.clienteNome)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl text-white text-sm"
+                  style={{ background: '#16a34a', display: 'flex' }}
+                >
+                  Enviar comprovante no WhatsApp
+                </a>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <button
-        onClick={onNovoPedido}
-        className="text-stone-500 hover:text-stone-300 text-sm mt-2 transition-colors underline underline-offset-4"
-      >
-        Fazer novo pedido
-      </button>
+        <button
+          onClick={onNovoPedido}
+          className="text-sm mt-2 transition-colors underline underline-offset-4"
+          style={{ color: '#6B5040' }}
+          onMouseOver={e => e.currentTarget.style.color = '#C4A882'}
+          onMouseOut={e => e.currentTarget.style.color = '#6B5040'}
+        >
+          Fazer novo pedido
+        </button>
+      </div>
     </div>
   )
 }
@@ -162,27 +185,41 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
   const podeAdicionar = !!configurando.opcaoId && (!precisaProteina || !!configurando.proteina)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
-      <div className="w-full md:max-w-lg md:rounded-3xl rounded-t-3xl max-h-[92vh] overflow-y-auto shadow-2xl" style={{ background: '#1a1008', border: '1px solid rgba(255,255,255,0.06)' }}>
+    <div
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
+    >
+      <div
+        className="w-full md:max-w-lg md:rounded-3xl rounded-t-3xl max-h-[92vh] overflow-y-auto"
+        style={{ background: '#1C0E06', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 -8px 48px rgba(0,0,0,0.6)' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 z-10" style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#1a1008' }}>
-          <h2 className="text-white font-bold text-lg">Montar marmitex</h2>
+        <div
+          className="flex items-center justify-between px-6 py-4 sticky top-0 z-10"
+          style={{ background: '#1C0E06', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div>
+            <h2 className="text-white font-bold text-lg">Monte sua marmitex</h2>
+            <p className="text-xs mt-0.5" style={{ color: '#6B5040' }}>Personalize do seu jeito</p>
+          </div>
           <button
             onClick={() => setConfigurando(null)}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors text-stone-400 hover:text-white"
-            style={{ background: 'rgba(255,255,255,0.06)' }}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+            style={{ background: 'rgba(255,255,255,0.07)', color: '#C4A882' }}
+            onMouseOver={e => e.currentTarget.style.color = '#fff'}
+            onMouseOut={e => e.currentTarget.style.color = '#C4A882'}
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-7">
           {/* Nome */}
           <div>
-            <label className="flex items-center gap-1.5 text-stone-400 text-sm mb-2">
+            <label className="flex items-center gap-1.5 text-sm font-medium mb-2.5" style={{ color: '#C4A882' }}>
               <User size={13} />
               Nome nessa marmitex
-              <span className="text-stone-600 text-xs">(opcional)</span>
+              <span className="text-xs font-normal" style={{ color: '#6B5040' }}>(opcional)</span>
             </label>
             <input
               type="text"
@@ -190,16 +227,16 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
               placeholder="Ex: João, Maria, Filha..."
               value={configurando.nome}
               onChange={e => setConfigurando(prev => ({ ...prev, nome: e.target.value }))}
-              className="w-full rounded-xl px-4 py-3 text-white placeholder-stone-600 focus:outline-none text-sm border transition-colors"
-              style={{ background: '#0f0a07', borderColor: 'rgba(255,255,255,0.08)' }}
-              onFocus={e => e.target.style.borderColor = '#f97316'}
+              className="w-full rounded-xl px-4 py-3 text-white placeholder-stone-700 focus:outline-none text-sm transition-colors"
+              style={{ background: '#0D0600', border: '1px solid rgba(255,255,255,0.08)' }}
+              onFocus={e => e.target.style.borderColor = '#F97316'}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
             />
           </div>
 
           {/* Tamanho */}
           <div>
-            <p className="text-stone-400 text-sm mb-3">Tamanho</p>
+            <p className="text-sm font-medium mb-3" style={{ color: '#C4A882' }}>Tamanho</p>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { value: 'P', label: 'Pequena', preco: cardapioHoje?.precoP },
@@ -208,14 +245,14 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
                 <button
                   key={value}
                   onClick={() => setConfigurando(prev => ({ ...prev, tamanho: value }))}
-                  className="rounded-2xl p-4 text-left border-2 transition-all"
+                  className="rounded-2xl p-4 text-left transition-all"
                   style={{
-                    borderColor: configurando.tamanho === value ? '#f97316' : 'rgba(255,255,255,0.08)',
-                    background: configurando.tamanho === value ? 'rgba(249,115,22,0.12)' : '#0f0a07',
+                    border: `2px solid ${configurando.tamanho === value ? '#F97316' : 'rgba(255,255,255,0.08)'}`,
+                    background: configurando.tamanho === value ? 'rgba(249,115,22,0.12)' : '#0D0600',
                   }}
                 >
-                  <p className="text-white font-bold">{label}</p>
-                  {p ? <p className="text-orange-400 text-sm font-semibold mt-0.5">{fmtR$(p)}</p> : null}
+                  <p className="text-white font-bold text-sm">{label}</p>
+                  {p ? <p className="text-sm font-bold mt-1" style={{ color: '#F97316' }}>{fmtR$(p)}</p> : null}
                 </button>
               ))}
             </div>
@@ -224,21 +261,21 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
           {/* Opção */}
           {opcoes.length > 1 && (
             <div>
-              <p className="text-stone-400 text-sm mb-3">Opção</p>
+              <p className="text-sm font-medium mb-3" style={{ color: '#C4A882' }}>Opção</p>
               <div className="space-y-2">
                 {opcoes.map(op => (
                   <button
                     key={op.id}
                     onClick={() => setConfigurando(prev => ({ ...prev, opcaoId: op.id, semItens: [] }))}
-                    className="w-full rounded-2xl p-4 text-left border-2 transition-all"
+                    className="w-full rounded-2xl p-4 text-left transition-all"
                     style={{
-                      borderColor: configurando.opcaoId === op.id ? '#f97316' : 'rgba(255,255,255,0.08)',
-                      background: configurando.opcaoId === op.id ? 'rgba(249,115,22,0.12)' : '#0f0a07',
+                      border: `2px solid ${configurando.opcaoId === op.id ? '#F97316' : 'rgba(255,255,255,0.08)'}`,
+                      background: configurando.opcaoId === op.id ? 'rgba(249,115,22,0.12)' : '#0D0600',
                     }}
                   >
-                    <p className="text-white font-semibold">{op.nome}</p>
+                    <p className="text-white font-semibold text-sm">{op.nome}</p>
                     {op.acompanhamentos?.length > 0 && (
-                      <p className="text-stone-500 text-xs mt-0.5">
+                      <p className="text-xs mt-0.5" style={{ color: '#6B5040' }}>
                         {op.acompanhamentos.map(strAcomp).filter(Boolean).join(', ')}
                       </p>
                     )}
@@ -251,8 +288,8 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
           {/* Acompanhamentos */}
           {opcaoAtual?.acompanhamentos?.length > 0 && (
             <div>
-              <p className="text-stone-400 text-sm mb-1">Acompanhamentos</p>
-              <p className="text-stone-600 text-xs mb-3">Toque para remover o que não quiser</p>
+              <p className="text-sm font-medium mb-1" style={{ color: '#C4A882' }}>Acompanhamentos</p>
+              <p className="text-xs mb-3" style={{ color: '#6B5040' }}>Toque para remover o que não quiser</p>
               <div className="flex flex-wrap gap-2">
                 {opcaoAtual.acompanhamentos.map((rawItem, idx) => {
                   const item = strAcomp(rawItem)
@@ -262,13 +299,13 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
                     <button
                       key={idx}
                       onClick={() => toggleAcomp(item)}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium border transition-all"
+                      className="px-3 py-1.5 rounded-full text-sm font-medium transition-all"
                       style={{
                         background: removido ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.06)',
-                        borderColor: removido ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)',
-                        color: removido ? '#f87171' : '#d6d3d1',
+                        border: `1px solid ${removido ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                        color: removido ? '#f87171' : '#C4A882',
                         textDecoration: removido ? 'line-through' : 'none',
-                        opacity: removido ? 0.6 : 1,
+                        opacity: removido ? 0.65 : 1,
                       }}
                     >
                       {removido && <X size={10} className="inline mr-1" />}
@@ -278,7 +315,7 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
                 })}
               </div>
               {configurando.semItens.length > 0 && (
-                <p className="text-red-400 text-xs mt-2">
+                <p className="text-xs mt-2.5" style={{ color: '#f87171' }}>
                   Sem: {configurando.semItens.join(', ')}
                 </p>
               )}
@@ -287,17 +324,20 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
 
           {/* Proteína especial */}
           {opcaoAtual?.tipoCarnes === 'especial' && opcaoAtual?.pratoEspecial && (
-            <div className="rounded-2xl p-4 border" style={{ background: 'rgba(249,115,22,0.08)', borderColor: 'rgba(249,115,22,0.25)' }}>
-              <p className="text-orange-400 text-xs uppercase tracking-wide mb-1">Prato especial</p>
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}
+            >
+              <p className="text-xs uppercase tracking-wide font-bold mb-1" style={{ color: '#F97316' }}>Prato especial</p>
               <p className="text-white font-bold">{opcaoAtual.pratoEspecial}</p>
-              <p className="text-stone-500 text-xs mt-1">Proteína já inclusa</p>
+              <p className="text-xs mt-1" style={{ color: '#6B5040' }}>Proteína já inclusa</p>
             </div>
           )}
 
           {/* Escolha de carne */}
           {tipoCarnes === 'globais' && carnesDisponiveis.length > 0 && (
             <div>
-              <p className="text-stone-400 text-sm mb-1">
+              <p className="text-sm font-medium mb-1" style={{ color: '#C4A882' }}>
                 Escolha a carne <span className="text-red-400">*</span>
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
@@ -305,11 +345,11 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
                   <button
                     key={i}
                     onClick={() => setConfigurando(prev => ({ ...prev, proteina: c }))}
-                    className="px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all"
+                    className="px-4 py-2 rounded-xl text-sm font-bold transition-all"
                     style={{
-                      background: configurando.proteina === c ? '#f97316' : '#0f0a07',
-                      borderColor: configurando.proteina === c ? '#f97316' : 'rgba(255,255,255,0.12)',
-                      color: configurando.proteina === c ? '#fff' : '#a8a29e',
+                      background: configurando.proteina === c ? '#F97316' : '#0D0600',
+                      border: `2px solid ${configurando.proteina === c ? '#F97316' : 'rgba(255,255,255,0.12)'}`,
+                      color: configurando.proteina === c ? '#fff' : '#C4A882',
                     }}
                   >
                     {c}
@@ -317,19 +357,25 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
                 ))}
               </div>
               {!configurando.proteina && (
-                <p className="text-red-400 text-xs mt-2">Selecione a carne para continuar</p>
+                <p className="text-xs mt-2" style={{ color: '#f87171' }}>Selecione a carne para continuar</p>
               )}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 p-5 border-t" style={{ background: '#1a1008', borderColor: 'rgba(255,255,255,0.06)' }}>
+        {/* Footer fixo */}
+        <div
+          className="sticky bottom-0 p-5"
+          style={{ background: '#1C0E06', borderTop: '1px solid rgba(255,255,255,0.07)' }}
+        >
           <button
             onClick={onAdicionar}
             disabled={!podeAdicionar}
-            className="w-full font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-base disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-lg shadow-orange-500/20"
-            style={{ background: podeAdicionar ? 'linear-gradient(135deg, #f97316, #ea580c)' : '#374151' }}
+            className="w-full font-bold py-4 rounded-2xl flex items-center justify-center gap-2 text-base text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: podeAdicionar ? 'linear-gradient(135deg, #F97316, #EA580C)' : '#251508',
+              boxShadow: podeAdicionar ? '0 4px 24px rgba(249,115,22,0.3)' : 'none',
+            }}
           >
             <Plus size={20} />
             Adicionar ao carrinho — {fmtR$(preco)}
@@ -343,24 +389,42 @@ function ModalMarmitex({ cardapioHoje, configurando, setConfigurando, onAdiciona
 // ── Item do Carrinho ───────────────────────────────────────────────────────────
 function CarrinhoItem({ item, onRemover, numero }) {
   return (
-    <div className="rounded-2xl p-4 flex items-start gap-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
-      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}>
+    <div
+      className="rounded-2xl p-4 flex items-start gap-3"
+      style={{ background: '#251508', border: '1px solid rgba(255,255,255,0.07)' }}
+    >
+      <div
+        className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
+        style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}
+      >
         {numero}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-bold text-sm leading-tight">
+        <p className="text-white font-bold text-sm leading-snug">
           {item.opcao.nome}
-          <span className="text-stone-500 font-normal"> · {item.tamanho === 'P' ? 'Pequena' : 'Grande'}</span>
+          <span className="font-normal ml-1" style={{ color: '#6B5040' }}>
+            · {item.tamanho === 'P' ? 'Pequena' : 'Grande'}
+          </span>
         </p>
-        {item.proteina && <p className="text-orange-400 text-xs mt-0.5">{item.proteina}</p>}
-        {item.nome && <p className="text-stone-500 text-xs mt-0.5">para: {item.nome}</p>}
-        {item.semItens.length > 0 && (
-          <p className="text-red-400/70 text-xs mt-0.5">sem: {item.semItens.join(', ')}</p>
+        {item.proteina && (
+          <p className="text-xs mt-0.5 font-semibold" style={{ color: '#F97316' }}>{item.proteina}</p>
         )}
-        <p className="text-orange-400 font-bold text-sm mt-1.5">{fmtR$(item.preco)}</p>
+        {item.nome && (
+          <p className="text-xs mt-0.5" style={{ color: '#C4A882' }}>para: {item.nome}</p>
+        )}
+        {item.semItens.length > 0 && (
+          <p className="text-xs mt-0.5" style={{ color: 'rgba(248,113,113,0.7)' }}>sem: {item.semItens.join(', ')}</p>
+        )}
+        <p className="text-sm font-bold mt-1.5" style={{ color: '#F97316' }}>{fmtR$(item.preco)}</p>
       </div>
-      <button onClick={onRemover} className="text-stone-700 hover:text-red-400 transition-colors p-1 shrink-0">
-        <Trash2 size={16} />
+      <button
+        onClick={onRemover}
+        className="p-1.5 rounded-lg transition-colors shrink-0"
+        style={{ color: '#6B5040' }}
+        onMouseOver={e => e.currentTarget.style.color = '#f87171'}
+        onMouseOut={e => e.currentTarget.style.color = '#6B5040'}
+      >
+        <Trash2 size={15} />
       </button>
     </div>
   )
@@ -531,14 +595,24 @@ export default function PedidoOnline() {
   const carnesAtivas = cardapioHoje?.carnes?.filter(c => c) || []
 
   const SecaoCarnes = carnesAtivas.length > 0 && (
-    <div className="rounded-2xl overflow-hidden border" style={{ background: 'rgba(249,115,22,0.06)', borderColor: 'rgba(249,115,22,0.2)' }}>
-      <div className="px-5 py-3 flex items-center gap-2 border-b" style={{ borderColor: 'rgba(249,115,22,0.15)', background: 'rgba(249,115,22,0.08)' }}>
-        <Flame size={15} className="text-orange-400" />
-        <p className="text-orange-400 text-xs uppercase tracking-widest font-bold">Carnes do dia</p>
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.18)' }}
+    >
+      <div
+        className="px-5 py-2.5 flex items-center gap-2"
+        style={{ background: 'rgba(249,115,22,0.1)', borderBottom: '1px solid rgba(249,115,22,0.15)' }}
+      >
+        <Flame size={14} style={{ color: '#F97316' }} />
+        <p className="text-xs uppercase tracking-widest font-bold" style={{ color: '#F97316' }}>Carnes do dia</p>
       </div>
-      <div className="px-5 py-4 flex flex-wrap gap-2">
+      <div className="px-5 py-3 flex flex-wrap gap-2">
         {carnesAtivas.map((c, i) => (
-          <span key={i} className="px-3 py-1.5 rounded-full text-sm font-semibold text-orange-300 border" style={{ background: 'rgba(249,115,22,0.1)', borderColor: 'rgba(249,115,22,0.25)' }}>
+          <span
+            key={i}
+            className="px-3 py-1.5 rounded-full text-sm font-semibold"
+            style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.22)', color: '#F97316' }}
+          >
             {c}
           </span>
         ))}
@@ -551,80 +625,107 @@ export default function PedidoOnline() {
   // ─────────────────────────────────────────────────────────────────────────────
   const ColunaCatalogo = (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="relative shrink-0">
-          <img src="/logo-vertical.png" alt="Fogão a Lenha da Leninha" className="h-16 w-auto rounded-xl" />
+      {/* Hero compacto desktop */}
+      <div
+        className="rounded-2xl px-6 py-5"
+        style={{ background: 'linear-gradient(160deg, #2D1200 0%, #0D0600 70%)', border: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        <div className="flex items-center gap-4">
+          <img src="/logo-vertical.png" alt="Fogão a Lenha da Leninha" className="h-14 w-auto rounded-xl shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs uppercase tracking-widest font-bold mb-1" style={{ color: '#F97316' }}>Cardápio de hoje</p>
+            <h1 className="text-white font-black text-xl leading-tight">Fogão a Lenha da Leninha</h1>
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              {lojaFechada ? (
+                <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" /> Encerrado
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full" style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E', border: '1px solid rgba(34,197,94,0.25)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" /> Aberto agora
+                </span>
+              )}
+              {cardapioHoje?.precoP && (
+                <span className="text-sm font-medium" style={{ color: '#C4A882' }}>
+                  Pequena {fmtR$(cardapioHoje.precoP)}
+                  {cardapioHoje?.precoG && <span> · Grande {fmtR$(cardapioHoje.precoG)}</span>}
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            title="Painel admin"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors shrink-0"
+            style={{ background: 'rgba(255,255,255,0.05)', color: '#6B5040' }}
+            onMouseOver={e => e.currentTarget.style.color = '#C4A882'}
+            onMouseOut={e => e.currentTarget.style.color = '#6B5040'}
+          >
+            <Settings size={17} />
+          </button>
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-white font-black text-xl leading-tight">Fogão a Lenha da Leninha</h1>
-          <p className="text-orange-400 text-sm mt-0.5">Peça agora e retire na hora!</p>
-        </div>
-        <button
-          onClick={() => navigate('/login')}
-          title="Painel admin"
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors text-stone-600 hover:text-stone-400"
-          style={{ background: 'rgba(255,255,255,0.04)' }}
-        >
-          <Settings size={17} />
-        </button>
       </div>
-
-      {lojaFechada && (
-        <div className="rounded-2xl p-4 text-center border" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
-          <p className="text-red-400 font-semibold">Pedidos encerrados no momento</p>
-          <p className="text-red-500/70 text-sm mt-1">Tente novamente mais tarde</p>
-        </div>
-      )}
 
       {SecaoCarnes}
 
       {/* Opções */}
       {opcoes.length === 0 ? (
         <div className="text-center py-16">
-          <UtensilsCrossed size={48} className="mx-auto text-stone-700 mb-4" />
-          <p className="text-stone-500">Cardápio não disponível no momento</p>
+          <UtensilsCrossed size={48} className="mx-auto mb-4" style={{ color: '#6B5040' }} />
+          <p style={{ color: '#6B5040' }}>Cardápio não disponível no momento</p>
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-stone-600 text-xs uppercase tracking-widest font-semibold px-1">Escolha sua opção</p>
-          {opcoes.map(op => (
+          <p className="text-xs uppercase tracking-widest font-semibold px-1" style={{ color: '#6B5040' }}>Escolha sua opção</p>
+          {opcoes.map((op, idx) => (
             <div
               key={op.id}
-              className="rounded-2xl overflow-hidden border transition-colors"
-              style={{ background: '#1a1008', borderColor: 'rgba(255,255,255,0.06)' }}
+              className="rounded-2xl overflow-hidden transition-colors"
+              style={{ background: '#1C0E06', border: '1px solid rgba(255,255,255,0.07)' }}
             >
-              <div className="p-5 flex items-start justify-between gap-4">
+              <div className="p-5 flex items-start gap-4">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}
+                >
+                  {String(idx + 1).padStart(2, '0')}
+                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-white font-bold text-lg leading-tight">{op.nome}</h3>
                   {op.acompanhamentos?.length > 0 && (
-                    <p className="text-stone-500 text-sm mt-1.5 leading-relaxed">
+                    <p className="text-sm mt-1.5 leading-relaxed" style={{ color: '#6B5040' }}>
                       {op.acompanhamentos.map(strAcomp).filter(Boolean).join(' · ')}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 mt-3">
-                    {cardapioHoje?.precoP && (
-                      <div className="text-center">
-                        <p className="text-stone-600 text-xs">Pequena</p>
-                        <p className="text-orange-400 font-bold text-base">{fmtR$(cardapioHoje.precoP)}</p>
-                      </div>
-                    )}
-                    {cardapioHoje?.precoG && (
-                      <div className="text-center">
-                        <p className="text-stone-600 text-xs">Grande</p>
-                        <p className="text-orange-400 font-bold text-base">{fmtR$(cardapioHoje.precoG)}</p>
-                      </div>
-                    )}
-                  </div>
                 </div>
-                <button
-                  disabled={lojaFechada}
-                  onClick={() => abrirModal(op.id)}
-                  className="shrink-0 flex items-center gap-2 font-bold px-5 py-3 rounded-xl transition-all text-white text-sm shadow-lg shadow-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
-                >
-                  <Plus size={17} /> Adicionar
-                </button>
+              </div>
+              <div className="grid grid-cols-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                {[
+                  { label: 'Pequena', size: 'P', preco: cardapioHoje?.precoP },
+                  { label: 'Grande', size: 'G', preco: cardapioHoje?.precoG },
+                ].map(({ label, size, preco: p }, i) => (
+                  <button
+                    key={size}
+                    disabled={lojaFechada}
+                    onClick={() => abrirModal(op.id)}
+                    className="py-4 flex flex-col items-center gap-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{
+                      borderRight: i === 0 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                      background: 'transparent',
+                    }}
+                    onMouseOver={e => { if (!lojaFechada) e.currentTarget.style.background = 'rgba(249,115,22,0.06)' }}
+                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span className="text-sm font-semibold" style={{ color: '#C4A882' }}>{label}</span>
+                    {p && <span className="font-bold text-base" style={{ color: '#F97316' }}>{fmtR$(p)}</span>}
+                    <span
+                      className="w-8 h-8 rounded-xl flex items-center justify-center mt-1"
+                      style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}
+                    >
+                      <Plus size={16} className="text-white" />
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           ))}
@@ -634,13 +735,19 @@ export default function PedidoOnline() {
   )
 
   const ColunaCarrinho = (
-    <div className="rounded-2xl overflow-hidden border sticky top-6" style={{ background: '#1a1008', borderColor: 'rgba(255,255,255,0.06)' }}>
+    <div
+      className="rounded-2xl overflow-hidden sticky top-6"
+      style={{ background: '#1C0E06', border: '1px solid rgba(255,255,255,0.07)' }}
+    >
       {/* Header */}
-      <div className="px-5 py-4 flex items-center gap-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <ShoppingCart size={18} className="text-orange-400" />
+      <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <ShoppingCart size={17} style={{ color: '#F97316' }} />
         <h2 className="text-white font-bold">Seu pedido</h2>
         {carrinho.length > 0 && (
-          <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: '#f97316' }}>
+          <span
+            className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full text-white"
+            style={{ background: '#F97316' }}
+          >
             {carrinho.length}
           </span>
         )}
@@ -648,11 +755,14 @@ export default function PedidoOnline() {
 
       {carrinho.length === 0 ? (
         <div className="py-12 text-center px-5">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <ShoppingCart size={28} className="text-stone-700" />
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'rgba(255,255,255,0.03)' }}
+          >
+            <ShoppingCart size={28} style={{ color: '#6B5040' }} />
           </div>
-          <p className="text-stone-600 text-sm">Nenhuma marmitex adicionada</p>
-          <p className="text-stone-700 text-xs mt-1">Escolha uma opção ao lado</p>
+          <p className="text-sm" style={{ color: '#6B5040' }}>Nenhuma marmitex adicionada</p>
+          <p className="text-xs mt-1" style={{ color: '#4a3020' }}>Escolha uma opção ao lado</p>
         </div>
       ) : (
         <div className="p-5 space-y-4">
@@ -666,17 +776,20 @@ export default function PedidoOnline() {
             onClick={() => abrirModal()}
             disabled={lojaFechada}
             className="w-full border-dashed border-2 rounded-xl py-3 text-sm flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40"
-            style={{ borderColor: 'rgba(249,115,22,0.3)', color: '#9ca3af' }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = '#f97316'; e.currentTarget.style.color = '#f97316' }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)'; e.currentTarget.style.color = '#9ca3af' }}
+            style={{ borderColor: 'rgba(249,115,22,0.25)', color: '#6B5040' }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.color = '#F97316' }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.25)'; e.currentTarget.style.color = '#6B5040' }}
           >
             <Plus size={14} /> Adicionar outra marmitex
           </button>
 
           {/* Total */}
-          <div className="flex justify-between font-bold text-white text-lg pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div
+            className="flex justify-between font-bold text-white text-lg pt-3"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
+          >
             <span>Total</span>
-            <span className="text-orange-400">{fmtR$(total)}</span>
+            <span style={{ color: '#F97316' }}>{fmtR$(total)}</span>
           </div>
 
           {/* Dados do cliente */}
@@ -688,14 +801,14 @@ export default function PedidoOnline() {
                 placeholder="Seu nome *"
                 value={form.clienteNome}
                 onChange={e => setForm(f => ({ ...f, clienteNome: e.target.value }))}
-                className="w-full rounded-xl px-4 py-3 text-white placeholder-stone-600 focus:outline-none text-sm border transition-colors"
+                className="w-full rounded-xl px-4 py-3 text-white placeholder-stone-700 focus:outline-none text-sm transition-colors"
                 style={{
-                  background: '#0f0a07',
-                  borderColor: erros.clienteNome ? '#ef4444' : 'rgba(255,255,255,0.08)',
+                  background: '#0D0600',
+                  border: `1px solid ${erros.clienteNome ? '#ef4444' : 'rgba(255,255,255,0.08)'}`,
                 }}
               />
               {erros.clienteNome && <p className="text-red-400 text-xs mt-1">{erros.clienteNome}</p>}
-              {mensalista && <p className="text-green-400 text-xs mt-1">✓ Cliente mensalista identificado</p>}
+              {mensalista && <p className="text-xs mt-1" style={{ color: '#22C55E' }}>✓ Cliente mensalista identificado</p>}
             </div>
 
             <div>
@@ -704,10 +817,10 @@ export default function PedidoOnline() {
                 placeholder="Seu telefone *"
                 value={form.clienteTelefone}
                 onChange={e => setForm(f => ({ ...f, clienteTelefone: fmtTel(e.target.value) }))}
-                className="w-full rounded-xl px-4 py-3 text-white placeholder-stone-600 focus:outline-none text-sm border transition-colors"
+                className="w-full rounded-xl px-4 py-3 text-white placeholder-stone-700 focus:outline-none text-sm transition-colors"
                 style={{
-                  background: '#0f0a07',
-                  borderColor: erros.clienteTelefone ? '#ef4444' : 'rgba(255,255,255,0.08)',
+                  background: '#0D0600',
+                  border: `1px solid ${erros.clienteTelefone ? '#ef4444' : 'rgba(255,255,255,0.08)'}`,
                 }}
               />
               {erros.clienteTelefone && <p className="text-red-400 text-xs mt-1">{erros.clienteTelefone}</p>}
@@ -719,11 +832,11 @@ export default function PedidoOnline() {
                   <button
                     key={p}
                     onClick={() => setForm(f => ({ ...f, pagamento: p }))}
-                    className="py-3 rounded-xl text-sm font-semibold border-2 transition-all"
+                    className="py-3 rounded-xl text-sm font-semibold transition-all"
                     style={{
-                      borderColor: form.pagamento === p ? '#f97316' : 'rgba(255,255,255,0.08)',
-                      background: form.pagamento === p ? 'rgba(249,115,22,0.12)' : '#0f0a07',
-                      color: form.pagamento === p ? '#fb923c' : '#9ca3af',
+                      border: `2px solid ${form.pagamento === p ? '#F97316' : 'rgba(255,255,255,0.08)'}`,
+                      background: form.pagamento === p ? 'rgba(249,115,22,0.12)' : '#0D0600',
+                      color: form.pagamento === p ? '#F97316' : '#6B5040',
                     }}
                   >
                     {p === 'Pix' ? '💠 Pix' : '💵 Dinheiro'}
@@ -733,9 +846,12 @@ export default function PedidoOnline() {
             )}
 
             {mensalista && (
-              <div className="rounded-xl p-3 border" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.2)' }}>
-                <p className="text-green-400 text-sm font-semibold">Conta mensalista</p>
-                <p className="text-green-600 text-xs mt-0.5">Cobrado no fechamento mensal</p>
+              <div
+                className="rounded-xl p-3"
+                style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}
+              >
+                <p className="text-sm font-semibold" style={{ color: '#22C55E' }}>Conta mensalista</p>
+                <p className="text-xs mt-0.5" style={{ color: 'rgba(34,197,94,0.6)' }}>Cobrado no fechamento mensal</p>
               </div>
             )}
 
@@ -745,15 +861,15 @@ export default function PedidoOnline() {
               value={form.obs}
               onChange={e => setForm(f => ({ ...f, obs: e.target.value }))}
               rows={2}
-              className="w-full rounded-xl px-4 py-3 text-white placeholder-stone-600 focus:outline-none resize-none text-sm border"
-              style={{ background: '#0f0a07', borderColor: 'rgba(255,255,255,0.08)' }}
+              className="w-full rounded-xl px-4 py-3 text-white placeholder-stone-700 focus:outline-none resize-none text-sm"
+              style={{ background: '#0D0600', border: '1px solid rgba(255,255,255,0.08)' }}
             />
 
             <button
               onClick={confirmarPedido}
               disabled={enviando}
-              className="w-full font-bold py-4 rounded-2xl transition-all text-white text-sm shadow-lg shadow-orange-500/20 disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
+              className="w-full font-bold py-4 rounded-2xl text-white text-sm transition-all disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)', boxShadow: '0 4px 20px rgba(249,115,22,0.25)' }}
             >
               {enviando ? 'Confirmando...' : 'Confirmar pedido'}
             </button>
@@ -767,75 +883,113 @@ export default function PedidoOnline() {
   // MOBILE — steps
   // ─────────────────────────────────────────────────────────────────────────────
   const MobileHeader = ({ titulo, onBack, direita }) => (
-    <div className="flex items-center gap-3 px-4 py-4 border-b" style={{ background: '#1a1008', borderColor: 'rgba(255,255,255,0.06)' }}>
-      {onBack && (
-        <button onClick={onBack} className="w-9 h-9 rounded-xl flex items-center justify-center text-stone-400 transition-colors shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
+    <div
+      className="flex items-center gap-3 px-4 py-3.5"
+      style={{ background: '#1C0E06', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+    >
+      {onBack ? (
+        <button
+          onClick={onBack}
+          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+          style={{ background: 'rgba(255,255,255,0.06)', color: '#C4A882' }}
+        >
           <ChevronLeft size={20} />
         </button>
-      )}
-      {!onBack && (
+      ) : (
         <img src="/logo-vertical.png" alt="Logo" className="h-10 w-auto rounded-lg shrink-0" />
       )}
       <div className="flex-1 min-w-0">
         <p className="text-white font-bold text-base leading-tight truncate">{titulo}</p>
-        {!onBack && <p className="text-orange-400 text-xs">Monte seu pedido</p>}
+        {!onBack && <p className="text-xs" style={{ color: '#F97316' }}>Monte seu pedido</p>}
       </div>
       {direita}
     </div>
   )
 
   const MobileCardapio = (
-    <div className="min-h-screen pb-32" style={{ background: '#0f0a07' }}>
+    <div className="min-h-screen pb-32" style={{ background: '#0D0600' }}>
       <MobileHeader
         titulo="Fogão a Lenha da Leninha"
         direita={
           <button
             onClick={() => navigate('/login')}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-stone-600 shrink-0"
-            style={{ background: 'rgba(255,255,255,0.04)' }}
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(255,255,255,0.05)', color: '#6B5040' }}
           >
             <Settings size={16} />
           </button>
         }
       />
 
-      <div className="px-4 py-5 space-y-4">
-        {lojaFechada && (
-          <div className="rounded-2xl p-4 text-center border" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
-            <p className="text-red-400 font-bold">Pedidos encerrados no momento</p>
-            <p className="text-red-500/70 text-sm mt-1">Tente novamente mais tarde</p>
-          </div>
+      {/* Hero banner */}
+      <div
+        className="px-4 py-6 flex flex-col items-center text-center"
+        style={{ background: 'linear-gradient(160deg, #2D1200 0%, #0D0600 60%)' }}
+      >
+        <span style={{ fontSize: 40, lineHeight: 1 }}>🍖</span>
+        <p className="text-xs uppercase tracking-widest font-bold mt-2 mb-1.5" style={{ color: '#F97316' }}>Cardápio de hoje</p>
+        {lojaFechada ? (
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full mb-2"
+            style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" /> Encerrado
+          </span>
+        ) : (
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full mb-2"
+            style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E', border: '1px solid rgba(34,197,94,0.25)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" /> Aberto agora
+          </span>
         )}
+        {(cardapioHoje?.precoP || cardapioHoje?.precoG) && (
+          <p className="text-sm font-medium" style={{ color: '#C4A882' }}>
+            {cardapioHoje?.precoP && <>Pequena {fmtR$(cardapioHoje.precoP)}</>}
+            {cardapioHoje?.precoP && cardapioHoje?.precoG && ' · '}
+            {cardapioHoje?.precoG && <>Grande {fmtR$(cardapioHoje.precoG)}</>}
+          </p>
+        )}
+      </div>
 
+      <div className="px-4 py-4 space-y-4">
         {SecaoCarnes}
 
         {opcoes.length === 0 ? (
           <div className="text-center py-20">
-            <UtensilsCrossed size={52} className="mx-auto text-stone-800 mb-4" />
-            <p className="text-stone-600">Cardápio não disponível no momento</p>
+            <UtensilsCrossed size={52} className="mx-auto mb-4" style={{ color: '#6B5040' }} />
+            <p style={{ color: '#6B5040' }}>Cardápio não disponível no momento</p>
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-stone-700 text-xs uppercase tracking-widest font-semibold px-1">Escolha sua opção</p>
-            {opcoes.map(op => (
+            <p className="text-xs uppercase tracking-widest font-semibold px-1" style={{ color: '#6B5040' }}>Escolha sua opção</p>
+            {opcoes.map((op, idx) => (
               <div
                 key={op.id}
-                className="rounded-2xl overflow-hidden border"
-                style={{ background: '#1a1008', borderColor: 'rgba(255,255,255,0.06)' }}
+                className="rounded-2xl overflow-hidden"
+                style={{ background: '#1C0E06', border: '1px solid rgba(255,255,255,0.07)' }}
               >
-                <div className="px-5 pt-5 pb-4">
-                  <h3 className="text-white font-bold text-xl">{op.nome}</h3>
-                  {op.acompanhamentos?.length > 0 && (
-                    <p className="text-stone-500 text-sm mt-1.5 leading-relaxed">
-                      {op.acompanhamentos.map(strAcomp).filter(Boolean).join(' · ')}
-                    </p>
-                  )}
+                <div className="px-5 pt-5 pb-4 flex items-start gap-3">
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}
+                  >
+                    {String(idx + 1).padStart(2, '0')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-bold text-xl leading-tight">{op.nome}</h3>
+                    {op.acompanhamentos?.length > 0 && (
+                      <p className="text-sm mt-1.5 leading-relaxed" style={{ color: '#6B5040' }}>
+                        {op.acompanhamentos.map(strAcomp).filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                <div className="grid grid-cols-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
                   {[
                     { label: 'Pequena', size: 'P', preco: cardapioHoje?.precoP },
                     { label: 'Grande', size: 'G', preco: cardapioHoje?.precoG },
-                  ].map(({ label, size, preco: p }, idx) => (
+                  ].map(({ label, size, preco: p }, i) => (
                     <button
                       key={size}
                       disabled={lojaFechada}
@@ -844,11 +998,14 @@ export default function PedidoOnline() {
                         setTimeout(() => setConfigurando(prev => prev ? { ...prev, tamanho: size, opcaoId: op.id } : null), 0)
                       }}
                       className="py-5 flex flex-col items-center gap-1 active:opacity-70 transition-opacity disabled:opacity-40"
-                      style={{ borderRight: idx === 0 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}
+                      style={{ borderRight: i === 0 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}
                     >
-                      <span className="text-stone-300 font-semibold text-base">{label}</span>
-                      {p && <span className="text-orange-400 font-bold text-lg">{fmtR$(p)}</span>}
-                      <span className="w-9 h-9 rounded-xl flex items-center justify-center mt-1" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}>
+                      <span className="font-semibold text-base" style={{ color: '#C4A882' }}>{label}</span>
+                      {p && <span className="font-bold text-lg" style={{ color: '#F97316' }}>{fmtR$(p)}</span>}
+                      <span
+                        className="w-9 h-9 rounded-xl flex items-center justify-center mt-1"
+                        style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}
+                      >
                         <Plus size={18} className="text-white" />
                       </span>
                     </button>
@@ -860,14 +1017,21 @@ export default function PedidoOnline() {
         )}
       </div>
 
+      {/* Floating cart bar */}
       {carrinho.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4" style={{ background: 'linear-gradient(to top, #0f0a07 70%, transparent)' }}>
+        <div
+          className="fixed bottom-0 left-0 right-0 p-4"
+          style={{ background: 'linear-gradient(to top, #0D0600 65%, transparent)' }}
+        >
           <button
             onClick={() => setStep('carrinho')}
-            className="w-full text-white font-bold py-4 rounded-2xl flex items-center justify-between px-5 transition-all shadow-2xl shadow-orange-500/30"
-            style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
+            className="w-full text-white font-bold py-4 rounded-2xl flex items-center justify-between px-5 transition-all"
+            style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)', boxShadow: '0 8px 32px rgba(249,115,22,0.4)' }}
           >
-            <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black" style={{ background: 'rgba(0,0,0,0.2)' }}>
+            <span
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black"
+              style={{ background: 'rgba(0,0,0,0.22)' }}
+            >
               {carrinho.length}
             </span>
             <span className="text-base">Ver carrinho</span>
@@ -879,12 +1043,15 @@ export default function PedidoOnline() {
   )
 
   const MobileCarrinho = (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0f0a07' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#0D0600' }}>
       <MobileHeader
-        titulo="Seu carrinho"
+        titulo="Carrinho"
         onBack={() => setStep('cardapio')}
         direita={
-          <span className="ml-auto text-xs font-bold px-2.5 py-1 rounded-full text-white" style={{ background: '#f97316' }}>
+          <span
+            className="ml-auto text-xs font-bold px-2.5 py-1 rounded-full text-white"
+            style={{ background: '#F97316' }}
+          >
             {carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}
           </span>
         }
@@ -897,103 +1064,112 @@ export default function PedidoOnline() {
         <button
           onClick={() => setStep('cardapio')}
           className="w-full border-dashed border-2 rounded-2xl py-5 text-sm flex items-center justify-center gap-2 transition-colors"
-          style={{ borderColor: 'rgba(249,115,22,0.25)', color: '#6b7280' }}
+          style={{ borderColor: 'rgba(249,115,22,0.2)', color: '#6B5040' }}
+          onMouseOver={e => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.color = '#F97316' }}
+          onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.2)'; e.currentTarget.style.color = '#6B5040' }}
         >
           <Plus size={15} /> Adicionar outra marmitex
         </button>
       </div>
 
-      <div className="p-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+      <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="flex justify-between text-white font-bold text-xl mb-4">
           <span>Total</span>
-          <span className="text-orange-400">{fmtR$(total)}</span>
+          <span style={{ color: '#F97316' }}>{fmtR$(total)}</span>
         </div>
         <button
           onClick={() => setStep('checkout')}
-          className="w-full text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-2 text-base shadow-xl shadow-orange-500/25 transition-all"
-          style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
+          className="w-full text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-2 text-base transition-all"
+          style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)', boxShadow: '0 6px 24px rgba(249,115,22,0.3)' }}
         >
-          Finalizar pedido <ChevronRight size={20} />
+          Ir para pagamento <ChevronRight size={20} />
         </button>
       </div>
     </div>
   )
 
   const MobileCheckout = (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0f0a07' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#0D0600' }}>
       <MobileHeader titulo="Finalizar pedido" onBack={() => setStep('carrinho')} />
 
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
         {/* Resumo */}
-        <div className="rounded-2xl overflow-hidden border" style={{ background: '#1a1008', borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div className="px-5 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            <p className="text-stone-500 text-xs uppercase tracking-widest font-semibold">Resumo</p>
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: '#1C0E06', border: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#6B5040' }}>Resumo</p>
           </div>
-          <div className="p-5 space-y-2">
+          <div className="p-5 space-y-2.5">
             {carrinho.map(item => (
-              <div key={item.uid} className="flex justify-between text-sm text-stone-300 gap-2">
-                <span className="flex-1">
-                  {item.opcao.nome} <span className="text-stone-600">({item.tamanho === 'P' ? 'Pequena' : 'Grande'})</span>
-                  {item.nome && <span className="text-orange-400"> · {item.nome}</span>}
+              <div key={item.uid} className="flex justify-between text-sm gap-2">
+                <span className="flex-1" style={{ color: '#C4A882' }}>
+                  {item.opcao.nome}
+                  <span className="ml-1" style={{ color: '#6B5040' }}>({item.tamanho === 'P' ? 'Pequena' : 'Grande'})</span>
+                  {item.nome && <span className="ml-1" style={{ color: '#F97316' }}>· {item.nome}</span>}
                   {item.semItens?.length > 0 && (
-                    <span className="block text-xs text-red-400/70 mt-0.5">sem: {item.semItens.join(', ')}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: 'rgba(248,113,113,0.7)' }}>sem: {item.semItens.join(', ')}</span>
                   )}
                 </span>
                 <span className="font-semibold text-white shrink-0">{fmtR$(item.preco)}</span>
               </div>
             ))}
           </div>
-          <div className="px-5 pb-4 flex justify-between font-bold text-white text-base border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div
+            className="px-5 py-3 flex justify-between font-bold text-white text-base"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
+          >
             <span>Total</span>
-            <span className="text-orange-400">{fmtR$(total)}</span>
+            <span style={{ color: '#F97316' }}>{fmtR$(total)}</span>
           </div>
         </div>
 
         {/* Formulário */}
         <div className="space-y-4">
-          <p className="text-stone-600 text-xs uppercase tracking-widest font-semibold">Seus dados</p>
+          <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#6B5040' }}>Seus dados</p>
 
           <div>
-            <label className="text-stone-400 text-sm font-medium block mb-1.5">Nome *</label>
+            <label className="text-sm font-medium block mb-1.5" style={{ color: '#C4A882' }}>Nome *</label>
             <input
               type="text"
               data-nocase
               placeholder="Nome completo"
               value={form.clienteNome}
               onChange={e => setForm(f => ({ ...f, clienteNome: e.target.value }))}
-              className="w-full rounded-xl px-4 py-4 text-white placeholder-stone-600 focus:outline-none text-base border transition-colors"
-              style={{ background: '#1a1008', borderColor: erros.clienteNome ? '#ef4444' : 'rgba(255,255,255,0.08)' }}
+              className="w-full rounded-xl px-4 py-4 text-white placeholder-stone-700 focus:outline-none text-base transition-colors"
+              style={{ background: '#1C0E06', border: `1px solid ${erros.clienteNome ? '#ef4444' : 'rgba(255,255,255,0.08)'}` }}
             />
             {erros.clienteNome && <p className="text-red-400 text-sm mt-1.5">{erros.clienteNome}</p>}
-            {mensalista && <p className="text-green-400 text-sm mt-1.5 font-medium">✓ Cliente mensalista identificado</p>}
+            {mensalista && <p className="text-sm mt-1.5 font-medium" style={{ color: '#22C55E' }}>✓ Cliente mensalista identificado</p>}
           </div>
 
           <div>
-            <label className="text-stone-400 text-sm font-medium block mb-1.5">Telefone *</label>
+            <label className="text-sm font-medium block mb-1.5" style={{ color: '#C4A882' }}>Telefone *</label>
             <input
               type="tel"
               placeholder="(00) 00000-0000"
               value={form.clienteTelefone}
               onChange={e => setForm(f => ({ ...f, clienteTelefone: fmtTel(e.target.value) }))}
-              className="w-full rounded-xl px-4 py-4 text-white placeholder-stone-600 focus:outline-none text-base border transition-colors"
-              style={{ background: '#1a1008', borderColor: erros.clienteTelefone ? '#ef4444' : 'rgba(255,255,255,0.08)' }}
+              className="w-full rounded-xl px-4 py-4 text-white placeholder-stone-700 focus:outline-none text-base transition-colors"
+              style={{ background: '#1C0E06', border: `1px solid ${erros.clienteTelefone ? '#ef4444' : 'rgba(255,255,255,0.08)'}` }}
             />
             {erros.clienteTelefone && <p className="text-red-400 text-sm mt-1.5">{erros.clienteTelefone}</p>}
           </div>
 
           {!mensalista && (
             <div>
-              <label className="text-stone-400 text-sm font-medium block mb-2">Forma de pagamento</label>
+              <label className="text-sm font-medium block mb-2" style={{ color: '#C4A882' }}>Forma de pagamento</label>
               <div className="grid grid-cols-2 gap-3">
                 {['Pix', 'Dinheiro'].map(p => (
                   <button
                     key={p}
                     onClick={() => setForm(f => ({ ...f, pagamento: p }))}
-                    className="py-4 rounded-2xl text-base font-semibold border-2 transition-all"
+                    className="py-4 rounded-2xl text-base font-semibold transition-all"
                     style={{
-                      borderColor: form.pagamento === p ? '#f97316' : 'rgba(255,255,255,0.08)',
-                      background: form.pagamento === p ? 'rgba(249,115,22,0.12)' : '#1a1008',
-                      color: form.pagamento === p ? '#fb923c' : '#6b7280',
+                      border: `2px solid ${form.pagamento === p ? '#F97316' : 'rgba(255,255,255,0.08)'}`,
+                      background: form.pagamento === p ? 'rgba(249,115,22,0.12)' : '#1C0E06',
+                      color: form.pagamento === p ? '#F97316' : '#6B5040',
                     }}
                   >
                     {p === 'Pix' ? '💠 Pix' : '💵 Dinheiro'}
@@ -1004,15 +1180,18 @@ export default function PedidoOnline() {
           )}
 
           {mensalista && (
-            <div className="rounded-2xl p-4 border" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.2)' }}>
-              <p className="text-green-400 font-bold">Conta mensalista</p>
-              <p className="text-green-600 text-sm mt-1">O valor será cobrado no fechamento mensal</p>
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}
+            >
+              <p className="font-bold" style={{ color: '#22C55E' }}>Conta mensalista</p>
+              <p className="text-sm mt-1" style={{ color: 'rgba(34,197,94,0.6)' }}>O valor será cobrado no fechamento mensal</p>
             </div>
           )}
 
           <div>
-            <label className="text-stone-400 text-sm font-medium block mb-1.5">
-              Observações <span className="text-stone-700 font-normal">(opcional)</span>
+            <label className="text-sm font-medium block mb-1.5" style={{ color: '#C4A882' }}>
+              Observações <span className="font-normal" style={{ color: '#6B5040' }}>(opcional)</span>
             </label>
             <textarea
               data-nocase
@@ -1020,19 +1199,19 @@ export default function PedidoOnline() {
               value={form.obs}
               onChange={e => setForm(f => ({ ...f, obs: e.target.value }))}
               rows={3}
-              className="w-full rounded-xl px-4 py-4 text-white placeholder-stone-600 focus:outline-none resize-none text-base border"
-              style={{ background: '#1a1008', borderColor: 'rgba(255,255,255,0.08)' }}
+              className="w-full rounded-xl px-4 py-4 text-white placeholder-stone-700 focus:outline-none resize-none text-base"
+              style={{ background: '#1C0E06', border: '1px solid rgba(255,255,255,0.08)' }}
             />
           </div>
         </div>
       </div>
 
-      <div className="p-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+      <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         <button
           onClick={confirmarPedido}
           disabled={enviando}
-          className="w-full font-bold py-5 rounded-2xl text-base text-white shadow-xl shadow-orange-500/25 transition-all disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
+          className="w-full font-bold py-5 rounded-2xl text-base text-white transition-all disabled:opacity-60"
+          style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)', boxShadow: '0 6px 24px rgba(249,115,22,0.3)' }}
         >
           {enviando ? 'Confirmando...' : `Confirmar pedido · ${fmtR$(total)}`}
         </button>
@@ -1052,7 +1231,7 @@ export default function PedidoOnline() {
       )}
 
       {/* Desktop */}
-      <div className="hidden md:block min-h-screen" style={{ background: '#0f0a07' }}>
+      <div className="hidden md:block min-h-screen" style={{ background: '#0D0600' }}>
         <div className="max-w-5xl mx-auto px-6 py-8 grid gap-8" style={{ gridTemplateColumns: '1fr 380px' }}>
           {ColunaCatalogo}
           {ColunaCarrinho}
