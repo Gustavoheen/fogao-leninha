@@ -129,13 +129,25 @@ function Bolha({ msg }) {
         padding: '8px 12px',
         border: `1px solid ${isEntrada ? 'rgba(255,255,255,0.06)' : isHumano ? 'rgba(37,99,235,0.2)' : 'rgba(22,163,74,0.2)'}`,
       }}>
-        {isAudio && (
+        {isAudio && msg.media_base64 && (
+          <audio controls style={{ display: 'block', maxWidth: 240, marginBottom: msg.transcricao ? 6 : 4 }}
+            src={`data:${msg.media_mime || 'audio/ogg'};base64,${msg.media_base64}`} />
+        )}
+        {isAudio && !msg.media_base64 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: msg.transcricao ? 6 : 0 }}>
             <Mic size={14} color="#f97316" />
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Áudio</span>
           </div>
         )}
-        {isImagem && (
+        {isImagem && msg.media_base64 && (
+          <img
+            src={`data:${msg.media_mime || 'image/jpeg'};base64,${msg.media_base64}`}
+            alt="imagem"
+            style={{ display: 'block', maxWidth: 220, maxHeight: 220, borderRadius: 8, marginBottom: msg.conteudo ? 6 : 4, cursor: 'pointer' }}
+            onClick={() => window.open(`data:${msg.media_mime || 'image/jpeg'};base64,${msg.media_base64}`, '_blank')}
+          />
+        )}
+        {isImagem && !msg.media_base64 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: msg.conteudo ? 4 : 0 }}>
             <Image size={14} color="#a78bfa" />
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Imagem</span>
