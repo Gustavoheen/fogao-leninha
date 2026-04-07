@@ -1,32 +1,32 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+
+// Email fixo do admin — única conta com acesso ao painel
+const ADMIN_EMAIL = 'admin@fogaoleninha.com.br'
 
 export default function Login() {
   const navigate = useNavigate()
   const [senha, setSenha] = useState('')
   const [mostrar, setMostrar] = useState(false)
   const [erro, setErro] = useState(false)
-  const [senhaCorreta, setSenhaCorreta] = useState(null) // null = carregando
+  const [entrando, setEntrando] = useState(false)
 
-  useEffect(() => {
-    supabase.from('configuracoes').select('senhaAdmin').eq('id', 1).single()
-      .then(({ data }) => {
-        setSenhaCorreta(data?.senhaAdmin || 'fogao2024')
-      })
-      .catch(() => setSenhaCorreta('fogao2024'))
-  }, [])
-
-  function entrar(e) {
+  async function entrar(e) {
     e.preventDefault()
-    const correta = senhaCorreta ?? 'fogao2024'
-    if (senha === correta) {
-      sessionStorage.setItem('fogao_logado', '1')
-      navigate('/pedidos', { replace: true })
-    } else {
+    setEntrando(true)
+    setErro(false)
+    const { error } = await supabase.auth.signInWithPassword({
+      email: ADMIN_EMAIL,
+      password: senha,
+    })
+    setEntrando(false)
+    if (error) {
       setErro(true)
       setSenha('')
+    } else {
+      navigate('/pedidos', { replace: true })
     }
   }
 
@@ -81,7 +81,7 @@ export default function Login() {
                 onChange={e => { setSenha(e.target.value); setErro(false) }}
                 placeholder="••••••••"
                 autoFocus
-                disabled={senhaCorreta === null}
+                disabled={entrando}
                 style={{
                   width: '100%', padding: '11px 40px 11px 38px',
                   borderRadius: 10, fontSize: 14,
@@ -90,7 +90,7 @@ export default function Login() {
                   fontFamily: 'Inter, sans-serif',
                   transition: 'border-color 0.15s',
                   boxSizing: 'border-box',
-                  opacity: senhaCorreta === null ? 0.5 : 1,
+                  opacity: entrando ? 0.5 : 1,
                 }}
               />
               <button
@@ -113,18 +113,18 @@ export default function Login() {
 
           <button
             type="submit"
-            disabled={senhaCorreta === null}
+            disabled={entrando}
             style={{
               width: '100%', padding: '12px', borderRadius: 10,
               fontSize: 14, fontWeight: 700,
-              background: senhaCorreta === null ? '#CFC4BB' : '#C8221A',
+              background: entrando ? '#CFC4BB' : '#C8221A',
               color: '#fff', border: 'none',
-              cursor: senhaCorreta === null ? 'default' : 'pointer',
-              boxShadow: senhaCorreta === null ? 'none' : '0 4px 16px rgba(200,34,26,0.40)',
+              cursor: entrando ? 'default' : 'pointer',
+              boxShadow: entrando ? 'none' : '0 4px 16px rgba(200,34,26,0.40)',
               transition: 'all 0.15s', letterSpacing: '0.02em',
             }}
           >
-            {senhaCorreta === null ? 'Carregando...' : 'Entrar no Painel'}
+            {entrando ? 'Entrando...' : 'Entrar no Painel'}
           </button>
         </form>
 

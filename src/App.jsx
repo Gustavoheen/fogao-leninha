@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { AppProvider } from './context/AppContext'
 import Layout from './components/Layout'
 import PedidoOnline from './pages/PedidoOnline'
@@ -14,10 +15,23 @@ import Funcionarios from './pages/Funcionarios'
 import Dashboard from './pages/Dashboard'
 import Configuracoes from './pages/Configuracoes'
 import Atendimento from './pages/Atendimento'
+import { supabase } from './lib/supabase'
 
 function RequireAuth({ children }) {
-  const logado = sessionStorage.getItem('fogao_logado')
-  if (!logado) return <Navigate to="/login" replace />
+  const [status, setStatus] = useState('loading') // 'loading' | 'authed' | 'unauthed'
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setStatus(session ? 'authed' : 'unauthed')
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setStatus(session ? 'authed' : 'unauthed')
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (status === 'loading') return null
+  if (status === 'unauthed') return <Navigate to="/login" replace />
   return children
 }
 
