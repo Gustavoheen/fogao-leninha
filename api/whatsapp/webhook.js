@@ -254,6 +254,17 @@ module.exports = async function handler(req, res) {
     if (!sessao) sessao = await upsertSessao(sbPublic, telefone, { estado: 'novo', humano_ativo: false, nome_contato: nomeContato, bot_msg_ids: [], ia_historico: [], ia_pedido: null, dados_cliente: null })
     if (sessao.humano_ativo) return res.status(200).json({ ok: true, skip: 'humano_ativo' })
 
+    // Pergunta sobre preço/cardápio — qualquer estado → IA responde
+    const isPerguntaPreco = /quanto custa|qual o pre[çc]o|quanto [eé]|valor d[eoa]|pre[çc]o d[eoa]|quanto fica|quanto sai/i.test(textoLower)
+    if (isPerguntaPreco && sessao.estado !== 'pedindo_ia') {
+      const historico = sessao.ia_historico || []
+      const { texto: respostaIA } = await chatComIA(historico, texto)
+      const novoHistorico = [...historico, { role: 'user', text: texto }, { role: 'model', text: respostaIA }].slice(-30)
+      await enviarBot(sbPublic, telefone, respostaIA)
+      await upsertSessao(sbPublic, telefone, { ia_historico: novoHistorico })
+      return res.status(200).json({ ok: true, action: 'pergunta_preco' })
+    }
+
     // Fora do horário
     const aberto = modoBot === 'ligado' ? true : (config.lojaAberta !== false)
     if (!aberto) {
@@ -591,10 +602,14 @@ module.exports = async function handler(req, res) {
           msg += `────────────────────\n🏦 *Dados PIX:*\nChave: *${pixChave}*\n\n`
           if (pixChave && resultado.total > 0) {
             const copiaCola = gerarPixCopiaCola({ chave: pixChave, nome: pixNome, cidade: 'Visconde do Rio Branco', valor: resultado.total, txid: `PED${resultado.id}` })
-            msg += `📋 *Copia e Cola:*\n${copiaCola}\n\n`
-            // Enviar QR Code como imagem depois
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(copiaCola)}`
-            setTimeout(() => enviarImagem(telefone, qrUrl, `📱 *QR Code PIX*\nEscaneie com o app do banco! 💰`), 1500)
+            msg += `\n`
+            // Enviar copia e cola como msg separada (fácil copiar) + QR Code
+            setTimeout(async () => {
+              await enviarTexto(telefone, copiaCola)
+              await enviarBot(sbPublic, telefone, `👆 *Segure a mensagem acima pra copiar o código PIX!*`)
+              const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(copiaCola)}`
+              await enviarImagem(telefone, qrUrl, `📱 *QR Code PIX*\nEscaneie com o app do banco! 💰`)
+            }, 1500)
           }
           msg += `⚠️ *Envie o comprovante aqui!* 🧾\n\n`
         }
