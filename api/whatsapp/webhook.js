@@ -217,23 +217,11 @@ module.exports = async function handler(req, res) {
     let texto = extrairTextoMensagem(data.message)
     const audioInfo = extrairAudioInfo(data.message)
     if (!texto && audioInfo) {
-      // Evolution API pode enviar a URL do áudio em vários campos
-      const mediaUrl = data.message?.audioMessage?.url
-        || data.message?.mediaUrl
-        || data.media?.url
-        || body.media?.url
-        || data.message?.audioMessage?.directPath
-        || null
       const base64 = data.message?.audioMessage?.base64
         || data.message?.base64
         || body.base64
         || data.base64
         || body.data?.base64
-        || null
-      const mediaUrl = data.message?.audioMessage?.url
-        || data.message?.mediaUrl
-        || data.media?.url
-        || body.media?.url
         || null
 
       console.log('[Audio] base64:', base64 ? `SIM (${base64.length})` : 'NAO', '| url:', mediaUrl ? 'SIM' : 'NAO')

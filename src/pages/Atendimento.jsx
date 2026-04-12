@@ -16,27 +16,31 @@ export default function Atendimento() {
   const [tab, setTab] = useState('conversas') // conversas | config
   const chatRef = useRef(null)
 
+  const configCarregado = useRef(false)
+
   // ── Carga inicial + polling ─────────────────────────────
   useEffect(() => {
-    carregarTudo()
-    const poll = setInterval(carregarTudo, 10000)
+    carregarTudo(true)
+    const poll = setInterval(() => carregarTudo(false), 10000)
     return () => clearInterval(poll)
   }, [])
 
-  async function carregarTudo() {
+  async function carregarTudo(primeiraVez = false) {
     try {
       const [sessRes, alertRes, statusRes, configRes] = await Promise.all([
         fetch('/api/whatsapp/sessoes').then(r => r.json()).catch(() => []),
         fetch('/api/whatsapp/alertas?status=aberto').then(r => r.json()).catch(() => []),
         fetch('/api/whatsapp/instance').then(r => r.json()).catch(() => null),
-        supabase.from('configuracoes').select('bot_ativo, bot_dicas').eq('id', 1).single(),
+        primeiraVez ? supabase.from('configuracoes').select('bot_ativo, bot_dicas').eq('id', 1).single() : { data: null },
       ])
       setSessoes(sessRes)
       setAlertas(alertRes)
       setBotStatus(statusRes)
-      if (configRes.data) {
+      // Config só carrega na primeira vez — depois o usuário controla
+      if (primeiraVez && configRes.data) {
         setBotModo(configRes.data.bot_ativo || 'auto')
         setBotDicas(configRes.data.bot_dicas || '')
+        configCarregado.current = true
       }
     } catch {}
   }
