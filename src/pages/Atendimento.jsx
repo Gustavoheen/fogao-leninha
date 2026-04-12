@@ -289,20 +289,13 @@ export default function Atendimento() {
       setBotLigado(data?.bot_ativo !== 'desligado')
     })
 
-    // Realtime: sessões
-    const canalSessoes = supabase
-      .channel('atendimento-sessoes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'fogao_whatsapp_sessions' }, payload => {
-        carregarSessoes()
-        // Notificação de aguardando
-        if (payload.new?.modo === 'aguardando') {
-          try { new Audio('/notification.mp3').play().catch(() => {}) } catch {}
-        }
-      })
-      .subscribe()
+    // Polling sessões a cada 10s (mais confiável que realtime)
+    const pollSessoes = setInterval(carregarSessoes, 10000)
 
-    // Realtime: mensagens
-    const canalMsgs = supabase
+    // Realtime: mensagens (tentar, pode não existir a tabela)
+    let canalMsgs
+    try {
+      canalMsgs = supabase
       .channel('atendimento-msgs')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'whatsapp_mensagens' }, payload => {
         if (payload.new?.telefone === selecionadaRef.current) {
@@ -310,10 +303,11 @@ export default function Atendimento() {
         }
       })
       .subscribe()
+    } catch {}
 
     return () => {
-      supabase.removeChannel(canalSessoes)
-      supabase.removeChannel(canalMsgs)
+      clearInterval(pollSessoes)
+      if (canalMsgs) supabase.removeChannel(canalMsgs)
     }
   }, [])
 
