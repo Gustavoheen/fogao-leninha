@@ -207,18 +207,22 @@ module.exports = async function handler(req, res) {
       const base64 = data.message?.audioMessage?.base64
         || data.message?.base64
         || body.base64
-        || data.body?.base64
+        || data.base64
+        || body.data?.base64
+        || null
+      const mediaUrl = data.message?.audioMessage?.url
+        || data.message?.mediaUrl
+        || data.media?.url
+        || body.media?.url
         || null
 
-      console.log('[Audio] mediaUrl:', mediaUrl ? 'SIM' : 'NAO', '| base64:', base64 ? `SIM (${String(base64).length} chars)` : 'NAO')
+      console.log('[Audio] base64:', base64 ? `SIM (${base64.length})` : 'NAO', '| url:', mediaUrl ? 'SIM' : 'NAO')
 
-      if (mediaUrl || base64) {
-        texto = await transcreverAudio(mediaUrl, base64, audioInfo.mimetype)
-        if (texto) console.log('[Audio] Transcrito:', texto.substring(0, 100))
-        else console.log('[Audio] Transcrição vazia')
+      if (base64) {
+        texto = await transcreverAudio(null, base64, audioInfo.mimetype)
+      } else if (mediaUrl) {
+        texto = await transcreverAudio(mediaUrl, null, audioInfo.mimetype)
       } else {
-        console.log('[Audio] Sem URL nem base64 — buscando via Evolution API')
-        // Buscar base64 via Evolution API getBase64FromMediaMessage
         try {
           const evoUrl = (process.env.EVOLUTION_API_URL || '').replace(/\/$/, '')
           const evoKey = process.env.EVOLUTION_API_KEY || ''
@@ -229,15 +233,15 @@ module.exports = async function handler(req, res) {
             body: JSON.stringify({ message: { key: data.key, message: data.message } }),
           })
           const mediaData = await mediaRes.json()
-          console.log('[Audio] getBase64 response:', mediaData?.base64 ? `OK (${mediaData.base64.length} chars)` : 'sem base64', mediaData?.mimetype || '')
-          if (mediaData?.base64) {
-            texto = await transcreverAudio(null, mediaData.base64, mediaData.mimetype || audioInfo.mimetype)
-            if (texto) console.log('[Audio] Transcrito via getBase64:', texto.substring(0, 100))
-          }
-        } catch (e) {
-          console.error('[Audio] Erro ao buscar base64 via Evolution:', e.message)
-        }
+          if (mediaData?.base64) texto = await transcreverAudio(null, mediaData.base64, mediaData.mimetype || audioInfo.mimetype)
+        } catch (e) { console.error('[Audio] fallback erro:', e.message) }
       }
+
+      if (!texto) {
+        await enviarBot(sbPublic, telefone, `Desculpe, não consegui ouvir seu áudio. 🎙️\nPode digitar o que deseja? 😊`)
+        return res.status(200).json({ ok: true, action: 'audio_nao_transcrito' })
+      }
+      texto = texto.trim()
     }
     if (!texto) return res.status(200).json({ ok: true, skip: 'no text' })
 
