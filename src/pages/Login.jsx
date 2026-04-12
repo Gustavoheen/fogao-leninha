@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Lock, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
-// Email fixo do admin — única conta com acesso ao painel
-const ADMIN_EMAIL = 'admin@fogaoleninha.com.br'
-
 export default function Login() {
   const navigate = useNavigate()
   const [senha, setSenha] = useState('')
@@ -17,17 +14,36 @@ export default function Login() {
     e.preventDefault()
     setEntrando(true)
     setErro(false)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password: senha,
-    })
-    setEntrando(false)
-    if (error) {
-      setErro(true)
-      setSenha('')
-    } else {
-      navigate('/pedidos', { replace: true })
+
+    try {
+      // Login local — valida senha contra tabela configuracoes
+      const { data } = await supabase
+        .from('configuracoes')
+        .select('senhaAdmin')
+        .eq('id', 1)
+        .single()
+
+      const senhaCorreta = data?.senhaAdmin || 'fogao2024'
+
+      if (senha === senhaCorreta) {
+        sessionStorage.setItem('fogao_auth', 'true')
+        navigate('/pedidos', { replace: true })
+      } else {
+        setErro(true)
+        setSenha('')
+      }
+    } catch {
+      // Fallback se banco falhar
+      if (senha === 'fogao2024') {
+        sessionStorage.setItem('fogao_auth', 'true')
+        navigate('/pedidos', { replace: true })
+      } else {
+        setErro(true)
+        setSenha('')
+      }
     }
+
+    setEntrando(false)
   }
 
   return (

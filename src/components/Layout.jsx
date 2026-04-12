@@ -36,7 +36,7 @@ export default function Layout({ children }) {
   const [mostrarConf, setMostrarConf] = useState(false)
 
   async function sair() {
-    await supabase.auth.signOut()
+    sessionStorage.removeItem('fogao_auth')
     navigate('/login', { replace: true })
   }
 
@@ -44,18 +44,12 @@ export default function Layout({ children }) {
     e.preventDefault()
     if (senhaNova.length < 4) { setErroSenha('Mínimo 4 caracteres'); return }
     if (senhaNova !== senhaConf) { setErroSenha('As senhas não coincidem'); return }
-    // Verifica senha atual re-autenticando
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error: verifyError } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: senhaAtual,
-    })
-    if (verifyError) { setErroSenha('Senha atual incorreta'); return }
-    // Atualiza senha no Supabase Auth
-    const { error } = await supabase.auth.updateUser({ password: senhaNova })
+    // Verifica senha atual contra configuracoes
+    const { data } = await supabase.from('configuracoes').select('senhaAdmin').eq('id', 1).single()
+    if (senhaAtual !== (data?.senhaAdmin || 'fogao2024')) { setErroSenha('Senha atual incorreta'); return }
+    // Atualiza senha na tabela configuracoes
+    const { error } = await supabase.from('configuracoes').update({ senhaAdmin: senhaNova }).eq('id', 1)
     if (error) { setErroSenha('Erro ao salvar. Tente novamente.'); return }
-    // Mantém configuracoes em sync para exibição
-    await supabase.from('configuracoes').update({ senhaAdmin: senhaNova }).eq('id', 1)
     setOkSenha(true); setErroSenha('')
     setSenhaAtual(''); setSenhaNova(''); setSenhaConf('')
     setTimeout(() => { setModalSenha(false); setOkSenha(false) }, 1500)

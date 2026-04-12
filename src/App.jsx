@@ -18,20 +18,8 @@ import Atendimento from './pages/Atendimento'
 import { supabase } from './lib/supabase'
 
 function RequireAuth({ children }) {
-  const [status, setStatus] = useState('loading') // 'loading' | 'authed' | 'unauthed'
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setStatus(session ? 'authed' : 'unauthed')
-    })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setStatus(session ? 'authed' : 'unauthed')
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  if (status === 'loading') return null
-  if (status === 'unauthed') return <Navigate to="/login" replace />
+  const authed = sessionStorage.getItem('fogao_auth') === 'true'
+  if (!authed) return <Navigate to="/login" replace />
   return children
 }
 
