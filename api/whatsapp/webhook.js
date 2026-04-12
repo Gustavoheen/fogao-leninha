@@ -229,26 +229,98 @@ module.exports = async function handler(req, res) {
       case 'novo': {
         const { cardapio: cardHoje, bebidas } = await buscarCardapioEConfig()
         const cardapioTexto = formatarCardapioDoDia(cardHoje, bebidas)
+        const opcoes = (cardHoje.opcoes || []).filter(o => o.disponivel !== false)
 
         await enviarBot(sbPublic, telefone,
           `Olá${nomeContato ? `, ${nomeContato}` : ''}! 👋\n\n` +
           `Bem-vindo ao *${NOME_LOJA}*! 🍲\n\n` +
-          `Aqui está nosso cardápio de hoje:\n\n` +
-          `${cardapioTexto}\n` +
-          `O que vai ser hoje? Me diga o que deseja! 😋`
+          `${cardapioTexto}`
         )
+
+        // Botões pra escolher opção
+        const botoes = opcoes.map((o, i) => ({
+          id: `btn_op${i + 1}`,
+          text: `${o.nome || 'Opção ' + (i + 1)}${o.tipoCarnes === 'especial' && o.pratoEspecial ? ' — ' + o.pratoEspecial : ''}`,
+        }))
+        if (botoes.length > 0) {
+          await enviarBotoes(telefone, `Qual opção vai ser hoje?`, botoes, NOME_LOJA)
+        }
+
         await upsertSessao(sbPublic, telefone, {
-          estado: 'pedindo_ia', nome_contato: nomeContato,
+          estado: 'escolhendo_opcao', nome_contato: nomeContato,
           ia_historico: [], ia_pedido: null, dados_cliente: null,
         })
         return res.status(200).json({ ok: true, action: 'saudacao_cardapio' })
+      }
+
+      // ═══ ESCOLHENDO OPÇÃO ═══
+      case 'escolhendo_opcao': {
+        const { cardapio: cardHoje3, bebidas: beb3 } = await buscarCardapioEConfig()
+        const opcoes3 = (cardHoje3.opcoes || []).filter(o => o.disponivel !== false)
+        const carnes3 = (cardHoje3.carnes || []).filter(c => c && c.trim())
+
+        // Detectar qual opção escolheu
+        let opcaoIdx = -1
+        if (/btn_op1|op.*1|opção.*1|primeira|1/i.test(textoLower)) opcaoIdx = 0
+        else if (/btn_op2|op.*2|opção.*2|segunda|2/i.test(textoLower)) opcaoIdx = 1
+        else if (/btn_op3|op.*3|opção.*3|terceira|3/i.test(textoLower)) opcaoIdx = 2
+
+        if (opcaoIdx < 0 || opcaoIdx >= opcoes3.length) {
+          // Não entendeu — pode ser um pedido direto, manda pra IA
+          const { cardapio: ch, bebidas: bb } = await buscarCardapioEConfig()
+          await enviarBot(sbPublic, telefone, `${formatarCardapioDoDia(ch, bb)}\nMe diga o que deseja ou escolha a opção! 📝`)
+          await upsertSessao(sbPublic, telefone, { estado: 'pedindo_ia', ia_historico: [], ia_pedido: null, dados_cliente: null })
+          // Passar a mensagem original pra IA processar
+          const { texto: respostaIA, pedido: pedidoIA } = await chatComIA([], texto)
+          if (respostaIA) await enviarBot(sbPublic, telefone, respostaIA)
+          await upsertSessao(sbPublic, telefone, { ia_historico: [{ role: 'user', text: texto }, { role: 'model', text: respostaIA }] })
+          return res.status(200).json({ ok: true, action: 'ia_direto' })
+        }
+
+        const opcaoEscolhida = opcoes3[opcaoIdx]
+        const isEspecial = opcaoEscolhida.tipoCarnes === 'especial'
+
+        if (isEspecial) {
+          // Opção especial — não tem escolha de carne, perguntar tamanho direto
+          await enviarBot(sbPublic, telefone,
+            `🍽️ *${opcaoEscolhida.nome}* — ${opcaoEscolhida.pratoEspecial || 'Prato especial'} ✅\n\n` +
+            `Qual tamanho?`
+          )
+          await enviarBotoes(telefone, `Escolha o tamanho:`, [
+            { id: 'btn_P', text: `📦 Pequena (P) — R$ ${cardHoje3.precoP}` },
+            { id: 'btn_G', text: `📦 Grande (G) — R$ ${cardHoje3.precoG}` },
+          ], 'Tamanho')
+          await upsertSessao(sbPublic, telefone, {
+            estado: 'pedindo_ia',
+            ia_historico: [{ role: 'user', text: `Quero ${opcaoEscolhida.nome} (${opcaoEscolhida.pratoEspecial})` }],
+            ia_pedido: null, dados_cliente: null,
+          })
+        } else {
+          // Opção padrão — precisa escolher carne
+          if (carnes3.length > 0) {
+            const botoesCarnes = carnes3.map((c, i) => ({ id: `btn_carne${i + 1}`, text: `🥩 ${c}` }))
+            await enviarBot(sbPublic, telefone, `🍽️ *${opcaoEscolhida.nome}* ✅\n\nQual carne?`)
+            await enviarBotoes(telefone, `Escolha a carne:`, botoesCarnes.slice(0, 3), 'Carne')
+          } else {
+            await enviarBot(sbPublic, telefone, `🍽️ *${opcaoEscolhida.nome}* ✅\n\nQual tamanho?`)
+            await enviarBotoes(telefone, `Escolha:`, [
+              { id: 'btn_P', text: `📦 Pequena (P) — R$ ${cardHoje3.precoP}` },
+              { id: 'btn_G', text: `📦 Grande (G) — R$ ${cardHoje3.precoG}` },
+            ], 'Tamanho')
+          }
+          await upsertSessao(sbPublic, telefone, {
+            estado: 'pedindo_ia',
+            ia_historico: [{ role: 'user', text: `Quero ${opcaoEscolhida.nome}` }],
+            ia_pedido: null, dados_cliente: null,
+          })
+        }
+        return res.status(200).json({ ok: true, action: 'opcao_escolhida' })
       }
 
       case 'saudacao':
       case 'insistiu_site':
       case 'ofereceu_whatsapp':
       case 'perguntou_duvida': {
-        // Qualquer interação nestes estados → manda pro modo IA
         const querAtendente = /atendente|humano|pessoa|falar com/i.test(textoLower)
         if (querAtendente) {
           await enviarBot(sbPublic, telefone, `Vou te direcionar para um atendente! 🙋‍♂️\nAguarde. 🙏`)
@@ -256,11 +328,18 @@ module.exports = async function handler(req, res) {
           return res.status(200).json({ ok: true, action: 'humano' })
         }
 
+        // Manda cardápio + botões de opção
         const { cardapio: cardHoje2, bebidas: beb2 } = await buscarCardapioEConfig()
         const cardTexto2 = formatarCardapioDoDia(cardHoje2, beb2)
-        await enviarBot(sbPublic, telefone, `Nosso cardápio de hoje:\n\n${cardTexto2}\n\nMe diga o que deseja! 📝`)
-        await upsertSessao(sbPublic, telefone, { estado: 'pedindo_ia', ia_historico: [], ia_pedido: null, dados_cliente: null })
-        return res.status(200).json({ ok: true, action: 'cardapio_enviado' })
+        const opcoes2 = (cardHoje2.opcoes || []).filter(o => o.disponivel !== false)
+        await enviarBot(sbPublic, telefone, `Nosso cardápio de hoje:\n\n${cardTexto2}`)
+        const botoes2 = opcoes2.map((o, i) => ({
+          id: `btn_op${i + 1}`,
+          text: `${o.nome || 'Opção ' + (i + 1)}${o.tipoCarnes === 'especial' && o.pratoEspecial ? ' — ' + o.pratoEspecial : ''}`,
+        }))
+        if (botoes2.length > 0) await enviarBotoes(telefone, `Qual opção?`, botoes2, NOME_LOJA)
+        await upsertSessao(sbPublic, telefone, { estado: 'escolhendo_opcao', ia_historico: [], ia_pedido: null, dados_cliente: null })
+        return res.status(200).json({ ok: true, action: 'cardapio_opcoes' })
       }
 
       case 'fora_horario': {

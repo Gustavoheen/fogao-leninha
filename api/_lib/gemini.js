@@ -36,28 +36,30 @@ function formatarCardapioDoDia(cardapio, bebidas) {
   let texto = `═══ CARDÁPIO DE HOJE ═══\n`
   texto += `*Fogão a Lenha da Leninha* 🍲\n\n`
 
-  if (carnes.length > 0) {
-    texto += `🥩 *CARNES DO DIA:*\n`
-    carnes.forEach((c, i) => { texto += `  ${i + 1}. ${c}\n` })
-    texto += `\n`
-  }
-
-  texto += `📦 *TAMANHOS:*\n`
-  texto += `  • Pequena (P) — R$ ${precoP}\n`
-  texto += `  • Grande (G) — R$ ${precoG}\n\n`
-
   if (opcoes.length > 0) {
     opcoes.forEach((o, i) => {
       texto += `🍽️ *${o.nome || 'Opção ' + (i + 1)}:*\n`
       if (o.tipoCarnes === 'especial' && o.pratoEspecial) {
-        texto += `  🥩 ${o.pratoEspecial}\n`
+        // Opção 1 = prato especial (carne já é o prato)
+        texto += `  🥩 *${o.pratoEspecial}*\n`
       }
       if (o.acompanhamentos && o.acompanhamentos.length > 0) {
-        texto += `  Acompanha: ${o.acompanhamentos.join(', ')}\n`
+        texto += `  • ${o.acompanhamentos.join('\n  • ')}\n`
       }
       texto += `\n`
     })
   }
+
+  // Carnes são apenas pra Opção 2
+  if (carnes.length > 0) {
+    texto += `🥩 *CARNES (para Opção 2):*\n`
+    carnes.forEach((c, i) => { texto += `  ${i + 1}. ${c}\n` })
+    texto += `\n`
+  }
+
+  texto += `📦 *TAMANHO:*\n`
+  texto += `  • Pequena (P) — R$ ${precoP}\n`
+  texto += `  • Grande (G) — R$ ${precoG}\n\n`
 
   if (salada && salada.disponivel) {
     texto += `🥗 *SALADA:* R$ ${salada.preco || '?'}\n`
@@ -100,11 +102,15 @@ REGRAS DO CARDÁPIO (MUITO IMPORTANTE):
 
 1. O CARDÁPIO MUDA TODO DIA. Use APENAS o que está listado abaixo.
 2. MARMITEX tem 2 tamanhos: P (Pequena) e G (Grande). SEMPRE pergunte o tamanho se não disse.
-3. O cliente escolhe uma OPÇÃO (Opção 1 ou Opção 2). Cada opção tem seus acompanhamentos.
-4. NÃO PODE misturar itens da Opção 1 com Opção 2. Cada opção é um prato fechado.
-5. O cliente pode apenas RETIRAR acompanhamentos que não quer ("sem feijão", "tira o macarrão").
-6. Se perguntar "o que tem hoje?", mande o cardápio completo.
-7. Assuma 1 marmitex se não disse quantidade.
+3. Existem 2 OPÇÕES:
+   - OPÇÃO 1 = prato ESPECIAL do dia (ex: Feijoada, Rabada, etc). Já vem pronto com seus acompanhamentos. NÃO tem escolha de carne — a carne É o prato especial.
+   - OPÇÃO 2 = prato padrão com acompanhamentos + ESCOLHA DE CARNE. O cliente escolhe: Frango Grelhado, Pernil Grelhado, ou 2 Ovos Fritos (ou outra carne listada no dia).
+4. As CARNES DO DIA são APENAS para a Opção 2. Na Opção 1 a carne já é o prato especial.
+5. NÃO PODE misturar itens da Opção 1 com Opção 2. Cada opção é um prato fechado.
+6. O cliente pode apenas RETIRAR acompanhamentos que não quer ("sem feijão", "tira o macarrão").
+7. Se perguntar "o que tem hoje?", mande o cardápio completo.
+8. Assuma 1 marmitex se não disse quantidade.
+9. Se o cliente pedir Opção 2 sem dizer a carne, PERGUNTE qual carne quer.
 
 ═══════════════════════════════════════════
 ADICIONAIS (COBRAM EXTRA):
