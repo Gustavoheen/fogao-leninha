@@ -189,10 +189,48 @@ module.exports = async function handler(req, res) {
 
     // Extrair texto ou transcrever áudio
     let texto = extrairTextoMensagem(data.message)
-    if (!texto && extrairAudioInfo(data.message)) {
-      const mediaUrl = data.message?.audioMessage?.url || data.media?.url || null
-      const base64 = data.message?.base64 || null
-      texto = await transcreverAudio(mediaUrl, base64, extrairAudioInfo(data.message)?.mimetype)
+    const audioInfo = extrairAudioInfo(data.message)
+    if (!texto && audioInfo) {
+      // Evolution API pode enviar a URL do áudio em vários campos
+      const mediaUrl = data.message?.audioMessage?.url
+        || data.message?.mediaUrl
+        || data.media?.url
+        || body.media?.url
+        || data.message?.audioMessage?.directPath
+        || null
+      const base64 = data.message?.audioMessage?.base64
+        || data.message?.base64
+        || body.base64
+        || data.body?.base64
+        || null
+
+      console.log('[Audio] mediaUrl:', mediaUrl ? 'SIM' : 'NAO', '| base64:', base64 ? `SIM (${String(base64).length} chars)` : 'NAO')
+
+      if (mediaUrl || base64) {
+        texto = await transcreverAudio(mediaUrl, base64, audioInfo.mimetype)
+        if (texto) console.log('[Audio] Transcrito:', texto.substring(0, 100))
+        else console.log('[Audio] Transcrição vazia')
+      } else {
+        console.log('[Audio] Sem URL nem base64 — áudio não acessível')
+        // Tentar baixar via Evolution API
+        try {
+          const evoUrl = (process.env.EVOLUTION_API_URL || '').replace(/\/$/, '')
+          const evoKey = process.env.EVOLUTION_API_KEY || ''
+          const evoInst = process.env.EVOLUTION_INSTANCE || 'fogao'
+          const mediaRes = await fetch(`${evoUrl}/chat/getBase64FromMediaMessage/${evoInst}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: evoKey },
+            body: JSON.stringify({ message: data }),
+          })
+          const mediaData = await mediaRes.json()
+          if (mediaData?.base64) {
+            texto = await transcreverAudio(null, mediaData.base64, audioInfo.mimetype)
+            if (texto) console.log('[Audio] Transcrito via getBase64:', texto.substring(0, 100))
+          }
+        } catch (e) {
+          console.error('[Audio] Erro ao buscar base64 via Evolution:', e.message)
+        }
+      }
     }
     if (!texto) return res.status(200).json({ ok: true, skip: 'no text' })
 
