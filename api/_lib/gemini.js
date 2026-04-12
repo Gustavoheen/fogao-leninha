@@ -111,6 +111,8 @@ REGRAS DO CARDÁPIO (MUITO IMPORTANTE):
 7. Se perguntar "o que tem hoje?", mande o cardápio completo.
 8. Assuma 1 marmitex se não disse quantidade.
 9. Se o cliente pedir Opção 2 sem dizer a carne, PERGUNTE qual carne quer.
+10. Se alguma opção tiver VARIAÇÕES nos acompanhamentos (ex: "arroz branco ou temperado", "feijão carioca ou preto"), PERGUNTE qual o cliente prefere antes de confirmar.
+11. Fique atento a qualquer "ou" nos acompanhamentos — significa escolha do cliente.
 
 ═══════════════════════════════════════════
 ADICIONAIS (COBRAM EXTRA):
