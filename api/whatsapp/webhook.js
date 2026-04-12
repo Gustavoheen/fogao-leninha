@@ -179,11 +179,17 @@ module.exports = async function handler(req, res) {
     const msgId = data.key.id
     const nomeContato = data.pushName || ''
 
-    // Human takeover detection
+    // Human takeover — só ativa quando humano DIGITA e ENVIA texto (não reação, visualização, etc)
     if (fromMe) {
-      const sessao = await buscarSessao(sbPublic, telefone)
-      const botIds = sessao?.bot_msg_ids || []
-      if (!botIds.includes(msgId)) await upsertSessao(sbPublic, telefone, { humano_ativo: true, estado: 'humano' })
+      const msgTexto = extrairTextoMensagem(data.message)
+      if (msgTexto) {
+        // É uma mensagem de texto enviada pelo humano
+        const sessao = await buscarSessao(sbPublic, telefone)
+        const botIds = sessao?.bot_msg_ids || []
+        if (!botIds.includes(msgId)) {
+          await upsertSessao(sbPublic, telefone, { humano_ativo: true, estado: 'humano' })
+        }
+      }
       return res.status(200).json({ ok: true, handled: 'outgoing' })
     }
 
