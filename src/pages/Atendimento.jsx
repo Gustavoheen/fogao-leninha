@@ -6,8 +6,7 @@ import {
   Mic, Image, Plus, X,
 } from 'lucide-react'
 
-const BOT_URL = import.meta.env.VITE_BOT_URL || 'https://fogao-bot.up.railway.app'
-const API_KEY = 'fogao2024'
+const BOT_URL = '/api/whatsapp'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function fmtHora(iso) {
@@ -276,17 +275,24 @@ export default function Atendimento() {
   const [cardapio, setCardapio]       = useState(null)
   const [modalPedido, setModalPedido] = useState(false)
   const [filtro, setFiltro]           = useState('todos') // todos | aguardando | humano | bot
+  const [botStatus, setBotStatus]     = useState(null)
+  const [botLigado, setBotLigado]     = useState(true)
   const msgEndRef = useRef(null)
 
   // ── Carga inicial ──────────────────────────────────────────────────────
   useEffect(() => {
     carregarSessoes()
     carregarCardapio()
+    // Status do bot e config
+    fetch('/api/whatsapp/instance').then(r => r.json()).then(setBotStatus).catch(() => {})
+    supabase.from('configuracoes').select('bot_ativo').eq('id', 1).single().then(({ data }) => {
+      setBotLigado(data?.bot_ativo !== 'desligado')
+    })
 
     // Realtime: sessões
     const canalSessoes = supabase
       .channel('atendimento-sessoes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_sessoes' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fogao_whatsapp_sessions' }, payload => {
         carregarSessoes()
         // Notificação de aguardando
         if (payload.new?.modo === 'aguardando') {
@@ -321,10 +327,17 @@ export default function Atendimento() {
 
   async function carregarSessoes() {
     const { data } = await supabase
-      .from('whatsapp_sessoes')
+      .from('fogao_whatsapp_sessions')
       .select('*')
-      .order('atualizado_em', { ascending: false })
-    setSessoes(data || [])
+      .order('updated_at', { ascending: false })
+    // Mapear campos novos pra formato esperado pelo UI
+    const mapped = (data || []).map(s => ({
+      ...s,
+      modo: s.humano_ativo ? 'humano' : s.estado === 'pedindo_ia' ? 'bot' : s.estado === 'novo' || s.estado === 'saudacao' ? 'aguardando' : 'bot',
+      nome: s.nome_contato || s.telefone,
+      atualizado_em: s.updated_at,
+    }))
+    setSessoes(mapped)
   }
 
   async function carregarCardapio() {
@@ -347,12 +360,12 @@ export default function Atendimento() {
   async function setModo(modo) {
     if (!selecionada) return
     try {
-      await fetch(`${BOT_URL}/admin/modo`, {
-        method: 'POST',
+      await fetch(`${BOT_URL}/sessoes`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telefone: selecionada, modo, apiKey: API_KEY }),
+        body: JSON.stringify({ telefone: selecionada, humano_ativo: modo === 'humano' }),
       })
-      await supabase.from('whatsapp_sessoes').update({ modo }).eq('telefone', selecionada)
+      await supabase.from('fogao_whatsapp_sessions').update({ estado: modo === 'humano' ? 'humano' : 'saudacao', humano_ativo: modo === 'humano' }).eq('telefone', selecionada)
       setSessoes(prev => prev.map(s => s.telefone === selecionada ? { ...s, modo } : s))
     } catch (e) {
       alert('Erro ao mudar modo: ' + e.message)
@@ -365,10 +378,10 @@ export default function Atendimento() {
     if (!texto.trim() || !selecionada || enviando) return
     setEnviando(true)
     try {
-      await fetch(`${BOT_URL}/admin/send`, {
-        method: 'POST',
+      await fetch(`${BOT_URL}/sessoes`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telefone: selecionada, texto: texto.trim(), apiKey: API_KEY }),
+        body: JSON.stringify({ telefone: selecionada, mensagem: texto.trim() }),
       })
       setTexto('')
     } catch (e) {
@@ -429,12 +442,34 @@ export default function Atendimento() {
         />
       )}
 
+      {/* ── Status + QR Code (topo) ─────────────────────────── */}
+      <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 50 }}>
+        {botStatus && !botStatus.connected && (
+          <a href="/api/whatsapp/qrcode" target="_blank" style={{ display: 'inline-block', margin: 8, padding: '6px 12px', background: '#ef4444', color: '#fff', borderRadius: 8, fontSize: 11, fontWeight: 700, textDecoration: 'none' }}>
+            ⚠️ WhatsApp desconectado — Clique pra conectar
+          </a>
+        )}
+      </div>
+
       {/* ── Lista de conversas ──────────────────────────────────────── */}
       <div style={{ width: 280, minWidth: 280, borderRight: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', background: '#110704' }}>
-        {/* Header */}
-        <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        {/* Liga/Desliga + Header */}
+        <div style={{ padding: '8px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: botLigado ? '#22c55e' : '#ef4444', display: 'inline-block' }}></span>
+            <span style={{ fontSize: 11, color: botLigado ? '#22c55e' : '#ef4444', fontWeight: 600 }}>{botLigado ? 'Bot ON' : 'Bot OFF'}</span>
+          </div>
+          <button onClick={async () => {
+            const novo = botLigado ? 'desligado' : 'auto'
+            await supabase.from('configuracoes').update({ bot_ativo: novo }).eq('id', 1)
+            setBotLigado(!botLigado)
+          }} style={{ padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, border: 'none', cursor: 'pointer', background: botLigado ? '#ef4444' : '#22c55e', color: '#fff' }}>
+            {botLigado ? 'Desligar' : 'Ligar'}
+          </button>
+        </div>
+        <div style={{ padding: '10px 14px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <h2 style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: 0 }}>WhatsApp</h2>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: 0 }}>Conversas</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {contadores.aguardando > 0 && (
                 <span style={{ background: '#d97706', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '2px 7px' }}>
