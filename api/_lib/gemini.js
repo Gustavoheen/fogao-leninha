@@ -1,6 +1,6 @@
 /**
  * IA atendente — Fogão a Lenha da Leninha.
- * Cardápio muda todo dia (marmitex), busca do Supabase antes de cada conversa.
+ * Cardápio muda todo dia. Busca do Supabase antes de cada conversa.
  * Env: OPENAI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
  */
 
@@ -33,57 +33,52 @@ function formatarCardapioDoDia(cardapio, bebidas) {
   const precoG = cardapio.precoG || '?'
   const salada = cardapio.salada
 
-  let texto = `═══ CARDÁPIO DE HOJE — FOGÃO A LENHA DA LENINHA ═══\n\n`
+  let texto = `═══ CARDÁPIO DE HOJE ═══\n`
+  texto += `*Fogão a Lenha da Leninha* 🍲\n\n`
 
   if (carnes.length > 0) {
-    texto += `🥩 CARNES DO DIA:\n`
+    texto += `🥩 *CARNES DO DIA:*\n`
     carnes.forEach((c, i) => { texto += `  ${i + 1}. ${c}\n` })
     texto += `\n`
   }
 
-  texto += `📦 MARMITEX:\n`
+  texto += `📦 *TAMANHOS:*\n`
   texto += `  • Pequena (P) — R$ ${precoP}\n`
   texto += `  • Grande (G) — R$ ${precoG}\n\n`
 
   if (opcoes.length > 0) {
-    texto += `🍽️ OPÇÕES:\n`
     opcoes.forEach((o, i) => {
-      texto += `  ${i + 1}. ${o.nome}`
+      texto += `🍽️ *${o.nome || 'Opção ' + (i + 1)}:*\n`
       if (o.tipoCarnes === 'especial' && o.pratoEspecial) {
-        texto += ` — ${o.pratoEspecial}`
+        texto += `  🥩 ${o.pratoEspecial}\n`
       }
       if (o.acompanhamentos && o.acompanhamentos.length > 0) {
-        texto += `\n     Acompanha: ${o.acompanhamentos.join(', ')}`
+        texto += `  Acompanha: ${o.acompanhamentos.join(', ')}\n`
       }
       texto += `\n`
     })
-    texto += `\n`
   }
 
   if (salada && salada.disponivel) {
-    texto += `🥗 SALADA: R$ ${salada.preco || '?'}\n`
-    if (salada.ingredientes?.length > 0) texto += `   ${salada.ingredientes.join(', ')}\n`
+    texto += `🥗 *SALADA:* R$ ${salada.preco || '?'}\n`
+    if (salada.ingredientes?.length > 0) texto += `  ${salada.ingredientes.join(', ')}\n`
     texto += `\n`
   }
 
-  // Bebidas
   const refrigerantes = bebidas.filter(b => b.categoria === 'Refrigerante')
   const combos = bebidas.filter(b => b.categoria === 'Combo')
 
   if (refrigerantes.length > 0) {
-    texto += `🥤 BEBIDAS:\n`
+    texto += `🥤 *BEBIDAS:*\n`
     refrigerantes.forEach(b => { texto += `  • ${b.nome}${b.subtipo ? ` (${b.subtipo})` : ''} — R$ ${Number(b.preco).toFixed(2).replace('.', ',')}\n` })
     texto += `\n`
   }
 
   if (combos.length > 0) {
-    texto += `🎉 COMBOS:\n`
+    texto += `🎉 *COMBOS:*\n`
     combos.forEach(b => { texto += `  • ${b.nome} — R$ ${Number(b.preco).toFixed(2).replace('.', ',')}${b.descricao ? ` (${b.descricao})` : ''}\n` })
     texto += `\n`
   }
-
-  texto += `📦 EMBALAGEM ADICIONAL: +R$ 1,00 cada\n`
-  texto += `💳 PAGAMENTO: Pix ou Dinheiro\n`
 
   return texto
 }
@@ -91,38 +86,74 @@ function formatarCardapioDoDia(cardapio, bebidas) {
 // ─── SYSTEM PROMPT ──────────────────────────────────────────
 
 function montarSystemPrompt(cardapioTexto, config, dicasDono) {
-  let prompt = `Você é a atendente virtual do *Fogão a Lenha da Leninha*, um restaurante de comida caseira mineira em Visconde do Rio Branco, MG.
+  let prompt = `Você é a atendente virtual do *Fogão a Lenha da Leninha*, restaurante de comida caseira mineira em Visconde do Rio Branco, MG.
 
 PERSONALIDADE:
-- Simpática, acolhedora, tom de comida de vó 🍲
+- Simpática, acolhedora, tom de comida de vó mineira 🍲
 - Emojis com moderação (1-2 por mensagem)
-- Respostas CURTAS e objetivas — WhatsApp, não redação
-- Natural, como atendente de restaurante de verdade
+- Respostas CURTAS — conversa de WhatsApp, não redação
+- Natural, como atendente real
 
-REGRAS DE ATENDIMENTO:
-1. O CARDÁPIO MUDA TODO DIA. Use APENAS o cardápio abaixo. Se não tiver o item hoje, diga educadamente.
-2. MARMITEX tem 2 tamanhos: P (pequena) e G (grande). SEMPRE pergunte o tamanho se não disse.
-3. O cliente escolhe a OPÇÃO (1, 2, 3...) e pode REMOVER acompanhamentos que não quer.
-4. Pode escolher a CARNE entre as disponíveis do dia.
-5. MENSALISTA: se o cliente disser que é mensalista, marque pagamento como "Mensalista".
-6. NUNCA invente pratos ou preços.
-7. Se perguntar "o que tem hoje?", mande o cardápio do dia.
-8. Sempre sugira bebida ("Vai querer uma bebida?").
-9. Embalagem adicional: +R$1 cada.
-10. Quando listar itens, NUMERE eles. Cliente pode mandar o número.
-11. Assuma que é 1 marmitex se não disse quantidade.
+═══════════════════════════════════════════
+REGRAS DO CARDÁPIO (MUITO IMPORTANTE):
+═══════════════════════════════════════════
 
-COMO ENTENDER PEDIDOS INFORMAIS:
+1. O CARDÁPIO MUDA TODO DIA. Use APENAS o que está listado abaixo.
+2. MARMITEX tem 2 tamanhos: P (Pequena) e G (Grande). SEMPRE pergunte o tamanho se não disse.
+3. O cliente escolhe uma OPÇÃO (Opção 1 ou Opção 2). Cada opção tem seus acompanhamentos.
+4. NÃO PODE misturar itens da Opção 1 com Opção 2. Cada opção é um prato fechado.
+5. O cliente pode apenas RETIRAR acompanhamentos que não quer ("sem feijão", "tira o macarrão").
+6. Se perguntar "o que tem hoje?", mande o cardápio completo.
+7. Assuma 1 marmitex se não disse quantidade.
+
+═══════════════════════════════════════════
+ADICIONAIS (COBRAM EXTRA):
+═══════════════════════════════════════════
+• Comida em ARROZ (marmitex de arroz) = +R$ 5,00 no preço
+• Carne ADICIONAL = +R$ 7,00
+• Ovo ADICIONAL = +R$ 4,00
+Informe o cliente sobre os adicionais quando pedir.
+
+═══════════════════════════════════════════
+SALADA:
+═══════════════════════════════════════════
+Se tiver salada disponível hoje, SEMPRE pergunte se quer antes de confirmar:
+"Vai querer salada também?" (informar preço)
+
+═══════════════════════════════════════════
+BEBIDAS:
+═══════════════════════════════════════════
+Sempre sugira bebida: "Vai querer uma bebida?"
+
+═══════════════════════════════════════════
+HORÁRIOS DE ENTREGA:
+═══════════════════════════════════════════
+• Entregas começam às 10:30
+• Prazo: 30 a 60 minutos
+• Se o cliente pedir ANTES das 10h, informar que a entrega será após as 10:30
+• Se o cliente quiser horário específico, anotar na observação
+• Exemplo: "quero pra 12h" → anotar "Entregar às 12h"
+
+═══════════════════════════════════════════
+COMO ENTENDER PEDIDOS:
+═══════════════════════════════════════════
 - "marmita" / "marmitex" / "quentinha" = Marmitex
-- "grande" / "G" = tamanho Grande
-- "pequena" / "P" = tamanho Pequeno
-- "opção 1" / "a primeira" / "1" = primeira opção do cardápio
+- "grande" / "G" / "a grande" = tamanho Grande
+- "pequena" / "P" / "a pequena" = tamanho Pequeno
+- "opção 1" / "a primeira" / "1" / "op1" = Opção 1
+- "opção 2" / "a segunda" / "2" / "op2" = Opção 2
 - "sem arroz" / "tira o feijão" = remover acompanhamento
+- "em arroz" / "marmitex de arroz" / "no arroz" = comida em arroz (+R$5)
+- "com ovo" / "adiciona ovo" = ovo adicional (+R$4)
+- "carne extra" / "mais carne" = carne adicional (+R$7)
+- "mensalista" / "sou mensal" / "quinzenal" = pagamento Mensalista
 - "coca" / "refri" = pergunte o tamanho/tipo
-- "mensalista" / "sou mensal" = pagamento Mensalista
+- "troco pra 50" = anotar troco
 
+═══════════════════════════════════════════
 FORMATO DE PEDIDO FINALIZADO:
-Quando o cliente CONFIRMAR, responda com JSON:
+═══════════════════════════════════════════
+Quando o cliente CONFIRMAR ("isso", "só isso", "manda", "fecha", "pode ser"), responda com JSON:
 
 \`\`\`json
 {
@@ -134,35 +165,51 @@ Quando o cliente CONFIRMAR, responda com JSON:
       "tamanho": "G",
       "proteina": "Frango caipira",
       "semItens": ["feijão tropeiro"],
-      "preco": 25.00
+      "emArroz": false,
+      "adicionais": [],
+      "preco": 25.00,
+      "qtd": 1
     }
   ],
   "subtotal": 25.00,
   "embalagens_adicionais": 0,
   "observacao": "",
+  "horario_entrega": null,
   "dados_extraidos": {
     "nome": null,
     "endereco": null,
-    "pagamento": null
+    "pagamento": null,
+    "troco": null
   }
 }
 \`\`\`
 
 REGRAS DO JSON:
-- "tipo": "marmitex" ou "bebida" ou "combo"
-- "opcaoNome": nome da opção do cardápio
-- "tamanho": "P" ou "G" (só pra marmitex)
-- "proteina": carne escolhida (se especificou)
-- "semItens": acompanhamentos removidos (array vazio se nenhum)
-- "preco": preço correto do tamanho escolhido
-- "embalagens_adicionais": número de embalagens extras
-- "dados_extraidos": extraia nome, endereço e pagamento se o cliente já disse (null se não)
-- Só gere JSON quando confirmar. "só isso", "manda", "fecha" = confirmar.
+- "tipo": "marmitex" ou "bebida" ou "combo" ou "salada"
+- "opcaoNome": nome da opção escolhida
+- "tamanho": "P" ou "G" (só marmitex)
+- "proteina": carne escolhida se especificou
+- "semItens": array de acompanhamentos removidos
+- "emArroz": true se pediu comida em arroz (+R$5 já somado no preco)
+- "adicionais": ["ovo", "carne extra"] — cada um com preço já somado
+- "preco": preço CORRETO (tamanho + adicionais)
+- "horario_entrega": "12:00" se pediu horário específico, null se não
+- "dados_extraidos": extraia o que puder do contexto (nome, endereço, pagamento, troco)
+- IMPORTANTE: Se pediu "em arroz", some +R$5 ao preço. Se pediu ovo, some +R$4. Carne extra +R$7.
 
-${cardapioTexto}`
+${cardapioTexto}
+
+➕ ADICIONAIS:
+• Comida em arroz: +R$ 5,00
+• Carne adicional: +R$ 7,00
+• Ovo adicional: +R$ 4,00
+• Embalagem adicional: +R$ 1,00
+
+📦 Entrega: a partir das 10:30 | Prazo: 30 a 60 min
+💳 Pagamento: Pix, Dinheiro, Cartão (motoboy cobra), Mensalista`
 
   if (dicasDono && dicasDono.trim()) {
-    prompt += `\n\n━━━ INSTRUÇÕES ESPECIAIS DO DONO ━━━\n${dicasDono.trim()}`
+    prompt += `\n\n━━━ INSTRUÇÕES DO DONO ━━━\n${dicasDono.trim()}`
   }
 
   return prompt
@@ -194,7 +241,7 @@ async function chatComIA(historico, mensagemAtual) {
         body: JSON.stringify({ model: 'gpt-4o-mini', messages: openaiMessages, temperature: 0.3, max_tokens: 1024 }),
       })
       const d = await r.json()
-      if (r.ok && d?.choices?.[0]?.message?.content) { resposta = d.choices[0].message.content; console.log('[IA] GPT-4o-mini OK') }
+      if (r.ok && d?.choices?.[0]?.message?.content) { resposta = d.choices[0].message.content }
       else console.warn('[IA] OpenAI erro:', r.status)
     } catch (e) { console.error('[IA] OpenAI falhou:', e.message) }
   }
@@ -209,7 +256,7 @@ async function chatComIA(historico, mensagemAtual) {
         body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: openaiMessages, temperature: 0.4, max_tokens: 1024 }),
       })
       const d = await r.json()
-      if (r.ok && d?.choices?.[0]?.message?.content) { resposta = d.choices[0].message.content; console.log('[IA] Groq OK') }
+      if (r.ok && d?.choices?.[0]?.message?.content) { resposta = d.choices[0].message.content }
     } catch (e) { console.error('[IA] Groq falhou:', e.message) }
   }
 
@@ -224,7 +271,7 @@ async function chatComIA(historico, mensagemAtual) {
         body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] }, contents, generationConfig: { temperature: 0.4, maxOutputTokens: 1024 } }),
       })
       const d = await r.json()
-      if (r.ok) { resposta = d?.candidates?.[0]?.content?.parts?.[0]?.text || '' }
+      if (r.ok) resposta = d?.candidates?.[0]?.content?.parts?.[0]?.text || ''
     } catch {}
   }
 
@@ -240,17 +287,23 @@ async function chatComIA(historico, mensagemAtual) {
     } catch {}
   }
 
-  // Validar preços contra cardápio real
+  // Validar preços
   if (pedido) {
     const precoP = Number(cardapio.precoP) || 0
     const precoG = Number(cardapio.precoG) || 0
     let subtotal = 0
     for (const item of pedido.itens) {
       if (item.tipo === 'marmitex') {
-        const precoReal = item.tamanho === 'G' ? precoG : precoP
-        if (precoReal > 0) item.preco = precoReal
-      } else if (item.tipo === 'bebida' || item.tipo === 'combo') {
-        const found = bebidas.find(b => b.nome.toLowerCase() === (item.nome || item.opcaoNome || '').toLowerCase())
+        let precoBase = item.tamanho === 'G' ? precoG : precoP
+        if (item.emArroz) precoBase += 5
+        if (item.adicionais?.includes('ovo')) precoBase += 4
+        if (item.adicionais?.includes('carne extra') || item.adicionais?.includes('carne')) precoBase += 7
+        item.preco = precoBase
+      } else if (item.tipo === 'salada') {
+        const saladaPreco = Number(cardapio.salada?.preco) || 0
+        item.preco = saladaPreco
+      } else {
+        const found = bebidas.find(b => b.nome.toLowerCase() === (item.opcaoNome || item.nome || '').toLowerCase())
         if (found) item.preco = Number(found.preco)
       }
       subtotal += (item.preco || 0) * (item.qtd || 1)
@@ -261,7 +314,14 @@ async function chatComIA(historico, mensagemAtual) {
 
   let textoLimpo = resposta.replace(/```json[\s\S]*?```/g, '').trim()
   if (!textoLimpo && pedido) {
-    const linhas = pedido.itens.map(i => `  ${i.qtd || 1}x ${i.opcaoNome || i.nome} (${i.tamanho || ''}) — R$ ${(i.preco * (i.qtd || 1)).toFixed(2).replace('.', ',')}`)
+    const linhas = pedido.itens.map(i => {
+      let desc = `${i.qtd || 1}x ${i.opcaoNome || i.nome} (${i.tamanho || ''})`
+      if (i.emArroz) desc += ' 🍚 em arroz'
+      if (i.semItens?.length) desc += ` sem ${i.semItens.join(', ')}`
+      if (i.adicionais?.length) desc += ` + ${i.adicionais.join(', ')}`
+      desc += ` — R$ ${((i.preco || 0) * (i.qtd || 1)).toFixed(2).replace('.', ',')}`
+      return `  ${desc}`
+    })
     textoLimpo = `Anotado! ✅\n\n${linhas.join('\n')}\n\n💰 Subtotal: R$ ${pedido.subtotal.toFixed(2).replace('.', ',')}`
   }
 

@@ -132,8 +132,25 @@ async function injetarPedido(supabase, sessao, config) {
     statusPagamento: dados.pagamento === 'Mensalista' ? 'mensalista' : dados.pagamento === 'Dinheiro' ? 'pago' : 'pendente',
     embalagensAdicionais: pedido.embalagens_adicionais || 0,
     observacoes: pedido.observacao || '',
+    horarioEntrega: pedido.horario_entrega || dados.horario_entrega || '',
+    motoboy: '',
     origem: 'whatsapp',
   })
+
+  // Salvar/atualizar cliente no banco
+  if (dados.nome || dados.rua) {
+    const telCliente = telLimpo
+    const existente = clienteExistente
+    await sbFogao.from('clientes').upsert({
+      id: existente?.id || Date.now(),
+      nome: dados.nome || existente?.nome || 'Cliente WhatsApp',
+      telefone: telCliente,
+      rua: dados.rua || existente?.rua || '',
+      bairro: dados.bairro || existente?.bairro || '',
+      numero: dados.numero || existente?.numero || '',
+      referencia: dados.referencia || existente?.referencia || '',
+    }, { onConflict: 'id' }).catch(() => {})
+  }
 
   return { id, total, numeroPedido: id }
 }
@@ -284,7 +301,12 @@ module.exports = async function handler(req, res) {
             }
           }
           else if (prox === 'coletando_pagamento') {
-            await enviarBotoes(telefone, `Como deseja pagar?`, [{ id: 'btn_pix', text: '💰 Pix' }, { id: 'btn_dinheiro', text: '💵 Dinheiro' }, { id: 'btn_mensalista', text: '📋 Mensalista' }], 'Pagamento')
+            await enviarLista(telefone, `Como deseja pagar?`, '💳 Pagamento', [{ titulo: 'Pagamento', itens: [
+              { id: 'btn_pix', titulo: '💰 Pix', descricao: 'QR Code + copia e cola' },
+              { id: 'btn_dinheiro', titulo: '💵 Dinheiro', descricao: 'Pague na entrega' },
+              { id: 'btn_cartao', titulo: '💳 Cartão', descricao: 'Motoboy cobra na entrega' },
+              { id: 'btn_mensalista', titulo: '📋 Mensalista', descricao: 'Cliente mensal/quinzenal' },
+            ]}], 'Forma de pagamento')
           }
           else if (prox === 'confirmando_pedido') {
             const total = (pedido.subtotal || 0) + (pedido.embalagens_adicionais || 0)
@@ -333,22 +355,93 @@ module.exports = async function handler(req, res) {
 
       case 'coletando_pagamento': {
         const dados = sessao.dados_cliente || {}
+
+        // Auto-detectar mensalista/quinzenal do banco
+        const clienteDB = await buscarCliente(sbFogao, telefone)
+        if (clienteDB?.tipo === 'mensalista' || clienteDB?.tipo === 'quinzenal') {
+          const pagAuto = clienteDB.tipo === 'quinzenal' ? 'Quinzenal' : 'Mensalista'
+          await enviarBot(sbPublic, telefone, `📋 Identifiquei que você é cliente *${pagAuto}*! Pagamento registrado automaticamente. 😊`)
+          // Pular direto pro resumo
+          const pedido = sessao.ia_pedido
+          const total = (pedido?.subtotal || 0) + (pedido?.embalagens_adicionais || 0)
+          const linhas = (pedido?.itens || []).map(i => {
+            let d = `${i.qtd || 1}x ${i.opcaoNome || i.nome} (${i.tamanho || ''})`
+            if (i.emArroz) d += ' 🍚'
+            if (i.semItens?.length) d += ` sem ${i.semItens.join(', ')}`
+            return `  ${d} — R$ ${((i.preco || 0) * (i.qtd || 1)).toFixed(2).replace('.', ',')}`
+          })
+          const horario = pedido?.horario_entrega ? `\n⏰ Horário: ${pedido.horario_entrega}` : ''
+          let resumo = `📋 *RESUMO*\n\n👤 ${dados.nome}\n📍 ${dados.rua || 'Retirar no local'}\n💳 ${pagAuto}${horario}\n\n🛒 *Itens:*\n${linhas.join('\n')}\n\n💵 *TOTAL: R$ ${total.toFixed(2).replace('.', ',')}*`
+          await enviarBot(sbPublic, telefone, resumo)
+          await enviarBotoes(telefone, `Tudo certo?`, [{ id: 'btn_confirmar', text: '✅ Confirmar' }, { id: 'btn_alterar', text: '✏️ Alterar' }], 'Confirmação')
+          await upsertSessao(sbPublic, telefone, { estado: 'confirmando_pedido', dados_cliente: { ...dados, pagamento: pagAuto } })
+          return res.status(200).json({ ok: true, action: 'mensalista_auto' })
+        }
+
         let pagamento = ''
         if (/pix|btn_pix/i.test(textoLower)) pagamento = 'Pix'
         else if (/dinheiro|btn_dinheiro/i.test(textoLower)) pagamento = 'Dinheiro'
-        else if (/mensalista|mensal|btn_mensalista/i.test(textoLower)) pagamento = 'Mensalista'
+        else if (/cart[aã]o|btn_cartao/i.test(textoLower)) pagamento = 'Cartão'
+        else if (/mensalista|mensal|btn_mensalista|quinzenal/i.test(textoLower)) pagamento = 'Mensalista'
+
         if (!pagamento) {
-          await enviarBotoes(telefone, `Escolha:`, [{ id: 'btn_pix', text: '💰 Pix' }, { id: 'btn_dinheiro', text: '💵 Dinheiro' }, { id: 'btn_mensalista', text: '📋 Mensalista' }], 'Pagamento')
+          await enviarLista(telefone, `Como deseja pagar?`, '💳 Pagamento', [{ titulo: 'Pagamento', itens: [
+            { id: 'btn_pix', titulo: '💰 Pix', descricao: 'QR Code + copia e cola' },
+            { id: 'btn_dinheiro', titulo: '💵 Dinheiro', descricao: 'Pague na entrega' },
+            { id: 'btn_cartao', titulo: '💳 Cartão', descricao: 'Motoboy cobra na entrega' },
+            { id: 'btn_mensalista', titulo: '📋 Mensalista', descricao: 'Cliente mensal/quinzenal' },
+          ]}], 'Forma de pagamento')
           return res.status(200).json({ ok: true })
         }
 
+        // Se dinheiro → perguntar troco
+        if (pagamento === 'Dinheiro') {
+          await enviarBot(sbPublic, telefone, `💵 *Dinheiro* selecionado!\n\nPrecisa de *troco*? Se sim, troco pra quanto?\n_(Ex: "troco pra 50" ou "não precisa")_`)
+          await upsertSessao(sbPublic, telefone, { estado: 'coletando_troco', dados_cliente: { ...dados, pagamento } })
+          return res.status(200).json({ ok: true })
+        }
+
+        // Se cartão → informar que motoboy cobra
+        if (pagamento === 'Cartão') {
+          await enviarBot(sbPublic, telefone, `💳 *Cartão* — o motoboy levará a maquininha! 😊`)
+        }
+
+        // Ir pro resumo
         const pedido = sessao.ia_pedido
         const total = (pedido?.subtotal || 0) + (pedido?.embalagens_adicionais || 0)
-        const linhas = (pedido?.itens || []).map(i => `  ${i.qtd || 1}x ${i.opcaoNome || i.nome} (${i.tamanho || ''}) — R$ ${((i.preco || 0) * (i.qtd || 1)).toFixed(2).replace('.', ',')}`)
-        let resumo = `📋 *RESUMO*\n\n👤 ${dados.nome}\n📍 ${dados.rua || 'Retirar no local'}\n💳 ${pagamento}\n\n🛒 *Itens:*\n${linhas.join('\n')}\n\n💵 *TOTAL: R$ ${total.toFixed(2).replace('.', ',')}*`
+        const linhas = (pedido?.itens || []).map(i => {
+          let d = `${i.qtd || 1}x ${i.opcaoNome || i.nome} (${i.tamanho || ''})`
+          if (i.emArroz) d += ' 🍚'
+          if (i.semItens?.length) d += ` sem ${i.semItens.join(', ')}`
+          return `  ${d} — R$ ${((i.preco || 0) * (i.qtd || 1)).toFixed(2).replace('.', ',')}`
+        })
+        const horario = pedido?.horario_entrega ? `\n⏰ Horário: ${pedido.horario_entrega}` : '\n⏰ Prazo: 30 a 60 min (a partir das 10:30)'
+        let resumo = `📋 *RESUMO DO PEDIDO*\n\n👤 ${dados.nome}\n📍 ${dados.rua || 'Retirar no local'}\n💳 ${pagamento}${horario}\n\n🛒 *Itens:*\n${linhas.join('\n')}\n\n💵 *TOTAL: R$ ${total.toFixed(2).replace('.', ',')}*`
         await enviarBot(sbPublic, telefone, resumo)
         await enviarBotoes(telefone, `Tudo certo?`, [{ id: 'btn_confirmar', text: '✅ Confirmar' }, { id: 'btn_alterar', text: '✏️ Alterar' }], 'Confirmação')
         await upsertSessao(sbPublic, telefone, { estado: 'confirmando_pedido', dados_cliente: { ...dados, pagamento } })
+        return res.status(200).json({ ok: true })
+      }
+
+      // ═══ TROCO (só pra dinheiro) ═══
+      case 'coletando_troco': {
+        const dados = sessao.dados_cliente || {}
+        const trocoMatch = texto.match(/(\d+)/)
+        const troco = /não|nao|sem|zero/i.test(textoLower) ? '' : (trocoMatch ? `R$ ${trocoMatch[1]}` : texto.trim())
+
+        const pedido = sessao.ia_pedido
+        const total = (pedido?.subtotal || 0) + (pedido?.embalagens_adicionais || 0)
+        const linhas = (pedido?.itens || []).map(i => {
+          let d = `${i.qtd || 1}x ${i.opcaoNome || i.nome} (${i.tamanho || ''})`
+          if (i.emArroz) d += ' 🍚'
+          if (i.semItens?.length) d += ` sem ${i.semItens.join(', ')}`
+          return `  ${d} — R$ ${((i.preco || 0) * (i.qtd || 1)).toFixed(2).replace('.', ',')}`
+        })
+        const horario = pedido?.horario_entrega ? `\n⏰ Horário: ${pedido.horario_entrega}` : '\n⏰ Prazo: 30 a 60 min (a partir das 10:30)'
+        let resumo = `📋 *RESUMO DO PEDIDO*\n\n👤 ${dados.nome}\n📍 ${dados.rua || 'Retirar no local'}\n💳 Dinheiro${troco ? ` (troco p/ ${troco})` : ''}${horario}\n\n🛒 *Itens:*\n${linhas.join('\n')}\n\n💵 *TOTAL: R$ ${total.toFixed(2).replace('.', ',')}*`
+        await enviarBot(sbPublic, telefone, resumo)
+        await enviarBotoes(telefone, `Tudo certo?`, [{ id: 'btn_confirmar', text: '✅ Confirmar' }, { id: 'btn_alterar', text: '✏️ Alterar' }], 'Confirmação')
+        await upsertSessao(sbPublic, telefone, { estado: 'confirmando_pedido', dados_cliente: { ...dados, troco } })
         return res.status(200).json({ ok: true })
       }
 
