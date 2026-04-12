@@ -71,7 +71,27 @@ async function enviarBot(sbPublic, telefone, texto) {
   const result = await enviarTexto(telefone, texto)
   const msgId = result?.key?.id || result?.messageId || null
   await salvarBotMsgId(sbPublic, telefone, msgId)
+  // Salvar no histórico pra visualizar no admin
+  try {
+    const sessao = await buscarSessao(sbPublic, telefone)
+    if (sessao) {
+      const hist = (sessao.ia_historico || []).slice(-40)
+      hist.push({ role: 'model', text: texto })
+      await sbPublic.from('fogao_whatsapp_sessions').update({ ia_historico: hist }).eq('telefone', telefone)
+    }
+  } catch {}
   return result
+}
+
+async function salvarMsgCliente(sbPublic, telefone, texto) {
+  try {
+    const sessao = await buscarSessao(sbPublic, telefone)
+    if (sessao) {
+      const hist = (sessao.ia_historico || []).slice(-40)
+      hist.push({ role: 'user', text: texto })
+      await sbPublic.from('fogao_whatsapp_sessions').update({ ia_historico: hist }).eq('telefone', telefone)
+    }
+  } catch {}
 }
 
 async function buscarCliente(supabase, telefone) {
@@ -243,6 +263,9 @@ module.exports = async function handler(req, res) {
       texto = texto.trim()
     }
     if (!texto) return res.status(200).json({ ok: true, skip: 'no text' })
+
+    // Salvar mensagem do cliente no histórico
+    await salvarMsgCliente(sbPublic, telefone, texto)
 
     let sessao = await buscarSessao(sbPublic, telefone)
     const { config } = await buscarCardapioEConfig()
