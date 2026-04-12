@@ -208,59 +208,42 @@ module.exports = async function handler(req, res) {
     const estado = sessao.estado
 
     switch (estado) {
+      // ═══ PRIMEIRO CONTATO — já manda cardápio do dia ═══
       case 'novo': {
-        await enviarBot(sbPublic, telefone, `Olá${nomeContato ? `, ${nomeContato}` : ''}! 👋\n\nBem-vindo ao *${NOME_LOJA}*! 🍲\n\nFaça seu pedido pelo nosso cardápio:\n👉 ${LINK_SITE}\n\nÉ rápido e fácil! 😋`)
-        await upsertSessao(sbPublic, telefone, { estado: 'saudacao', nome_contato: nomeContato })
-        return res.status(200).json({ ok: true, action: 'saudacao' })
+        const { cardapio: cardHoje, bebidas } = await buscarCardapioEConfig()
+        const cardapioTexto = formatarCardapioDoDia(cardHoje, bebidas)
+
+        await enviarBot(sbPublic, telefone,
+          `Olá${nomeContato ? `, ${nomeContato}` : ''}! 👋\n\n` +
+          `Bem-vindo ao *${NOME_LOJA}*! 🍲\n\n` +
+          `Aqui está nosso cardápio de hoje:\n\n` +
+          `${cardapioTexto}\n` +
+          `O que vai ser hoje? Me diga o que deseja! 😋`
+        )
+        await upsertSessao(sbPublic, telefone, {
+          estado: 'pedindo_ia', nome_contato: nomeContato,
+          ia_historico: [], ia_pedido: null, dados_cliente: null,
+        })
+        return res.status(200).json({ ok: true, action: 'saudacao_cardapio' })
       }
 
-      case 'saudacao': {
-        await enviarBot(sbPublic, telefone, `Nosso cardápio de hoje:\n👉 ${LINK_SITE}\n\nSe tiver dificuldade, posso anotar por aqui! 😊`)
-        await upsertSessao(sbPublic, telefone, { estado: 'insistiu_site' })
-        return res.status(200).json({ ok: true, action: 'reforco_site' })
-      }
-
+      case 'saudacao':
       case 'insistiu_site':
-      case 'ofereceu_whatsapp': {
-        const querPedir = /sim|quero|pode|bora|pedir|pedido|aqui|por aqui|cardapio|menu|pedir_aqui|nao consigo|não consigo|dificuldade/i.test(textoLower)
-        const querSite = /site|pedir_site/i.test(textoLower)
-
-        if (querSite) {
-          await enviarBot(sbPublic, telefone, `👉 ${LINK_SITE}\n\nBom apetite! 🍲`)
-          return res.status(200).json({ ok: true, action: 'enviou_link' })
-        }
-
-        if (querPedir) {
-          const { cardapio, bebidas } = await buscarCardapioEConfig()
-          const cardapioTexto = formatarCardapioDoDia(cardapio, bebidas)
-          await enviarBot(sbPublic, telefone, `Sem problemas! Aqui está o cardápio de hoje:\n\n${cardapioTexto}\n_Me diga o que deseja! 📝_`)
-          await upsertSessao(sbPublic, telefone, { estado: 'pedindo_ia', ia_historico: [], ia_pedido: null, dados_cliente: null })
-          return res.status(200).json({ ok: true, action: 'cardapio_enviado' })
-        }
-
-        await enviarBotoes(supabase, telefone, `Como posso te ajudar?`, [
-          { id: 'pedir_aqui', text: '📱 Pedir por aqui' },
-          { id: 'pedir_site', text: '🌐 Ir pro site' },
-          { id: 'atendente', text: '👤 Falar c/ atendente' },
-        ], 'Escolha')
-        await upsertSessao(sbPublic, telefone, { estado: 'perguntou_duvida' })
-        return res.status(200).json({ ok: true, action: 'ofereceu_opcoes' })
-      }
-
+      case 'ofereceu_whatsapp':
       case 'perguntou_duvida': {
-        if (/pedir_aqui|sim|quero|pode|pedir/i.test(textoLower)) {
-          const { cardapio, bebidas } = await buscarCardapioEConfig()
-          await enviarBot(sbPublic, telefone, `${formatarCardapioDoDia(cardapio, bebidas)}\n_Me diga o que deseja! 📝_`)
-          await upsertSessao(sbPublic, telefone, { estado: 'pedindo_ia', ia_historico: [], ia_pedido: null, dados_cliente: null })
-          return res.status(200).json({ ok: true, action: 'cardapio_enviado' })
+        // Qualquer interação nestes estados → manda pro modo IA
+        const querAtendente = /atendente|humano|pessoa|falar com/i.test(textoLower)
+        if (querAtendente) {
+          await enviarBot(sbPublic, telefone, `Vou te direcionar para um atendente! 🙋‍♂️\nAguarde. 🙏`)
+          await upsertSessao(sbPublic, telefone, { estado: 'humano', humano_ativo: true })
+          return res.status(200).json({ ok: true, action: 'humano' })
         }
-        if (/site|pedir_site/i.test(textoLower)) {
-          await enviarBot(sbPublic, telefone, `👉 ${LINK_SITE}\n\nBom apetite! 🍲`)
-          return res.status(200).json({ ok: true })
-        }
-        await enviarBot(sbPublic, telefone, `Vou te direcionar para um atendente! 🙋‍♂️\nAguarde. 🙏`)
-        await upsertSessao(sbPublic, telefone, { estado: 'humano', humano_ativo: true })
-        return res.status(200).json({ ok: true, action: 'humano' })
+
+        const { cardapio: cardHoje2, bebidas: beb2 } = await buscarCardapioEConfig()
+        const cardTexto2 = formatarCardapioDoDia(cardHoje2, beb2)
+        await enviarBot(sbPublic, telefone, `Nosso cardápio de hoje:\n\n${cardTexto2}\n\nMe diga o que deseja! 📝`)
+        await upsertSessao(sbPublic, telefone, { estado: 'pedindo_ia', ia_historico: [], ia_pedido: null, dados_cliente: null })
+        return res.status(200).json({ ok: true, action: 'cardapio_enviado' })
       }
 
       case 'fora_horario': {
