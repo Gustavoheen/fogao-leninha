@@ -11,8 +11,9 @@ const { transcreverAudio } = require('../_lib/whisper')
 
 // Schema fogao = dados do restaurante (pedidos, clientes, configuracoes, cardapio_hoje)
 // Schema public = tabelas do bot (fogao_whatsapp_sessions, fogao_alertas)
+// Tudo no schema public (fogao schema não está exposto no Supabase)
 function getSupabaseFogao() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { db: { schema: 'fogao' } })
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
 }
 function getSupabasePublic() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)

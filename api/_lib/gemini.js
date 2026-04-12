@@ -11,7 +11,7 @@ const GROQ_KEY = () => process.env.GROQ_API_KEY || ''
 const GEMINI_KEY = () => process.env.GEMINI_API_KEY || ''
 
 function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { db: { schema: 'fogao' } })
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
 }
 
 // ─── BUSCAR CARDÁPIO DO DIA + CONFIG ────────────────────────
