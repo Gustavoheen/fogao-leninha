@@ -220,9 +220,8 @@ module.exports = async function handler(req, res) {
 
       if (base64) {
         texto = await transcreverAudio(null, base64, audioInfo.mimetype)
-      } else if (mediaUrl) {
-        texto = await transcreverAudio(mediaUrl, null, audioInfo.mimetype)
       } else {
+        // URL do WhatsApp é encriptada — usar getBase64FromMediaMessage
         try {
           const evoUrl = (process.env.EVOLUTION_API_URL || '').replace(/\/$/, '')
           const evoKey = process.env.EVOLUTION_API_KEY || ''
