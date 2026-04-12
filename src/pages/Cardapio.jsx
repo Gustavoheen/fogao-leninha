@@ -46,17 +46,20 @@ export default function Cardapio() {
   const [botAtivo, setBotAtivo] = useState(true)
   const [salvandoBot, setSalvandoBot] = useState(false)
 
-  // Carregar metadados da row id=99 (imagemUrl + botAtivo)
+  // Carregar metadados
   useState(() => {
+    // Imagem do cardápio
     supabase.from('cardapio_hoje').select('opcoes').eq('id', 99).single()
       .then(({ data }) => {
         if (data?.opcoes?.imagemUrl) {
           setImagemUrl(data.opcoes.imagemUrl)
           setInputUrl(data.opcoes.imagemUrl)
         }
-        if (data?.opcoes?.botAtivo !== undefined) {
-          setBotAtivo(data.opcoes.botAtivo)
-        }
+      })
+    // Estado do bot — de configuracoes.bot_ativo
+    supabase.from('configuracoes').select('bot_ativo').eq('id', 1).single()
+      .then(({ data }) => {
+        setBotAtivo(data?.bot_ativo !== 'desligado')
       })
   })
 
@@ -83,7 +86,8 @@ export default function Cardapio() {
     const novo = !botAtivo
     setSalvandoBot(true)
     setBotAtivo(novo)
-    await supabase.from('cardapio_hoje').upsert({ id: 99, opcoes: { imagemUrl: imagemUrl || null, botAtivo: novo } })
+    // Salvar em configuracoes.bot_ativo (mesmo campo que o webhook lê)
+    await supabase.from('configuracoes').update({ bot_ativo: novo ? 'auto' : 'desligado' }).eq('id', 1)
     setSalvandoBot(false)
   }
 
