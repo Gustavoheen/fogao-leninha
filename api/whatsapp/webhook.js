@@ -211,8 +211,8 @@ module.exports = async function handler(req, res) {
         if (texto) console.log('[Audio] Transcrito:', texto.substring(0, 100))
         else console.log('[Audio] Transcrição vazia')
       } else {
-        console.log('[Audio] Sem URL nem base64 — áudio não acessível')
-        // Tentar baixar via Evolution API
+        console.log('[Audio] Sem URL nem base64 — buscando via Evolution API')
+        // Buscar base64 via Evolution API getBase64FromMediaMessage
         try {
           const evoUrl = (process.env.EVOLUTION_API_URL || '').replace(/\/$/, '')
           const evoKey = process.env.EVOLUTION_API_KEY || ''
@@ -220,11 +220,12 @@ module.exports = async function handler(req, res) {
           const mediaRes = await fetch(`${evoUrl}/chat/getBase64FromMediaMessage/${evoInst}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', apikey: evoKey },
-            body: JSON.stringify({ message: data }),
+            body: JSON.stringify({ message: { key: data.key, message: data.message } }),
           })
           const mediaData = await mediaRes.json()
+          console.log('[Audio] getBase64 response:', mediaData?.base64 ? `OK (${mediaData.base64.length} chars)` : 'sem base64', mediaData?.mimetype || '')
           if (mediaData?.base64) {
-            texto = await transcreverAudio(null, mediaData.base64, audioInfo.mimetype)
+            texto = await transcreverAudio(null, mediaData.base64, mediaData.mimetype || audioInfo.mimetype)
             if (texto) console.log('[Audio] Transcrito via getBase64:', texto.substring(0, 100))
           }
         } catch (e) {
