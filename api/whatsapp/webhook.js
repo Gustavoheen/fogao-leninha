@@ -25,7 +25,12 @@ const SESSION_TIMEOUT_MS = 6 * 60 * 60 * 1000
 
 // ─── Helpers ───────────────────────────────────────────────
 
-function limparTelefone(jid) { return (jid || '').replace(/@.*$/, '').replace(/\D/g, '') }
+function limparTelefone(jid) {
+  let tel = (jid || '').replace(/@.*$/, '').replace(/\D/g, '')
+  // Normalizar: celular BR 55+DDD(2)+9+num(8)=13 dígitos. Se 12, add 9
+  if (tel.startsWith('55') && tel.length === 12) tel = tel.slice(0, 4) + '9' + tel.slice(4)
+  return tel
+}
 
 function extrairTextoMensagem(msg) {
   if (!msg) return ''
