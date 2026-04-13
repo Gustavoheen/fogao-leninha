@@ -107,7 +107,7 @@ async function injetarPedido(supabase, sessao, config) {
   const telLimpo = telefone.replace(/^55/, '')
 
   const agora = new Date()
-  const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
   const dataRef = new Date(agora)
   if (dataRef.getHours() < 5) dataRef.setDate(dataRef.getDate() - 1)
 
