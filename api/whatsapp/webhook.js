@@ -269,15 +269,7 @@ module.exports = async function handler(req, res) {
     if (sessao.humano_ativo) return res.status(200).json({ ok: true, skip: 'humano_ativo' })
 
     // Pergunta sobre preço/cardápio — qualquer estado → IA responde
-    const isPerguntaPreco = /quanto custa|qual o pre[çc]o|quanto [eé]|valor d[eoa]|pre[çc]o d[eoa]|quanto fica|quanto sai/i.test(textoLower)
-    if (isPerguntaPreco && sessao.estado !== 'pedindo_ia') {
-      const historico = sessao.ia_historico || []
-      const { texto: respostaIA } = await chatComIA(historico, texto)
-      const novoHistorico = [...historico, { role: 'user', text: texto }, { role: 'model', text: respostaIA }].slice(-30)
-      await enviarBot(sbPublic, telefone, respostaIA)
-      await upsertSessao(sbPublic, telefone, { ia_historico: novoHistorico })
-      return res.status(200).json({ ok: true, action: 'pergunta_preco' })
-    }
+    // isPerguntaPreco movido pra depois de textoLower
 
     // Fora do horário
     const aberto = modoBot === 'ligado' ? true : (config.lojaAberta !== false)
@@ -292,6 +284,16 @@ module.exports = async function handler(req, res) {
     }
 
     const textoLower = texto.toLowerCase()
+
+    // Pergunta sobre preço — qualquer estado
+    const isPerguntaPreco = /quanto custa|qual o pre[çc]o|quanto [eé]|valor d[eoa]|pre[çc]o d[eoa]|quanto fica|quanto sai/i.test(textoLower)
+    if (isPerguntaPreco && sessao.estado !== 'pedindo_ia') {
+      const historico = sessao.ia_historico || []
+      const { texto: respostaIA } = await chatComIA(historico, texto)
+      await enviarBot(sbPublic, telefone, respostaIA)
+      return res.status(200).json({ ok: true, action: 'pergunta_preco' })
+    }
+
     const estado = sessao.estado
 
     switch (estado) {
