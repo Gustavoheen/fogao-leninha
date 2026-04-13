@@ -203,7 +203,15 @@ module.exports = async function handler(req, res) {
     if (fromMe) {
       const msgTexto = extrairTextoMensagem(data.message)
       if (msgTexto) {
-        // É uma mensagem de texto enviada pelo humano
+        // Salvar resposta da atendente no histórico
+        try {
+          const s = await buscarSessao(sbPublic, telefone)
+          if (s) {
+            const h = (s.ia_historico || []).slice(-40)
+            h.push({ role: 'model', text: '👤 ' + msgTexto })
+            await sbPublic.from('fogao_whatsapp_sessions').update({ ia_historico: h }).eq('telefone', telefone)
+          }
+        } catch {}
         const sessao = await buscarSessao(sbPublic, telefone)
         const botIds = sessao?.bot_msg_ids || []
         if (!botIds.includes(msgId)) {
