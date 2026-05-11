@@ -30,7 +30,7 @@ function createMockClient() {
 }
 
 export const supabase = (url && key)
-  ? createClient(url, key)
+  ? createClient(url, key, { db: { schema: 'fogao' } })
   : createMockClient()
 
 export const supabaseConfigured = !!(url && key)
